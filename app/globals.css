@@ -1,26 +1,226 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #1a1714;
+  --parchment: #0f0e0c;
+  --parchment-light: #1c1a17;
+  --gold: #c4a35a;
+  --gold-dim: #8b7640;
+  --gold-bright: #e8c97a;
+  --stone: #6b6560;
+  --mist: #a39e96;
+  --cream: #d4cfc7;
+  --red-seal: #8b2020;
+  --glass-rgb: 255, 255, 255;
+  --card-shadow: rgba(196, 163, 90, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.03);
+  --input-border: rgba(196, 163, 90, 0.2);
+  --input-focus-shadow: rgba(196, 163, 90, 0.15);
+  --overlay-gold: rgba(196, 163, 90, 0.03);
+  --overlay-red: rgba(139, 32, 32, 0.02);
+  --overlay-gold-2: rgba(196, 163, 90, 0.02);
+}
+
+[data-theme="light"] {
+  --ink: #f5f0e8;
+  --parchment: #f8f4ec;
+  --parchment-light: #ece7dc;
+  --gold: #8b7028;
+  --gold-dim: #a68d3e;
+  --gold-bright: #6b5518;
+  --stone: #8a8480;
+  --mist: #6b6560;
+  --cream: #2a2520;
+  --red-seal: #a02828;
+  --glass-rgb: 0, 0, 0;
+  --card-shadow: rgba(139, 112, 40, 0.12);
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --input-border: rgba(139, 112, 40, 0.25);
+  --input-focus-shadow: rgba(139, 112, 40, 0.15);
+  --overlay-gold: rgba(139, 112, 40, 0.04);
+  --overlay-red: rgba(160, 40, 40, 0.03);
+  --overlay-gold-2: rgba(139, 112, 40, 0.03);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-parchment: var(--parchment);
+  --color-parchment-light: var(--parchment-light);
+  --color-gold: var(--gold);
+  --color-gold-dim: var(--gold-dim);
+  --color-gold-bright: var(--gold-bright);
+  --color-stone: var(--stone);
+  --color-mist: var(--mist);
+  --color-cream: var(--cream);
+  --color-red-seal: var(--red-seal);
+  --font-serif: 'Noto Serif TC', 'Georgia', serif;
+  --font-display: 'Crimson Pro', 'Georgia', serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--parchment);
+  color: var(--cream);
+  font-family: var(--font-serif);
+  overflow-x: hidden;
+}
+
+/* Ink wash background texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, var(--overlay-gold) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, var(--overlay-red) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 80%, var(--overlay-gold-2) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gold divider line */
+.gold-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+
+/* Brush stroke underline effect */
+.brush-underline {
+  position: relative;
+  display: inline-block;
+}
+.brush-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -5%;
+  width: 110%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 15%, var(--gold) 85%, transparent 100%);
+  opacity: 0.6;
+  border-radius: 50%;
+}
+
+/* Seal stamp animation */
+@keyframes seal-stamp {
+  0% { transform: scale(1.5) rotate(-5deg); opacity: 0; }
+  60% { transform: scale(0.95) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.seal-appear {
+  animation: seal-stamp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Fade in up */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+/* Smoke float */
+@keyframes smoke {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-20px) scale(1.1); opacity: 0.15; }
+}
+.animate-smoke {
+  animation: smoke 8s ease-in-out infinite;
+}
+
+/* Pulse glow for gold elements */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Ink reveal for text */
+@keyframes ink-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.ink-reveal {
+  animation: ink-reveal 1.2s ease-out forwards;
+}
+
+/* Streaming text cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.streaming-cursor::after {
+  content: '|';
+  color: var(--gold);
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* Form inputs */
+input, select {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  color: var(--cream);
+  padding: 10px 14px;
+  min-height: 44px;
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  width: 100%;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--input-focus-shadow);
+}
+input::placeholder {
+  color: var(--stone);
+}
+select option {
+  background: var(--parchment);
+  color: var(--cream);
+}
+label {
+  font-size: 0.85rem;
+  color: var(--mist);
+  letter-spacing: 0.05em;
+}
+
+/* Markdown-like result formatting */
+.result-text h3 {
+  color: var(--gold);
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.result-text p {
+  margin-bottom: 0.75rem;
+  line-height: 1.85;
+  color: var(--cream);
+}
+.result-text strong {
+  color: var(--gold-bright);
+}
+.result-text ul {
+  list-style: none;
+  padding-left: 1rem;
+}
+.result-text ul li {
+  position: relative;
+  padding-left: 1rem;
+  margin-bottom: 0.4rem;
+}
+.result-text ul li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--gold-dim);
+  font-weight: bold;
 }
