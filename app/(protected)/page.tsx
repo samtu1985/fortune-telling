@@ -471,12 +471,62 @@ export default function Home() {
       {/* Divination Type Selection */}
       <section className="max-w-5xl mx-auto px-6 pb-8">
         <p
-          className="animate-fade-in-up text-center text-sm text-mist/60 mb-8 tracking-wide"
+          className="animate-fade-in-up text-center text-sm text-mist/60 mb-6 sm:mb-8 tracking-wide"
           style={{ animationDelay: "500ms", opacity: 0 }}
         >
           選擇命理方式
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+
+        {/* Mobile: Compact horizontal tabs */}
+        <div
+          className="animate-fade-in-up flex sm:hidden gap-2"
+          style={{ animationDelay: "600ms", opacity: 0 }}
+        >
+          {DIVINATION_TYPES.map((dt) => (
+            <button
+              key={dt.id}
+              onClick={() => setSelectedType(dt.id)}
+              className={`
+                flex-1 py-3 rounded-sm border text-center transition-all duration-300
+                ${
+                  selectedType === dt.id
+                    ? "border-gold/60 bg-gold/[0.06]"
+                    : "border-gold/10 active:border-gold/30"
+                }
+              `}
+              style={
+                selectedType !== dt.id
+                  ? { backgroundColor: "rgba(var(--glass-rgb), 0.02)" }
+                  : undefined
+              }
+            >
+              <span
+                className={`text-2xl block transition-opacity duration-300 ${
+                  selectedType === dt.id ? "opacity-100" : "opacity-40"
+                }`}
+              >
+                {dt.symbol}
+              </span>
+              <span
+                className={`text-xs block mt-1 font-serif tracking-wide transition-colors duration-300 ${
+                  selectedType === dt.id ? "text-gold" : "text-cream/70"
+                }`}
+              >
+                {dt.title}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile: Selected type description */}
+        {selectedType && (
+          <p className="sm:hidden text-center text-sm text-mist/60 mt-4 px-2 leading-relaxed">
+            {DIVINATION_TYPES.find((d) => d.id === selectedType)?.description}
+          </p>
+        )}
+
+        {/* Desktop: Full cards */}
+        <div className="hidden sm:grid sm:grid-cols-3 gap-5">
           {DIVINATION_TYPES.map((dt, i) => (
             <DivinationCard
               key={dt.id}
