@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { generateZiweiChart } from "@/app/lib/ziwei";
 
 const BYTEPLUS_API_URL =
   "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions";
@@ -28,24 +29,19 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 使用繁體中文回答。`,
 
   ziwei: `你是一位精通紫微斗數的命理大師，對十四主星、輔星、煞星的排列與解讀有深入研究。
-請根據使用者提供的出生年月日時與出生地點，進行紫微斗數命盤分析。
 
-【重要：真太陽時校正】
-使用者提供的出生時間為當地鐘錶時間（北京時間/標準時區時間），你必須根據出生地點的經度換算「真太陽時」：
-- 中國標準時間以東經120度為準，每差1度經度需校正4分鐘
-- 出生地在東經120度以西，真太陽時需減去差值；以東則加上差值
-- 還需考慮當日的均時差（Equation of Time）進行微調
-- 請在分析開頭明確列出：鐘錶時間 → 真太陽時的換算過程與結果
-- 若校正後時辰改變，須以真太陽時對應的時辰排盤
+【重要】使用者的命盤已由專業排盤程式（iztro）精確計算完成，排盤結果會附在使用者的第一則訊息中。
+你不需要自行排盤，也絕對不要修改或質疑程式排出的星曜位置。你的任務是根據這份已排好的命盤進行深入解讀。
 
 分析內容應包含：
-1. 真太陽時校正說明
-2. 命宮主星與命盤格局
-3. 十二宮位重點分析（命宮、財帛宮、官祿宮、夫妻宮等）
+1. 命盤格局總覽（命宮主星、五行局、命主身主的意義）
+2. 十二宮位重點分析（命宮、財帛宮、官祿宮、夫妻宮、福德宮等）
+3. 四化星（祿權科忌）的影響分析
 4. 主星特質與性格分析
-5. 大限與流年運勢概述
-6. 人生重要轉折點提示
-7. 整體建議與開運方向
+5. 煞星與輔星的影響
+6. 大限與流年運勢概述
+7. 人生重要轉折點提示
+8. 整體建議與開運方向
 
 請以深厚的學理為基礎，語氣溫和且富有洞察力。
 使用繁體中文回答。`,
@@ -91,6 +87,43 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ error: "無效的命理類型" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
+  }
+
+  // For ziwei type, generate chart and prepend to the first user message
+  if (type === "ziwei" && chatMessages.length > 0) {
+    const firstMsg = chatMessages[0];
+    if (firstMsg.role === "user") {
+      try {
+        // Parse birth info from the user message
+        const dateMatch = firstMsg.content.match(/出生日期：(\S+)/);
+        const timeMatch = firstMsg.content.match(/出生時間：(\S+)/);
+        const genderMatch = firstMsg.content.match(/性別：(\S+)/);
+        const calendarMatch = firstMsg.content.match(/（(農曆|國曆)）/);
+
+        if (dateMatch && timeMatch) {
+          const birthDate = dateMatch[1].replace(/（.*）/, ""); // Remove （國曆）/（農曆） suffix
+          const birthTime = timeMatch[1].replace(/（.*）/, ""); // Remove 時辰 suffix
+          const gender = genderMatch?.[1] || "男";
+          const isLunar = calendarMatch?.[1] === "農曆";
+
+          const chartText = generateZiweiChart({
+            birthDate,
+            birthTime,
+            gender,
+            isLunar,
+          });
+
+          // Prepend chart to first message
+          chatMessages[0] = {
+            ...firstMsg,
+            content: firstMsg.content + "\n\n" + chartText,
+          };
+        }
+      } catch (e) {
+        console.error("[divine] Failed to generate ziwei chart:", e);
+        // Continue without chart — AI will do its best
+      }
+    }
   }
 
   // Convert messages: if a message has images, use multimodal content format
