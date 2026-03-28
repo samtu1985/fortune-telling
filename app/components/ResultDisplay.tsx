@@ -6,6 +6,7 @@ interface ResultDisplayProps {
   content: string;
   reasoning: string;
   streaming: boolean;
+  hideDisclaimer?: boolean;
 }
 
 interface TableData {
@@ -155,6 +156,7 @@ export default function ResultDisplay({
   content,
   reasoning,
   streaming,
+  hideDisclaimer,
 }: ResultDisplayProps) {
   const [showReasoning, setShowReasoning] = useState(false);
 
@@ -222,7 +224,7 @@ export default function ResultDisplay({
       )}
 
       {/* Disclaimer */}
-      {content && !streaming && (
+      {content && !streaming && !hideDisclaimer && (
         <p className="mt-6 text-center text-xs text-stone/50 tracking-wide">
           以上分析由 AI 生成，僅供參考，不構成任何決策建議
         </p>

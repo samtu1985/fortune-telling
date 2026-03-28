@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { type, userMessage } = body as {
+  const { type, messages: chatMessages } = body as {
     type: string;
-    userMessage: string;
+    messages: { role: string; content: string }[];
   };
 
   const systemPrompt = SYSTEM_PROMPTS[type];
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       model: modelId,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
+        ...chatMessages,
       ],
       thinking: { type: "enabled" },
       reasoning_effort: "high",
