@@ -17,6 +17,22 @@ type Message = {
   images?: string[];
 };
 
+type ConversationState = {
+  messages: Message[];
+  streamingContent: string;
+  streamingReasoning: string;
+  streaming: boolean;
+  loading: boolean;
+};
+
+const emptyConversation: ConversationState = {
+  messages: [],
+  streamingContent: "",
+  streamingReasoning: "",
+  streaming: false,
+  loading: false,
+};
+
 function compressImage(dataUrl: string, maxWidth = 1024): Promise<string> {
   return new Promise((resolve) => {
     const img = new window.Image();
@@ -66,48 +82,92 @@ const DIVINATION_TYPES = [
 
 export default function Home() {
   const [selectedType, setSelectedType] = useState<DivinationType | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
-  const [streamingReasoning, setStreamingReasoning] = useState("");
-  const [streaming, setStreaming] = useState(false);
   const [followUp, setFollowUp] = useState("");
   const [followUpImages, setFollowUpImages] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const followUpFileRef = useRef<HTMLInputElement>(null);
 
-  const conversationStarted = messages.length > 0 || streaming;
+  // Track current type in a ref so streaming callbacks always see latest value
+  const selectedTypeRef = useRef(selectedType);
+  selectedTypeRef.current = selectedType;
+
+  // Per-scene conversation state persisted across tab switches
+  const conversationsRef = useRef<Record<DivinationType, ConversationState>>({
+    bazi: { ...emptyConversation },
+    ziwei: { ...emptyConversation },
+    zodiac: { ...emptyConversation },
+  });
+
+  // Current conversation derived from selected type
+  const [conv, setConv] = useState<ConversationState>(emptyConversation);
+
+  // Sync conversation state when switching types
+  useEffect(() => {
+    if (selectedType) {
+      setConv({ ...conversationsRef.current[selectedType] });
+      setFollowUp("");
+      setFollowUpImages([]);
+    }
+  }, [selectedType]);
+
+  const conversationStarted = conv.messages.length > 0 || conv.streaming;
 
   // Auto-scroll to bottom during streaming or new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [streamingContent, streamingReasoning, messages.length]);
+  }, [conv.streamingContent, conv.streamingReasoning, conv.messages.length]);
 
   const streamResponse = useCallback(
-    async (chatMessages: { role: string; content: string; images?: string[] }[]) => {
-      setLoading(true);
-      setStreamingContent("");
-      setStreamingReasoning("");
-      setStreaming(true);
+    async (
+      type: DivinationType,
+      chatMessages: { role: string; content: string; images?: string[] }[]
+    ) => {
+      // Set loading/streaming for this type
+      const setTypeConv = (updater: (prev: ConversationState) => ConversationState) => {
+        // Always update the ref
+        conversationsRef.current[type] = updater(conversationsRef.current[type]);
+        // Only update state if this type is still selected
+        setConv((prev) => {
+          // Check if we're still viewing this type
+          // We use the ref to get the latest selectedType
+          return updater(prev);
+        });
+      };
+
+      setTypeConv((c) => ({
+        ...c,
+        loading: true,
+        streamingContent: "",
+        streamingReasoning: "",
+        streaming: true,
+      }));
 
       try {
         const response = await fetch("/api/divine", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: selectedType, messages: chatMessages }),
+          body: JSON.stringify({ type, messages: chatMessages }),
         });
 
         if (!response.ok) {
           const error = await response.json();
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: `錯誤：${error.error || "請求失敗"}` },
-          ]);
-          setLoading(false);
-          setStreaming(false);
+          const errorMsg: Message = {
+            role: "assistant",
+            content: `錯誤：${error.error || "請求失敗"}`,
+          };
+          conversationsRef.current[type] = {
+            ...conversationsRef.current[type],
+            messages: [...conversationsRef.current[type].messages, errorMsg],
+            loading: false,
+            streaming: false,
+          };
+          setConv((prev) => {
+            if (selectedTypeRef.current === type) return { ...conversationsRef.current[type] };
+            return prev;
+          });
           return;
         }
 
@@ -137,48 +197,96 @@ export default function Home() {
               const parsed = JSON.parse(data);
               if (parsed.content) {
                 fullContent += parsed.content;
-                setStreamingContent(fullContent);
               }
               if (parsed.reasoning) {
                 fullReasoning += parsed.reasoning;
-                setStreamingReasoning(fullReasoning);
               }
             } catch {
               // skip
             }
           }
+
+          // Update streaming content in ref always
+          conversationsRef.current[type] = {
+            ...conversationsRef.current[type],
+            streamingContent: fullContent,
+            streamingReasoning: fullReasoning,
+          };
+          // Update state only if viewing this type
+          setConv((prev) => {
+            if (selectedTypeRef.current === type) {
+              return {
+                ...prev,
+                streamingContent: fullContent,
+                streamingReasoning: fullReasoning,
+              };
+            }
+            return prev;
+          });
         }
 
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: fullContent, reasoning: fullReasoning },
-        ]);
+        const assistantMsg: Message = {
+          role: "assistant",
+          content: fullContent,
+          reasoning: fullReasoning,
+        };
+        conversationsRef.current[type] = {
+          ...conversationsRef.current[type],
+          messages: [...conversationsRef.current[type].messages, assistantMsg],
+          streamingContent: "",
+          streamingReasoning: "",
+          loading: false,
+          streaming: false,
+        };
+        setConv((prev) => {
+          if (selectedTypeRef.current === type) return { ...conversationsRef.current[type] };
+          return prev;
+        });
       } catch (err) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `連線錯誤：${err instanceof Error ? err.message : "未知錯誤"}`,
-          },
-        ]);
-      } finally {
-        setStreamingContent("");
-        setStreamingReasoning("");
-        setLoading(false);
-        setStreaming(false);
+        const errorMsg: Message = {
+          role: "assistant",
+          content: `連線錯誤：${err instanceof Error ? err.message : "未知錯誤"}`,
+        };
+        conversationsRef.current[type] = {
+          ...conversationsRef.current[type],
+          messages: [...conversationsRef.current[type].messages, errorMsg],
+          streamingContent: "",
+          streamingReasoning: "",
+          loading: false,
+          streaming: false,
+        };
+        setConv((prev) => {
+          if (selectedTypeRef.current === type) return { ...conversationsRef.current[type] };
+          return prev;
+        });
       }
     },
-    [selectedType]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   const handleInitialSubmit = useCallback(
     async (userMessage: string, images?: string[]) => {
+      if (!selectedType) return;
+      const type = selectedType;
       const userMsg: Message = { role: "user", content: userMessage, images };
-      setMessages([userMsg]);
-      await streamResponse([{ role: "user", content: userMessage, images }]);
+
+      // Set messages for this type
+      conversationsRef.current[type] = {
+        ...conversationsRef.current[type],
+        messages: [userMsg],
+      };
+      setConv((prev) => ({
+        ...prev,
+        messages: [userMsg],
+      }));
+
+      await streamResponse(type, [
+        { role: "user", content: userMessage, images },
+      ]);
       setTimeout(() => inputRef.current?.focus(), 100);
     },
-    [streamResponse]
+    [selectedType, streamResponse]
   );
 
   const handleFollowUpImageUpload = useCallback(
@@ -204,19 +312,32 @@ export default function Home() {
   const handleFollowUp = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if ((!followUp.trim() && followUpImages.length === 0) || loading) return;
+      if ((!followUp.trim() && followUpImages.length === 0) || conv.loading) return;
+      if (!selectedType) return;
 
+      const type = selectedType;
       const userMsg = followUp.trim() || "請分析這張圖片";
       const imgs = followUpImages.length > 0 ? [...followUpImages] : undefined;
       setFollowUp("");
       setFollowUpImages([]);
 
+      const currentMessages = conversationsRef.current[type].messages;
       const updatedMessages: Message[] = [
-        ...messages,
+        ...currentMessages,
         { role: "user", content: userMsg, images: imgs },
       ];
-      setMessages(updatedMessages);
+
+      conversationsRef.current[type] = {
+        ...conversationsRef.current[type],
+        messages: updatedMessages,
+      };
+      setConv((prev) => ({
+        ...prev,
+        messages: updatedMessages,
+      }));
+
       await streamResponse(
+        type,
         updatedMessages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -224,20 +345,35 @@ export default function Home() {
         }))
       );
     },
-    [followUp, followUpImages, loading, messages, streamResponse]
+    [followUp, followUpImages, conv.loading, selectedType, streamResponse]
   );
 
   const handleReset = useCallback(() => {
-    setMessages([]);
+    if (selectedType) {
+      conversationsRef.current[selectedType] = { ...emptyConversation };
+    }
+    setConv({ ...emptyConversation });
     setSelectedType(null);
     setFollowUp("");
     setFollowUpImages([]);
-    setStreamingContent("");
-    setStreamingReasoning("");
+  }, [selectedType]);
+
+  // Switch to a type (from conversation mode back button → go to selection)
+  const handleBackToSelection = useCallback(() => {
+    setSelectedType(null);
+    setFollowUp("");
+    setFollowUpImages([]);
   }, []);
 
+  // Check if any type has an active conversation
+  const typesWithConversation = DIVINATION_TYPES.filter(
+    (dt) =>
+      conversationsRef.current[dt.id].messages.length > 0 ||
+      conversationsRef.current[dt.id].streaming
+  );
+
   // ── Conversation mode ──
-  if (conversationStarted) {
+  if (selectedType && conversationStarted) {
     return (
       <main className="relative z-10 flex flex-col h-dvh">
         <SmokeParticles />
@@ -245,7 +381,7 @@ export default function Home() {
         {/* Top bar */}
         <div className="relative z-20 flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
           <button
-            onClick={handleReset}
+            onClick={handleBackToSelection}
             className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
           >
             <svg
@@ -261,7 +397,7 @@ export default function Home() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            重新選擇
+            返回選擇
           </button>
 
           <h1 className="absolute left-1/2 -translate-x-1/2 font-serif text-xl font-bold tracking-[0.15em] text-gold">
@@ -274,12 +410,40 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Scene tabs — show when multiple scenes have conversations */}
+        <div className="flex justify-center gap-2 px-4 pb-1 shrink-0">
+          {DIVINATION_TYPES.map((dt) => {
+            const hasConvo =
+              conversationsRef.current[dt.id].messages.length > 0 ||
+              conversationsRef.current[dt.id].streaming;
+            if (!hasConvo && dt.id !== selectedType) return null;
+            const isActive = dt.id === selectedType;
+            const isStreaming = conversationsRef.current[dt.id].streaming;
+            return (
+              <button
+                key={dt.id}
+                onClick={() => setSelectedType(dt.id)}
+                className={`
+                  px-3 py-1.5 rounded-full text-xs font-serif tracking-wide transition-all duration-200
+                  ${
+                    isActive
+                      ? "bg-gold/15 text-gold border border-gold/30"
+                      : "text-stone/60 border border-transparent hover:text-stone hover:border-gold/15"
+                  }
+                `}
+              >
+                {dt.symbol} {dt.title}
+                {isStreaming && !isActive && (
+                  <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Divination type indicator */}
         <div className="text-center pb-2 shrink-0">
-          <p className="text-xs text-stone/60 tracking-wide">
-            {DIVINATION_TYPES.find((d) => d.id === selectedType)?.title}
-          </p>
-          <div className="mx-auto mt-2 w-24 gold-line" />
+          <div className="mx-auto mt-1 w-24 gold-line" />
         </div>
 
         {/* Messages area — scrollable */}
@@ -288,7 +452,7 @@ export default function Home() {
           className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
         >
           <div className="max-w-2xl mx-auto space-y-4">
-            {messages.map((msg, i) =>
+            {conv.messages.map((msg, i) =>
               msg.role === "user" ? (
                 <div key={i} className="flex justify-end">
                   <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 leading-relaxed">
@@ -320,11 +484,11 @@ export default function Home() {
             )}
 
             {/* Currently streaming */}
-            {streaming && (
+            {conv.streaming && (
               <div>
                 <ResultDisplay
-                  content={streamingContent}
-                  reasoning={streamingReasoning}
+                  content={conv.streamingContent}
+                  reasoning={conv.streamingReasoning}
                   streaming
                   hideDisclaimer
                 />
@@ -377,7 +541,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => followUpFileRef.current?.click()}
-                disabled={loading}
+                disabled={conv.loading}
                 className="shrink-0 w-[44px] h-[44px] flex items-center justify-center rounded-sm border border-gold/15 text-gold-dim/60 hover:text-gold-dim hover:border-gold/30 transition-colors disabled:opacity-40"
                 title="上傳圖片"
               >
@@ -401,27 +565,27 @@ export default function Home() {
                 value={followUp}
                 onChange={(e) => setFollowUp(e.target.value)}
                 placeholder="繼續追問..."
-                disabled={loading}
+                disabled={conv.loading}
                 className="flex-1"
               />
               <button
                 type="submit"
                 disabled={
-                  loading ||
+                  conv.loading ||
                   (!followUp.trim() && followUpImages.length === 0)
                 }
                 className={`
                   px-5 py-2.5 rounded-sm text-sm tracking-widest font-serif transition-all duration-500
                   border border-gold/20
                   ${
-                    loading ||
+                    conv.loading ||
                     (!followUp.trim() && followUpImages.length === 0)
                       ? "text-gold-dim/50 cursor-not-allowed"
                       : "text-gold hover:bg-gold/15 active:scale-[0.98]"
                   }
                 `}
               >
-                {loading ? (
+                {conv.loading ? (
                   <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
                 ) : (
                   "送出"
@@ -467,6 +631,35 @@ export default function Home() {
           style={{ animationDelay: "400ms", opacity: 0 }}
         />
       </header>
+
+      {/* Resume conversations */}
+      {typesWithConversation.length > 0 && (
+        <section className="max-w-2xl mx-auto px-6 pb-6">
+          <p className="text-center text-sm text-mist/60 mb-3 tracking-wide">
+            進行中的對話
+          </p>
+          <div className="flex justify-center gap-3">
+            {typesWithConversation.map((dt) => {
+              const isStreaming = conversationsRef.current[dt.id].streaming;
+              return (
+                <button
+                  key={dt.id}
+                  onClick={() => setSelectedType(dt.id)}
+                  className="px-4 py-2.5 rounded-lg border border-gold/20 bg-gold/[0.04] hover:bg-gold/10 transition-colors flex items-center gap-2"
+                >
+                  <span className="text-lg">{dt.symbol}</span>
+                  <span className="text-sm font-serif text-gold tracking-wide">
+                    {dt.title}
+                  </span>
+                  {isStreaming && (
+                    <span className="inline-block w-2 h-2 rounded-full bg-gold animate-pulse" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Divination Type Selection */}
       <section className="max-w-5xl mx-auto px-6 pb-8">
@@ -519,7 +712,7 @@ export default function Home() {
         </div>
 
         {/* Mobile: Selected type description */}
-        {selectedType && (
+        {selectedType && !conversationStarted && (
           <p className="sm:hidden text-center text-sm text-mist/60 mt-4 px-2 leading-relaxed">
             {DIVINATION_TYPES.find((d) => d.id === selectedType)?.description}
           </p>
@@ -545,12 +738,12 @@ export default function Home() {
       </section>
 
       {/* Input Form */}
-      {selectedType && (
+      {selectedType && !conversationStarted && (
         <section className="max-w-2xl mx-auto px-6 pb-8">
           <InputForm
             type={selectedType}
             onSubmit={handleInitialSubmit}
-            loading={loading}
+            loading={conv.loading}
           />
         </section>
       )}

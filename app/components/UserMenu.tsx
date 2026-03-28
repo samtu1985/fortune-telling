@@ -5,6 +5,8 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import ProfileModal from "./ProfileModal";
 
+const ADMIN_EMAIL = "geektu@gmail.com";
+
 export default function UserMenu() {
   const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -77,6 +79,21 @@ export default function UserMenu() {
               </svg>
               管理個人基本資訊
             </button>
+            {session.user.email === ADMIN_EMAIL && (
+              <>
+                <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
+                <a
+                  href="/admin"
+                  onClick={() => setDropdownOpen(false)}
+                  className="w-full text-left px-4 py-3 min-h-[44px] text-sm text-cream hover:bg-gold/10 transition-colors flex items-center gap-2.5"
+                >
+                  <svg className="w-4 h-4 text-gold-dim shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  使用者管理
+                </a>
+              </>
+            )}
             <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
             <button
               onClick={() => signOut()}
