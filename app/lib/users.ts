@@ -25,15 +25,10 @@ function useBlob(): boolean {
 export async function readUsers(): Promise<UsersStore> {
   if (useBlob()) {
     try {
-      const { list } = await import("@vercel/blob");
-      const { blobs } = await list({ prefix: BLOB_PATH, limit: 1 });
-      if (blobs.length === 0) {
-        console.log("[users] No blob found, returning empty store");
-        return {};
-      }
-      // For private blobs, use token-authenticated fetch
+      const { head } = await import("@vercel/blob");
+      const meta = await head(BLOB_PATH);
       const token = process.env.BLOB_READ_WRITE_TOKEN!;
-      const res = await fetch(blobs[0].url, {
+      const res = await fetch(meta.url, {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -42,7 +37,10 @@ export async function readUsers(): Promise<UsersStore> {
         return {};
       }
       return await res.json();
-    } catch (e) {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "BlobNotFoundError") {
+        return {};
+      }
       console.error("[users] Failed to read from Blob:", e instanceof Error ? e.message : e);
       return {};
     }
