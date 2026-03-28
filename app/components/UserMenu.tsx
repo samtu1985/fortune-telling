@@ -1,32 +1,97 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import ProfileModal from "./ProfileModal";
 
 export default function UserMenu() {
   const { data: session } = useSession();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
+
   if (!session?.user) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      {session.user.image && (
-        <Image
-          src={session.user.image}
-          alt=""
-          width={28}
-          height={28}
-          className="rounded-full border border-gold/30"
-        />
-      )}
-      <span className="text-xs text-mist hidden sm:inline max-w-[100px] truncate">
-        {session.user.name}
-      </span>
-      <button
-        onClick={() => signOut()}
-        className="text-xs text-stone hover:text-gold transition-colors px-1"
-      >
-        登出
-      </button>
-    </div>
+    <>
+      <div ref={menuRef} className="relative">
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="flex items-center gap-2 min-h-[44px]"
+        >
+          {session.user.image ? (
+            <Image
+              src={session.user.image}
+              alt=""
+              width={28}
+              height={28}
+              className="rounded-full border border-gold/30"
+            />
+          ) : (
+            <div className="w-7 h-7 rounded-full border border-gold/30 bg-gold/10 flex items-center justify-center text-xs text-gold">
+              {session.user.name?.[0]}
+            </div>
+          )}
+          <span className="text-xs text-mist hidden sm:inline max-w-[100px] truncate">
+            {session.user.name}
+          </span>
+          {/* Chevron */}
+          <svg
+            className={`w-3 h-3 text-stone transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Dropdown */}
+        {dropdownOpen && (
+          <div
+            className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-gold/15 shadow-lg overflow-hidden z-50"
+            style={{ background: "var(--parchment-light)" }}
+          >
+            <button
+              onClick={() => {
+                setDropdownOpen(false);
+                setProfileOpen(true);
+              }}
+              className="w-full text-left px-4 py-3 min-h-[44px] text-sm text-cream hover:bg-gold/10 transition-colors flex items-center gap-2.5"
+            >
+              <svg className="w-4 h-4 text-gold-dim shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              管理個人基本資訊
+            </button>
+            <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
+            <button
+              onClick={() => signOut()}
+              className="w-full text-left px-4 py-3 min-h-[44px] text-sm text-stone hover:bg-gold/10 transition-colors flex items-center gap-2.5"
+            >
+              <svg className="w-4 h-4 text-stone shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              登出
+            </button>
+          </div>
+        )}
+      </div>
+
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+    </>
   );
 }

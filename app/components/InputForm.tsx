@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface InputFormProps {
   type: "bazi" | "ziwei" | "zodiac";
@@ -60,6 +60,28 @@ export default function InputForm({ type, onSubmit, loading }: InputFormProps) {
   const [question, setQuestion] = useState("");
 
   const isChineseType = type === "bazi" || type === "ziwei";
+
+  // Auto-fill from saved profile
+  useEffect(() => {
+    const loadProfile = () => {
+      try {
+        const saved = localStorage.getItem("user_profile");
+        if (saved) {
+          const profile = JSON.parse(saved);
+          if (profile.birthDate) setBirthDate(profile.birthDate);
+          if (profile.birthTime) setBirthTime(profile.birthTime);
+          if (profile.gender) setGender(profile.gender);
+          if (profile.birthPlace) setBirthPlace(profile.birthPlace);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    loadProfile();
+    window.addEventListener("profile-updated", loadProfile);
+    return () => window.removeEventListener("profile-updated", loadProfile);
+  }, [type]);
 
   const buildMessage = () => {
     const shichen = isChineseType && birthTime ? timeToShichen(birthTime) : "";
