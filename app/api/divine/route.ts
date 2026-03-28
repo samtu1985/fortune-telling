@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateZiweiChart } from "@/app/lib/ziwei";
+import { generateNatalChart } from "@/app/lib/astrology";
 
 const BYTEPLUS_API_URL =
   "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions";
@@ -46,22 +47,23 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 請以深厚的學理為基礎，語氣溫和且富有洞察力。
 使用繁體中文回答。`,
 
-  zodiac: `You are a master Western astrologer with deep knowledge of natal charts, planetary aspects, and astrological houses.
-Based on the user's birth date, precise time, and location, provide a comprehensive astrological reading.
+  zodiac: `你是一位精通西洋占星術的大師，對出生星盤、行星相位、宮位系統有深入研究。
 
-IMPORTANT: The birth location is critical for calculating the Ascendant (Rising sign) and house placements.
-Use the birth city's geographic coordinates to determine the correct house cusps. Even a few minutes' difference in birth time can shift the Rising sign, so use the exact time provided.
+【重要】使用者的出生星盤已由專業天文程式（Moshier 星曆表 + Placidus 宮位制）精確計算完成，
+排盤結果會附在使用者的第一則訊息中。你不需要自行計算行星位置或宮位，也絕對不要修改程式算出的數據。
+你的任務是根據這份已計算好的星盤進行深入解讀。
 
-Your analysis should include:
-1. Sun sign, Moon sign, and Rising sign analysis (explain how the birth location affects the Rising sign)
-2. Key planetary placements and house positions
-3. Notable aspects and configurations
-4. Current transits and their influence
-5. Personality insights and life themes
-6. Love, career, and personal growth guidance
+分析內容應包含：
+1. 太陽星座、月亮星座、上升星座的三重解讀
+2. 重要行星的星座與宮位意義
+3. 主要相位的影響分析（合相、對分、三分、四分、六分）
+4. 星盤格局與特殊配置（T-Square、Grand Trine 等）
+5. 性格特質與人生主題
+6. 感情、事業與個人成長建議
+7. 當前行運的影響（如果適用）
 
-Respond with warmth and wisdom, avoiding absolute predictions.
-請以繁體中文回答，但可以保留星座和行星的英文名稱。`,
+請以溫和、富有智慧的語氣回答，避免過於絕對的斷言。
+使用繁體中文回答，但可以保留星座和行星的英文名稱作為參考。`,
 };
 
 export async function POST(request: NextRequest) {
@@ -122,6 +124,39 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         console.error("[divine] Failed to generate ziwei chart:", e);
         // Continue without chart — AI will do its best
+      }
+    }
+  }
+
+  // For zodiac type, generate natal chart and append to the first user message
+  if (type === "zodiac" && chatMessages.length > 0) {
+    const firstMsg = chatMessages[0];
+    if (firstMsg.role === "user") {
+      try {
+        const dateMatch = firstMsg.content.match(/出生日期：(\S+)/);
+        const timeMatch = firstMsg.content.match(/出生時間：(\S+)/);
+        const placeMatch = firstMsg.content.match(/出生地點：(\S+)/);
+
+        if (dateMatch && timeMatch && placeMatch) {
+          const birthDate = dateMatch[1].replace(/（.*）/, "");
+          const birthTime = timeMatch[1].replace(/（.*）/, "");
+          const birthPlace = placeMatch[1];
+
+          const chartText = generateNatalChart({
+            birthDate,
+            birthTime,
+            birthPlace,
+          });
+
+          if (chartText) {
+            chatMessages[0] = {
+              ...firstMsg,
+              content: firstMsg.content + "\n\n" + chartText,
+            };
+          }
+        }
+      } catch (e) {
+        console.error("[divine] Failed to generate natal chart:", e);
       }
     }
   }
