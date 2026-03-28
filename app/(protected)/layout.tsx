@@ -14,21 +14,10 @@ export default async function ProtectedLayout({
   const email = session.user?.email;
   if (!email) redirect("/login");
 
-  // Admin always has access
-  if (email === ADMIN_EMAIL) {
-    // Ensure admin is registered in storage
-    try {
-      await registerUser(email, session.user?.name ?? null, session.user?.image ?? null);
-    } catch (e) {
-      console.error("[layout] Failed to register admin:", e);
-    }
-    return <>{children}</>;
-  }
-
   let userData = await getUser(email);
 
-  // Backup registration: if signIn callback failed to register the user,
-  // register them now on first protected page access
+  // Only register if user doesn't exist yet (backup for when signIn callback fails)
+  // This avoids unnecessary blob writes that could race with admin operations
   if (!userData) {
     try {
       await registerUser(
@@ -41,6 +30,11 @@ export default async function ProtectedLayout({
     } catch (e) {
       console.error("[layout] Failed to register user:", e);
     }
+  }
+
+  // Admin always has access
+  if (email === ADMIN_EMAIL) {
+    return <>{children}</>;
   }
 
   if (!userData || userData.status === "pending") {
