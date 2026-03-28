@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "react";
 import DivinationCard from "@/app/components/DivinationCard";
 import InputForm from "@/app/components/InputForm";
 import ResultDisplay from "@/app/components/ResultDisplay";
@@ -14,7 +14,28 @@ type Message = {
   role: "user" | "assistant";
   content: string;
   reasoning?: string;
+  images?: string[];
 };
+
+function compressImage(dataUrl: string, maxWidth = 1024): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    };
+    img.src = dataUrl;
+  });
+}
 
 const DIVINATION_TYPES = [
   {
@@ -51,8 +72,10 @@ export default function Home() {
   const [streamingReasoning, setStreamingReasoning] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [followUp, setFollowUp] = useState("");
+  const [followUpImages, setFollowUpImages] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const followUpFileRef = useRef<HTMLInputElement>(null);
 
   const conversationStarted = messages.length > 0 || streaming;
 
@@ -64,7 +87,7 @@ export default function Home() {
   }, [streamingContent, streamingReasoning, messages.length]);
 
   const streamResponse = useCallback(
-    async (chatMessages: { role: string; content: string }[]) => {
+    async (chatMessages: { role: string; content: string; images?: string[] }[]) => {
       setLoading(true);
       setStreamingContent("");
       setStreamingReasoning("");
@@ -149,40 +172,66 @@ export default function Home() {
   );
 
   const handleInitialSubmit = useCallback(
-    async (userMessage: string) => {
-      const userMsg: Message = { role: "user", content: userMessage };
+    async (userMessage: string, images?: string[]) => {
+      const userMsg: Message = { role: "user", content: userMessage, images };
       setMessages([userMsg]);
-      await streamResponse([{ role: "user", content: userMessage }]);
-      // Focus follow-up input after response
+      await streamResponse([{ role: "user", content: userMessage, images }]);
       setTimeout(() => inputRef.current?.focus(), 100);
     },
     [streamResponse]
   );
 
+  const handleFollowUpImageUpload = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files) return;
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > 20 * 1024 * 1024) continue;
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        const compressed = await compressImage(dataUrl);
+        setFollowUpImages((prev) => [...prev, compressed]);
+      }
+      e.target.value = "";
+    },
+    []
+  );
+
   const handleFollowUp = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!followUp.trim() || loading) return;
+      if ((!followUp.trim() && followUpImages.length === 0) || loading) return;
 
-      const userMsg = followUp.trim();
+      const userMsg = followUp.trim() || "請分析這張圖片";
+      const imgs = followUpImages.length > 0 ? [...followUpImages] : undefined;
       setFollowUp("");
+      setFollowUpImages([]);
 
       const updatedMessages: Message[] = [
         ...messages,
-        { role: "user", content: userMsg },
+        { role: "user", content: userMsg, images: imgs },
       ];
       setMessages(updatedMessages);
       await streamResponse(
-        updatedMessages.map((m) => ({ role: m.role, content: m.content }))
+        updatedMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          images: m.images,
+        }))
       );
     },
-    [followUp, loading, messages, streamResponse]
+    [followUp, followUpImages, loading, messages, streamResponse]
   );
 
   const handleReset = useCallback(() => {
     setMessages([]);
     setSelectedType(null);
     setFollowUp("");
+    setFollowUpImages([]);
     setStreamingContent("");
     setStreamingReasoning("");
   }, []);
@@ -242,8 +291,20 @@ export default function Home() {
             {messages.map((msg, i) =>
               msg.role === "user" ? (
                 <div key={i} className="flex justify-end">
-                  <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 whitespace-pre-wrap leading-relaxed">
-                    {msg.content}
+                  <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 leading-relaxed">
+                    {msg.images && msg.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {msg.images.map((img, j) => (
+                          <img
+                            key={j}
+                            src={img}
+                            alt=""
+                            className="w-24 h-24 object-cover rounded border border-gold/20"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
                   </div>
                 </div>
               ) : (
@@ -277,42 +338,100 @@ export default function Home() {
           className="relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0"
           style={{ background: "var(--parchment)" }}
         >
-          <form
-            onSubmit={handleFollowUp}
-            className="max-w-2xl mx-auto flex gap-3"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              value={followUp}
-              onChange={(e) => setFollowUp(e.target.value)}
-              placeholder="繼續追問..."
-              disabled={loading}
-              className="flex-1"
-            />
-            <button
-              type="submit"
-              disabled={loading || !followUp.trim()}
-              className={`
-                px-5 py-2.5 rounded-sm text-sm tracking-widest font-serif transition-all duration-500
-                border border-gold/20
-                ${
-                  loading || !followUp.trim()
-                    ? "text-gold-dim/50 cursor-not-allowed"
-                    : "text-gold hover:bg-gold/15 active:scale-[0.98]"
+          <div className="max-w-2xl mx-auto">
+            {/* Image preview */}
+            {followUpImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {followUpImages.map((img, i) => (
+                  <div key={i} className="relative group">
+                    <img
+                      src={img}
+                      alt=""
+                      className="w-16 h-16 object-cover rounded border border-gold/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFollowUpImages((prev) =>
+                          prev.filter((_, j) => j !== i)
+                        )
+                      }
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-seal text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleFollowUp} className="flex gap-2">
+              <input
+                ref={followUpFileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFollowUpImageUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => followUpFileRef.current?.click()}
+                disabled={loading}
+                className="shrink-0 w-[44px] h-[44px] flex items-center justify-center rounded-sm border border-gold/15 text-gold-dim/60 hover:text-gold-dim hover:border-gold/30 transition-colors disabled:opacity-40"
+                title="上傳圖片"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+              <input
+                ref={inputRef}
+                type="text"
+                value={followUp}
+                onChange={(e) => setFollowUp(e.target.value)}
+                placeholder="繼續追問..."
+                disabled={loading}
+                className="flex-1"
+              />
+              <button
+                type="submit"
+                disabled={
+                  loading ||
+                  (!followUp.trim() && followUpImages.length === 0)
                 }
-              `}
-            >
-              {loading ? (
-                <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-              ) : (
-                "送出"
-              )}
-            </button>
-          </form>
-          <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
-            以上分析由 AI 生成，僅供參考
-          </p>
+                className={`
+                  px-5 py-2.5 rounded-sm text-sm tracking-widest font-serif transition-all duration-500
+                  border border-gold/20
+                  ${
+                    loading ||
+                    (!followUp.trim() && followUpImages.length === 0)
+                      ? "text-gold-dim/50 cursor-not-allowed"
+                      : "text-gold hover:bg-gold/15 active:scale-[0.98]"
+                  }
+                `}
+              >
+                {loading ? (
+                  <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                ) : (
+                  "送出"
+                )}
+              </button>
+            </form>
+            <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
+              以上分析由 AI 生成，僅供參考
+            </p>
+          </div>
         </div>
       </main>
     );

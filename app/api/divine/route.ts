@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { type, messages: chatMessages } = body as {
     type: string;
-    messages: { role: string; content: string }[];
+    messages: { role: string; content: string; images?: string[] }[];
   };
 
   const systemPrompt = SYSTEM_PROMPTS[type];
@@ -92,6 +92,23 @@ export async function POST(request: NextRequest) {
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
+
+  // Convert messages: if a message has images, use multimodal content format
+  const apiMessages = chatMessages.map((msg) => {
+    if (msg.images && msg.images.length > 0) {
+      return {
+        role: msg.role,
+        content: [
+          { type: "text" as const, text: msg.content },
+          ...msg.images.map((img) => ({
+            type: "image_url" as const,
+            image_url: { url: img },
+          })),
+        ],
+      };
+    }
+    return { role: msg.role, content: msg.content };
+  });
 
   const response = await fetch(BYTEPLUS_API_URL, {
     method: "POST",
@@ -103,7 +120,7 @@ export async function POST(request: NextRequest) {
       model: modelId,
       messages: [
         { role: "system", content: systemPrompt },
-        ...chatMessages,
+        ...apiMessages,
       ],
       thinking: { type: "enabled" },
       reasoning_effort: "high",

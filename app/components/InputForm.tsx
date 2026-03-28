@@ -1,11 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface InputFormProps {
   type: "bazi" | "ziwei" | "zodiac";
-  onSubmit: (message: string) => void;
+  onSubmit: (message: string, images?: string[]) => void;
   loading: boolean;
+}
+
+function compressImage(dataUrl: string, maxWidth = 1024): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    };
+    img.src = dataUrl;
+  });
 }
 
 const ZODIAC_SIGNS = [
@@ -58,8 +78,27 @@ export default function InputForm({ type, onSubmit, loading }: InputFormProps) {
   const [calendarType, setCalendarType] = useState("solar");
   const [zodiacSign, setZodiacSign] = useState("");
   const [question, setQuestion] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isChineseType = type === "bazi" || type === "ziwei";
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 20 * 1024 * 1024) continue;
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      const compressed = await compressImage(dataUrl);
+      setImages((prev) => [...prev, compressed]);
+    }
+    e.target.value = "";
+  };
 
   // Auto-fill from saved profile
   useEffect(() => {
@@ -111,7 +150,8 @@ ${question ? `特別想了解的方向：${question}` : "請進行完整的星�
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!birthDate || !birthTime || !birthPlace) return;
-    onSubmit(buildMessage());
+    onSubmit(buildMessage(), images.length > 0 ? images : undefined);
+    setImages([]);
   };
 
   return (
@@ -215,6 +255,50 @@ ${question ? `特別想了解的方向：${question}` : "請進行完整的星�
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
         />
+      </div>
+
+      {/* Image Upload */}
+      <div className="space-y-1.5">
+        <label>上傳圖片（選填）</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageUpload}
+          className="hidden"
+        />
+        <div className="flex flex-wrap gap-3 items-start">
+          {images.map((img, i) => (
+            <div key={i} className="relative group">
+              <img
+                src={img}
+                alt=""
+                className="w-20 h-20 object-cover rounded border border-gold/20"
+              />
+              <button
+                type="button"
+                onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-red-seal text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-20 h-20 rounded border border-dashed border-gold/20 text-gold-dim/60 hover:border-gold/40 hover:text-gold-dim transition-colors flex flex-col items-center justify-center gap-1"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-[10px]">上傳</span>
+          </button>
+        </div>
+        <p className="text-xs text-stone/50">
+          可上傳手相、面相、命盤截圖等圖片供 AI 參考分析
+        </p>
       </div>
 
       {/* Submit */}
