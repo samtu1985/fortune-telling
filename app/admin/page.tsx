@@ -51,11 +51,15 @@ export default function AdminPage() {
   ) => {
     setActionLoading(email);
     try {
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, status }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`操作失敗: ${data.error || res.statusText}`);
+      }
       await fetchUsers();
     } finally {
       setActionLoading(null);

@@ -73,12 +73,19 @@ export async function PATCH(request: NextRequest) {
     return Response.json({ error: "Cannot modify admin" }, { status: 400 });
   }
 
-  const ok = await updateUserStatus(email, status);
-  if (!ok) {
-    return Response.json({ error: "User not found" }, { status: 404 });
+  try {
+    const ok = await updateUserStatus(email, status);
+    if (!ok) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+    return Response.json({ success: true });
+  } catch (e) {
+    console.error("[admin] PATCH failed:", e instanceof Error ? e.message : e);
+    return Response.json(
+      { error: e instanceof Error ? e.message : "Update failed" },
+      { status: 500 }
+    );
   }
-
-  return Response.json({ success: true });
 }
 
 export async function DELETE(request: NextRequest) {
