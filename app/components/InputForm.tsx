@@ -100,21 +100,20 @@ export default function InputForm({ type, onSubmit, loading }: InputFormProps) {
     e.target.value = "";
   };
 
-  // Auto-fill from saved profile
+  // Auto-fill from saved profile (server-side)
   useEffect(() => {
     const loadProfile = () => {
-      try {
-        const saved = localStorage.getItem("user_profile");
-        if (saved) {
-          const profile = JSON.parse(saved);
-          if (profile.birthDate) setBirthDate(profile.birthDate);
-          if (profile.birthTime) setBirthTime(profile.birthTime);
-          if (profile.gender) setGender(profile.gender);
-          if (profile.birthPlace) setBirthPlace(profile.birthPlace);
-        }
-      } catch {
-        // ignore
-      }
+      fetch("/api/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.profile) {
+            if (data.profile.birthDate) setBirthDate(data.profile.birthDate);
+            if (data.profile.birthTime) setBirthTime(data.profile.birthTime);
+            if (data.profile.gender) setGender(data.profile.gender);
+            if (data.profile.birthPlace) setBirthPlace(data.profile.birthPlace);
+          }
+        })
+        .catch(() => {});
     };
 
     loadProfile();

@@ -3,12 +3,20 @@ import path from "path";
 
 export type UserStatus = "pending" | "approved" | "disabled";
 
+export interface UserProfile {
+  birthDate: string;
+  birthTime: string;
+  gender: string;
+  birthPlace: string;
+}
+
 export interface UserData {
   name: string | null;
   image: string | null;
   status: UserStatus;
   createdAt: string;
   approvedAt: string | null;
+  profile?: UserProfile;
 }
 
 export type UsersStore = Record<string, UserData>;
@@ -127,6 +135,22 @@ export async function deleteUser(email: string): Promise<boolean> {
   const users = await readUsers();
   if (!users[email]) return false;
   delete users[email];
+  await writeUsers(users);
+  return true;
+}
+
+export async function getProfile(email: string): Promise<UserProfile | null> {
+  const users = await readUsers();
+  return users[email]?.profile ?? null;
+}
+
+export async function updateProfile(
+  email: string,
+  profile: UserProfile
+): Promise<boolean> {
+  const users = await readUsers();
+  if (!users[email]) return false;
+  users[email].profile = profile;
   await writeUsers(users);
   return true;
 }
