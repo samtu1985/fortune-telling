@@ -25,13 +25,18 @@ function useBlob(): boolean {
 export async function readUsers(): Promise<UsersStore> {
   if (useBlob()) {
     try {
-      const { list } = await import("@vercel/blob");
+      const { list, getDownloadUrl } = await import("@vercel/blob");
       const { blobs } = await list({ prefix: BLOB_PATH, limit: 1 });
-      if (blobs.length === 0) return {};
-      const res = await fetch(blobs[0].downloadUrl, { cache: "no-store" });
+      if (blobs.length === 0) {
+        console.log("[users] No blob found, returning empty store");
+        return {};
+      }
+      // Use getDownloadUrl for private blob stores
+      const downloadUrl = await getDownloadUrl(blobs[0].url);
+      const res = await fetch(downloadUrl, { cache: "no-store" });
       return await res.json();
     } catch (e) {
-      console.error("[users] Failed to read from Blob:", e);
+      console.error("[users] Failed to read from Blob:", e instanceof Error ? e.message : e);
       return {};
     }
   }
@@ -50,7 +55,7 @@ export async function writeUsers(users: UsersStore): Promise<void> {
   if (useBlob()) {
     const { put } = await import("@vercel/blob");
     await put(BLOB_PATH, JSON.stringify(users, null, 2), {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
       contentType: "application/json",
     });
@@ -73,6 +78,7 @@ export async function registerUser(
   name: string | null,
   image: string | null
 ): Promise<void> {
+  console.log("[users] registerUser called:", email, "useBlob:", useBlob());
   const users = await readUsers();
   const isAdmin = email === ADMIN_EMAIL;
 
@@ -94,6 +100,7 @@ export async function registerUser(
   }
 
   await writeUsers(users);
+  console.log("[users] registerUser success:", email);
 }
 
 export async function updateUserStatus(
