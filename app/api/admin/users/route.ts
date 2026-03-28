@@ -18,24 +18,41 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const users = await readUsers();
+  const storageType = process.env.BLOB_READ_WRITE_TOKEN
+    ? "blob"
+    : "local";
 
-  // Convert to array sorted by: pending first, then by creation date
-  const statusOrder: Record<UserStatus, number> = {
-    pending: 0,
-    approved: 1,
-    disabled: 2,
-  };
+  try {
+    const users = await readUsers();
 
-  const list = Object.entries(users)
-    .map(([email, data]) => ({ email, ...data }))
-    .sort((a, b) => {
-      const statusDiff = statusOrder[a.status] - statusOrder[b.status];
-      if (statusDiff !== 0) return statusDiff;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    const statusOrder: Record<UserStatus, number> = {
+      pending: 0,
+      approved: 1,
+      disabled: 2,
+    };
 
-  return Response.json({ users: list });
+    const list = Object.entries(users)
+      .map(([email, data]) => ({ email, ...data }))
+      .sort((a, b) => {
+        const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+        if (statusDiff !== 0) return statusDiff;
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+
+    return Response.json({ users: list, storageType });
+  } catch (e) {
+    console.error("[admin] Failed to read users:", e);
+    return Response.json(
+      {
+        users: [],
+        storageType,
+        error: `儲存空間讀取失敗 (${storageType})`,
+      },
+      { status: 200 }
+    );
+  }
 }
 
 export async function PATCH(request: NextRequest) {

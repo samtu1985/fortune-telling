@@ -24,14 +24,18 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [storageType, setStorageType] = useState<string>("");
+  const [storageError, setStorageError] = useState<string>("");
 
   const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/users");
       const data = await res.json();
       setUsers(data.users || []);
+      setStorageType(data.storageType || "");
+      setStorageError(data.error || "");
     } catch {
-      // ignore
+      setStorageError("無法連接 API");
     } finally {
       setLoading(false);
     }
@@ -123,6 +127,23 @@ export default function AdminPage() {
           </p>
         )}
         <div className="mx-auto mt-4 w-24 gold-line" />
+
+        {/* Storage status */}
+        {storageType && (
+          <p className="text-xs text-stone/50 mt-3">
+            儲存：{storageType === "blob" ? "Vercel Blob" : "本機檔案"}
+          </p>
+        )}
+        {storageError && (
+          <div className="mt-3 mx-auto max-w-md px-4 py-2 rounded border border-red-400/30 bg-red-400/5">
+            <p className="text-xs text-red-400">{storageError}</p>
+            {storageType === "local" && (
+              <p className="text-xs text-stone/50 mt-1">
+                在 Vercel 上需設定 Blob Storage 才能正常儲存使用者資料
+              </p>
+            )}
+          </div>
+        )}
       </header>
 
       {/* User list */}

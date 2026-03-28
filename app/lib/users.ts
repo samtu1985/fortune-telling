@@ -1,4 +1,3 @@
-import { put, list } from "@vercel/blob";
 import fs from "fs/promises";
 import path from "path";
 
@@ -26,11 +25,13 @@ function useBlob(): boolean {
 export async function readUsers(): Promise<UsersStore> {
   if (useBlob()) {
     try {
+      const { list } = await import("@vercel/blob");
       const { blobs } = await list({ prefix: BLOB_PATH, limit: 1 });
       if (blobs.length === 0) return {};
       const res = await fetch(blobs[0].downloadUrl, { cache: "no-store" });
       return await res.json();
-    } catch {
+    } catch (e) {
+      console.error("[users] Failed to read from Blob:", e);
       return {};
     }
   }
@@ -40,12 +41,14 @@ export async function readUsers(): Promise<UsersStore> {
     const data = await fs.readFile(LOCAL_FILE, "utf-8");
     return JSON.parse(data);
   } catch {
+    // File doesn't exist yet, return empty
     return {};
   }
 }
 
 export async function writeUsers(users: UsersStore): Promise<void> {
   if (useBlob()) {
+    const { put } = await import("@vercel/blob");
     await put(BLOB_PATH, JSON.stringify(users, null, 2), {
       access: "public",
       addRandomSuffix: false,
@@ -82,10 +85,8 @@ export async function registerUser(
       approvedAt: isAdmin ? new Date().toISOString() : null,
     };
   } else {
-    // Update profile info on subsequent logins
     users[email].name = name;
     users[email].image = image;
-    // Auto-approve admin if somehow not approved
     if (isAdmin && users[email].status !== "approved") {
       users[email].status = "approved";
       users[email].approvedAt = new Date().toISOString();
