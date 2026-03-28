@@ -64,6 +64,7 @@ export async function writeUsers(users: UsersStore): Promise<void> {
     await put(BLOB_PATH, JSON.stringify(users, null, 2), {
       access: "private",
       addRandomSuffix: false,
+      allowOverwrite: true,
       contentType: "application/json",
     });
     return;
