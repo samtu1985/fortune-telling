@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { generateBaziChart } from "@/app/lib/bazi";
 import { generateZiweiChart } from "@/app/lib/ziwei";
 import { generateNatalChart } from "@/app/lib/astrology";
 
@@ -7,24 +8,23 @@ const BYTEPLUS_API_URL =
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   bazi: `你是一位精通八字命理的大師，擁有數十年的命理推算經驗。
-請根據使用者提供的出生年月日時（農曆或國曆）與出生地點，進行完整的八字排盤與分析。
 
-【重要：真太陽時校正】
-使用者提供的出生時間為當地鐘錶時間（北京時間/標準時區時間），你必須根據出生地點的經度換算「真太陽時」：
-- 中國標準時間以東經120度為準，每差1度經度需校正4分鐘
-- 出生地在東經120度以西，真太陽時需減去差值；以東則加上差值
-- 還需考慮當日的均時差（Equation of Time）進行微調
-- 請在分析開頭明確列出：鐘錶時間 → 真太陽時的換算過程與結果
-- 若校正後時辰改變，須以真太陽時對應的時辰排盤
+【重要】使用者的八字命盤已由專業排盤程式（lunar-typescript）精確計算完成，
+排盤結果會附在使用者的第一則訊息中，包含四柱、十神、藏干、五行統計、大運、流年等完整資料。
+你不需要自行排盤，也絕對不要修改程式排出的四柱和十神。你的任務是根據這份已排好的命盤進行深入解讀。
+
+如果使用者提供了出生地點，請根據出生地的經度進行真太陽時校正說明：
+- 若校正後時辰可能改變，請提醒使用者注意
 
 分析內容應包含：
-1. 真太陽時校正說明
-2. 四柱排盤（年柱、月柱、日柱、時柱）
-3. 五行分析（金木水火土的比例與強弱）
-4. 十神分析
-5. 大運流年概述
-6. 性格特質與人生建議
-7. 感情、事業、健康的整體運勢
+1. 日主強弱判斷（根據五行統計和十神配置）
+2. 格局分析（正官格、食神格、偏財格等）
+3. 十神配置解讀（各柱十神的意義與相互關係）
+4. 五行喜忌分析
+5. 大運走勢解讀（結合大運干支與命盤的生剋關係）
+6. 近期流年運勢
+7. 性格特質與人生建議
+8. 感情、事業、健康的整體運勢
 
 請以溫和、富有智慧的語氣回答，避免過於絕對的斷言。
 使用繁體中文回答。`,
@@ -89,6 +89,40 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ error: "無效的命理類型" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
+  }
+
+  // For bazi type, generate chart and append to the first user message
+  if (type === "bazi" && chatMessages.length > 0) {
+    const firstMsg = chatMessages[0];
+    if (firstMsg.role === "user") {
+      try {
+        const dateMatch = firstMsg.content.match(/出生日期：(\S+)/);
+        const timeMatch = firstMsg.content.match(/出生時間：(\S+)/);
+        const genderMatch = firstMsg.content.match(/性別：(\S+)/);
+        const calendarMatch = firstMsg.content.match(/（(農曆|國曆)）/);
+
+        if (dateMatch && timeMatch) {
+          const birthDate = dateMatch[1].replace(/（.*）/, "");
+          const birthTime = timeMatch[1].replace(/（.*）/, "");
+          const gender = genderMatch?.[1] || "男";
+          const isLunar = calendarMatch?.[1] === "農曆";
+
+          const chartText = generateBaziChart({
+            birthDate,
+            birthTime,
+            gender,
+            isLunar,
+          });
+
+          chatMessages[0] = {
+            ...firstMsg,
+            content: firstMsg.content + "\n\n" + chartText,
+          };
+        }
+      } catch (e) {
+        console.error("[divine] Failed to generate bazi chart:", e);
+      }
+    }
   }
 
   // For ziwei type, generate chart and prepend to the first user message
