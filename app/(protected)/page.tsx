@@ -122,9 +122,18 @@ export default function Home() {
 
   const conversationStarted = conv.messages.length > 0 || conv.streaming;
 
-  // Auto-scroll to bottom during streaming or new messages
+  // Track whether user is near the bottom of the scroll area
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 80;
+  }, []);
+
+  // Auto-scroll only when user is near the bottom
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && isNearBottomRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [conv.streamingContent, conv.streamingReasoning, conv.messages.length]);
@@ -277,6 +286,7 @@ export default function Home() {
   const handleInitialSubmit = useCallback(
     async (userMessage: string, images?: string[]) => {
       if (!selectedType) return;
+      isNearBottomRef.current = true;
       const type = selectedType;
       const userMsg: Message = { role: "user", content: userMessage, images };
 
@@ -360,6 +370,7 @@ export default function Home() {
       e.preventDefault();
       if ((!followUp.trim() && followUpImages.length === 0) || conv.loading) return;
       if (!selectedType) return;
+      isNearBottomRef.current = true;
 
       const type = selectedType;
       const userMsg = followUp.trim() || "請分析這張圖片";
@@ -495,6 +506,7 @@ export default function Home() {
         {/* Messages area — scrollable */}
         <div
           ref={scrollRef}
+          onScroll={handleScroll}
           className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
         >
           <div className="max-w-2xl mx-auto space-y-4">
