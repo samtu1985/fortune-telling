@@ -94,7 +94,7 @@ export default function Home() {
   const [followUp, setFollowUp] = useState("");
   const [followUpImages, setFollowUpImages] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const followUpFileRef = useRef<HTMLInputElement>(null);
 
   // Track current type in a ref so streaming callbacks always see latest value
@@ -626,14 +626,22 @@ export default function Home() {
                   />
                 </svg>
               </button>
-              <input
+              <textarea
                 ref={inputRef}
-                type="text"
                 value={followUp}
                 onChange={(e) => setFollowUp(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    if (followUp.trim() || followUpImages.length > 0) {
+                      e.currentTarget.form?.requestSubmit();
+                    }
+                  }
+                }}
                 placeholder="繼續追問..."
                 disabled={conv.loading}
-                className="flex-1"
+                rows={5}
+                className="flex-1 resize-none"
               />
               <button
                 type="submit"
