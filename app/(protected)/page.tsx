@@ -7,8 +7,16 @@ import ResultDisplay from "@/app/components/ResultDisplay";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
+import ZiweiChart from "@/app/components/ZiweiChart";
 
 type DivinationType = "bazi" | "ziwei" | "zodiac";
+
+type ZiweiBirthInfo = {
+  birthday: string;
+  birthTime: number;
+  gender: "男" | "女";
+  birthdayType: "lunar" | "solar";
+};
 
 type Message = {
   role: "user" | "assistant";
@@ -23,6 +31,7 @@ type ConversationState = {
   streamingReasoning: string;
   streaming: boolean;
   loading: boolean;
+  ziweiBirthInfo?: ZiweiBirthInfo;
 };
 
 const emptyConversation: ConversationState = {
@@ -271,14 +280,51 @@ export default function Home() {
       const type = selectedType;
       const userMsg: Message = { role: "user", content: userMessage, images };
 
+      // Parse ziwei birth info for visual chart
+      let ziweiBirthInfo: ZiweiBirthInfo | undefined;
+      if (type === "ziwei") {
+        const dateMatch = userMessage.match(/出生日期：(\S+)/);
+        const timeMatch = userMessage.match(/出生時間：(\S+)/);
+        const genderMatch = userMessage.match(/性別：(\S+)/);
+        const calendarMatch = userMessage.match(/（(農曆|國曆)）/);
+        if (dateMatch && timeMatch) {
+          const birthDate = dateMatch[1].replace(/（.*）/, "");
+          const birthTime = timeMatch[1].replace(/（.*）/, "");
+          const [h] = birthTime.split(":").map(Number);
+          // Convert hour to iztro time index
+          let timeIdx = 0;
+          if (h >= 23 || h < 1) timeIdx = 0;
+          else if (h < 3) timeIdx = 1;
+          else if (h < 5) timeIdx = 2;
+          else if (h < 7) timeIdx = 3;
+          else if (h < 9) timeIdx = 4;
+          else if (h < 11) timeIdx = 5;
+          else if (h < 13) timeIdx = 6;
+          else if (h < 15) timeIdx = 7;
+          else if (h < 17) timeIdx = 8;
+          else if (h < 19) timeIdx = 9;
+          else if (h < 21) timeIdx = 10;
+          else timeIdx = 11;
+
+          ziweiBirthInfo = {
+            birthday: birthDate,
+            birthTime: timeIdx,
+            gender: genderMatch?.[1] === "女" ? "女" : "男",
+            birthdayType: calendarMatch?.[1] === "農曆" ? "lunar" : "solar",
+          };
+        }
+      }
+
       // Set messages for this type
       conversationsRef.current[type] = {
         ...conversationsRef.current[type],
         messages: [userMsg],
+        ziweiBirthInfo,
       };
       setConv((prev) => ({
         ...prev,
         messages: [userMsg],
+        ziweiBirthInfo,
       }));
 
       await streamResponse(type, [
@@ -452,6 +498,15 @@ export default function Home() {
           className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
         >
           <div className="max-w-2xl mx-auto space-y-4">
+            {/* Visual ziwei chart */}
+            {selectedType === "ziwei" && conv.ziweiBirthInfo && (
+              <ZiweiChart
+                birthday={conv.ziweiBirthInfo.birthday}
+                birthTime={conv.ziweiBirthInfo.birthTime}
+                gender={conv.ziweiBirthInfo.gender}
+                birthdayType={conv.ziweiBirthInfo.birthdayType}
+              />
+            )}
             {conv.messages.map((msg, i) =>
               msg.role === "user" ? (
                 <div key={i} className="flex justify-end">

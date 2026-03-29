@@ -1,4 +1,5 @@
 import { astro } from "iztro";
+import { DestinyBoard, DestinyConfigBuilder } from "fortel-ziweidoushu";
 
 interface ZiweiInput {
   birthDate: string; // YYYY-MM-DD
@@ -112,6 +113,30 @@ export function generateZiweiChart(input: ZiweiInput): string {
       .map((s: { name: string; brightness?: string }) => s.name + (s.brightness ? `(${s.brightness})` : ""))
       .join("、") || "無主星";
     lines.push(`${p.decadal.range[0]}~${p.decadal.range[1]}歲 → ${p.name}（${majors}）`);
+  }
+
+  // Cross-reference with fortel-ziweidoushu (中州派)
+  try {
+    const shichenName = SHICHEN_NAMES[timeIdx];
+    const [y, m, d] = (input.isLunar ? chart.solarDate : input.birthDate).split("-").map(Number);
+    const genderFlag = genderStr === "男" ? "男" : "女";
+    const fortelText = `公曆${y}年${m}月${d}日${shichenName}出生${genderFlag}士`;
+    const board = new DestinyBoard(DestinyConfigBuilder.withText(fortelText));
+
+    lines.push("");
+    lines.push("────── 中州派交叉驗證（fortel-ziweidoushu）──────");
+    lines.push(`命主：${board.destinyMaster?.toString() || "?"}`);
+    lines.push(`身主：${board.bodyMaster?.toString() || "?"}`);
+
+    for (const cell of board.cells) {
+      const temples = cell.temples?.map((t: { toString(): string }) => t.toString()).join("、") || "?";
+      const majors = cell.majorStars?.map((s: { toString(): string }) => s.toString()).join("、") || "無主星";
+      const ground = cell.ground?.toString() || "?";
+      const lifeStage = cell.lifeStage?.toString() || "";
+      lines.push(`${ground} [${temples}]：${majors}（大限 ${cell.ageStart}-${cell.ageEnd}歲）${lifeStage ? `[${lifeStage}]` : ""}`);
+    }
+  } catch (e) {
+    console.error("[ziwei] fortel cross-reference failed:", e);
   }
 
   lines.push("");
