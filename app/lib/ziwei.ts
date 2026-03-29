@@ -88,6 +88,30 @@ export function generateZiweiChart(input: ZiweiInput): string {
     if (adjs && adjs.length > 0) {
       lines.push(`  雜曜：${adjs.join("、")}`);
     }
+
+    // 大限 (Decadal fortune period)
+    if (p.decadal?.range) {
+      lines.push(`  大限：${p.decadal.range[0]}~${p.decadal.range[1]}歲（${p.decadal.heavenlyStem}${p.decadal.earthlyBranch}）`);
+    }
+
+    // 小限歲數 (Annual ages passing through this palace)
+    if (p.ages && p.ages.length > 0) {
+      lines.push(`  小限經過歲數：${p.ages.join("、")}`);
+    }
+  }
+
+  // Summary: 大限順序
+  lines.push("");
+  lines.push("────── 大限總覽 ──────");
+  const decadalOrder = chart.palaces
+    .filter((p: { decadal?: { range?: number[] } }) => p.decadal?.range)
+    .sort((a: { decadal: { range: number[] } }, b: { decadal: { range: number[] } }) => a.decadal.range[0] - b.decadal.range[0]);
+  for (const p of decadalOrder) {
+    const majors = p.majorStars
+      ?.filter((s: { name: string }) => s.name)
+      .map((s: { name: string; brightness?: string }) => s.name + (s.brightness ? `(${s.brightness})` : ""))
+      .join("、") || "無主星";
+    lines.push(`${p.decadal.range[0]}~${p.decadal.range[1]}歲 → ${p.name}（${majors}）`);
   }
 
   lines.push("");
