@@ -16,8 +16,8 @@ export default function LoginPage() {
 
       <div className="text-center space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
         {/* Logo */}
-        <h1 className="font-serif text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold">
-          天命
+        <h1 className="text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+          天機
         </h1>
         <p className="font-display text-lg text-stone italic tracking-wide">
           Divination by AI

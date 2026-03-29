@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "天命 — 命理推算",
+  title: "天機 — 命理推算",
   description: "結合八字、紫微斗數與西洋星座的 AI 命理分析",
   manifest: "/manifest.json",
   icons: {
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "天命",
+    title: "天機",
   },
   formatDetection: {
     telephone: false,

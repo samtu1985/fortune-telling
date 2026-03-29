@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Zhi+Mang+Xing&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -56,6 +56,7 @@
   --color-red-seal: var(--red-seal);
   --font-serif: 'Noto Serif TC', 'Georgia', serif;
   --font-display: 'Crimson Pro', 'Georgia', serif;
+  --font-calligraphy: 'Zhi Mang Xing', 'Noto Serif TC', serif;
 }
 
 * {

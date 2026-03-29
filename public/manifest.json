@@ -1,6 +1,6 @@
 {
-  "name": "天命 — 命理推算",
-  "short_name": "天命",
+  "name": "天機 — 命理推算",
+  "short_name": "天機",
   "description": "結合八字、紫微斗數與西洋星座的 AI 命理分析",
   "start_url": "/",
   "display": "standalone",

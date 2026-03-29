@@ -23,8 +23,8 @@ export default function PendingScreen({ type }: PendingScreenProps) {
         className="text-center space-y-6 animate-fade-in-up"
         style={{ opacity: 0 }}
       >
-        <h1 className="font-serif text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold">
-          天命
+        <h1 className="text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+          天機
         </h1>
 
         <div className="mx-auto w-32 gold-line" />

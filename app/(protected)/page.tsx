@@ -400,8 +400,8 @@ export default function Home() {
             返回選擇
           </button>
 
-          <h1 className="absolute left-1/2 -translate-x-1/2 font-serif text-xl font-bold tracking-[0.15em] text-gold">
-            天命
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+            天機
           </h1>
 
           <div className="flex items-center gap-2">
@@ -615,10 +615,10 @@ export default function Home() {
       {/* Header */}
       <header className="pt-16 pb-12 px-6 text-center">
         <h1
-          className="animate-fade-in-up font-serif text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold"
-          style={{ opacity: 0 }}
+          className="animate-fade-in-up text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold"
+          style={{ fontFamily: "var(--font-calligraphy)", opacity: 0 }}
         >
-          天命
+          天機
         </h1>
         <p
           className="animate-fade-in-up mt-3 font-display text-lg sm:text-xl text-stone italic tracking-wide"
