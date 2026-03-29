@@ -163,6 +163,7 @@ export default function AdminPage() {
             {users.map((user) => {
               const status = STATUS_LABELS[user.status];
               const isLoading = actionLoading === user.email;
+              const isAdmin = user.email === "geektu@gmail.com";
 
               return (
                 <div
@@ -217,7 +218,9 @@ export default function AdminPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 shrink-0">
-                      {isLoading ? (
+                      {isAdmin ? (
+                        <span className="text-xs text-stone/40">管理員</span>
+                      ) : isLoading ? (
                         <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
                       ) : (
                         <>
