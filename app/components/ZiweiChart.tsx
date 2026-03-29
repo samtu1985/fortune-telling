@@ -1,19 +1,175 @@
 "use client";
 
-import { Component, type ReactNode } from "react";
-import dynamic from "next/dynamic";
-
-// react-iztro imports CSS files, must be loaded client-side only
-const Iztrolabe = dynamic(
-  () => import("react-iztro").then((mod) => mod.Iztrolabe),
-  { ssr: false }
-);
+import { Component, type ReactNode, useState, useEffect, useMemo } from "react";
+import { astro } from "iztro";
 
 interface ZiweiChartProps {
-  birthday: string; // YYYY-M-D format
-  birthTime: number; // 0-12 時辰 index
+  birthday: string;
+  birthTime: number;
   gender: "男" | "女";
   birthdayType: "lunar" | "solar";
+}
+
+// Earthly branch index → grid position [row, col]
+const GRID_MAP: [number, number][] = [
+  [3, 0], // 0: 寅
+  [2, 0], // 1: 卯
+  [1, 0], // 2: 辰
+  [0, 0], // 3: 巳
+  [0, 1], // 4: 午
+  [0, 2], // 5: 未
+  [0, 3], // 6: 申
+  [1, 3], // 7: 酉
+  [2, 3], // 8: 戌
+  [3, 3], // 9: 亥
+  [3, 2], // 10: 子
+  [3, 1], // 11: 丑
+];
+
+type PalaceData = {
+  name: string;
+  heavenlyStem: string;
+  earthlyBranch: string;
+  isBodyPalace: boolean;
+  isOriginalPalace: boolean;
+  majorStars: { name: string; brightness?: string; mutagen?: string }[];
+  minorStars: { name: string; mutagen?: string }[];
+  decadal?: { range: number[] };
+};
+
+const MUTAGEN_COLORS: Record<string, string> = {
+  "祿": "text-emerald-400",
+  "權": "text-amber-400",
+  "科": "text-sky-400",
+  "忌": "text-red-400",
+};
+
+const BRIGHTNESS_OPACITY: Record<string, string> = {
+  "廟": "opacity-100",
+  "旺": "opacity-90",
+  "得": "opacity-80",
+  "利": "opacity-70",
+  "平": "opacity-60",
+  "不": "opacity-50",
+  "陷": "opacity-40",
+};
+
+function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolean }) {
+  const majors = palace.majorStars?.filter((s) => s.name) || [];
+  const minors = palace.minorStars?.filter((s) => s.name) || [];
+
+  return (
+    <div
+      className={`
+        border border-gold/15 p-1.5 sm:p-2 flex flex-col justify-between min-h-[100px] sm:min-h-[130px] transition-colors
+        ${isActive ? "bg-gold/10 border-gold/40" : "bg-gold/[0.02]"}
+      `}
+    >
+      {/* Major stars */}
+      <div className="space-y-0.5">
+        {majors.length > 0 ? (
+          majors.map((s, i) => (
+            <div key={i} className="flex items-center gap-0.5 flex-wrap">
+              <span
+                className={`text-[10px] sm:text-xs font-bold text-cream/90 ${
+                  s.brightness ? BRIGHTNESS_OPACITY[s.brightness] || "" : ""
+                }`}
+              >
+                {s.name}
+              </span>
+              {s.brightness && (
+                <span className="text-[8px] sm:text-[10px] text-stone/50">{s.brightness}</span>
+              )}
+              {s.mutagen && (
+                <span className={`text-[8px] sm:text-[10px] font-bold ${MUTAGEN_COLORS[s.mutagen] || "text-gold"}`}>
+                  {s.mutagen}
+                </span>
+              )}
+            </div>
+          ))
+        ) : (
+          <span className="text-[10px] text-stone/30">—</span>
+        )}
+        {/* Minor stars (compact) */}
+        {minors.length > 0 && (
+          <div className="flex flex-wrap gap-x-1 mt-0.5">
+            {minors.slice(0, 4).map((s, i) => (
+              <span key={i} className="text-[8px] sm:text-[9px] text-stone/50">
+                {s.name}
+                {s.mutagen && (
+                  <span className={`${MUTAGEN_COLORS[s.mutagen] || ""}`}>{s.mutagen}</span>
+                )}
+              </span>
+            ))}
+            {minors.length > 4 && (
+              <span className="text-[8px] text-stone/30">+{minors.length - 4}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Footer: palace name + branch */}
+      <div className="flex items-end justify-between mt-1">
+        <div className="flex items-center gap-0.5">
+          <span className={`text-[10px] sm:text-xs font-serif tracking-wide ${isActive ? "text-gold font-bold" : "text-gold/70"}`}>
+            {palace.name}
+          </span>
+          {palace.isBodyPalace && (
+            <span className="text-[7px] sm:text-[8px] px-0.5 bg-gold/20 text-gold rounded">身</span>
+          )}
+        </div>
+        <div className="text-right">
+          <span className="text-[8px] sm:text-[9px] text-stone/40">
+            {palace.heavenlyStem}{palace.earthlyBranch}
+          </span>
+          {palace.decadal?.range && (
+            <div className="text-[7px] sm:text-[8px] text-stone/30">
+              {palace.decadal.range[0]}-{palace.decadal.range[1]}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CenterCell({
+  solarDate,
+  lunarDate,
+  gender,
+  fiveElements,
+  soul,
+  body,
+  zodiac,
+}: {
+  solarDate: string;
+  lunarDate: string;
+  gender: string;
+  fiveElements: string;
+  soul: string;
+  body: string;
+  zodiac: string;
+}) {
+  return (
+    <div className="col-span-2 row-span-2 border border-gold/15 bg-gold/[0.03] p-3 sm:p-4 flex flex-col items-center justify-center gap-1.5 text-center">
+      <div className="text-base sm:text-lg font-serif font-bold text-gold tracking-wider">紫微斗數</div>
+      <div className="w-12 h-px bg-gold/20" />
+      <div className="space-y-0.5 text-[10px] sm:text-xs text-cream/70">
+        <div>{solarDate}</div>
+        <div className="text-stone/50">{lunarDate}</div>
+        <div>{gender} · {zodiac}</div>
+      </div>
+      <div className="w-12 h-px bg-gold/20" />
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] sm:text-xs">
+        <span className="text-stone/50 text-right">五行局</span>
+        <span className="text-cream/80">{fiveElements}</span>
+        <span className="text-stone/50 text-right">命主</span>
+        <span className="text-cream/80">{soul}</span>
+        <span className="text-stone/50 text-right">身主</span>
+        <span className="text-cream/80">{body}</span>
+      </div>
+    </div>
+  );
 }
 
 class ZiweiChartErrorBoundary extends Component<
@@ -45,24 +201,133 @@ class ZiweiChartErrorBoundary extends Component<
   }
 }
 
-export default function ZiweiChart({
-  birthday,
-  birthTime,
-  gender,
-  birthdayType,
-}: ZiweiChartProps) {
+function ZiweiChartInner({ birthday, birthTime, gender, birthdayType }: ZiweiChartProps) {
+  const [chartData, setChartData] = useState<{
+    palaces: PalaceData[];
+    solarDate: string;
+    lunarDate: string;
+    zodiac: string;
+    soul: string;
+    body: string;
+    fiveElementsClass: string;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const chart =
+        birthdayType === "lunar"
+          ? astro.byLunar(birthday, birthTime, gender, false, true, "zh-TW")
+          : astro.bySolar(birthday, birthTime, gender, true, "zh-TW");
+
+      setChartData({
+        palaces: chart.palaces.map((p) => ({
+          name: p.name,
+          heavenlyStem: p.heavenlyStem,
+          earthlyBranch: p.earthlyBranch,
+          isBodyPalace: p.isBodyPalace,
+          isOriginalPalace: p.isOriginalPalace,
+          majorStars: (p.majorStars || [])
+            .filter((s: { name: string }) => s.name)
+            .map((s: { name: string; brightness?: string; mutagen?: string }) => ({
+              name: s.name,
+              brightness: s.brightness,
+              mutagen: s.mutagen,
+            })),
+          minorStars: (p.minorStars || [])
+            .filter((s: { name: string }) => s.name)
+            .map((s: { name: string; mutagen?: string }) => ({
+              name: s.name,
+              mutagen: s.mutagen,
+            })),
+          decadal: p.decadal?.range ? { range: p.decadal.range } : undefined,
+        })),
+        solarDate: chart.solarDate,
+        lunarDate: chart.lunarDate,
+        zodiac: chart.zodiac,
+        soul: chart.soul,
+        body: chart.body,
+        fiveElementsClass: chart.fiveElementsClass,
+      });
+    } catch (e) {
+      console.error("[ZiweiChart] chart generation error:", e);
+    }
+  }, [birthday, birthTime, gender, birthdayType]);
+
+  // Build 4x4 grid: palaces around the edges, center 2x2 for info
+  const grid = useMemo(() => {
+    if (!chartData) return null;
+
+    const cells: (
+      | { type: "palace"; palace: PalaceData; isActive: boolean }
+      | { type: "center" }
+      | null
+    )[][] = Array.from({ length: 4 }, () => Array(4).fill(null));
+
+    for (let i = 0; i < chartData.palaces.length; i++) {
+      const [row, col] = GRID_MAP[i];
+      const palace = chartData.palaces[i];
+      cells[row][col] = {
+        type: "palace",
+        palace,
+        isActive: palace.isOriginalPalace,
+      };
+    }
+
+    // Center cells
+    cells[1][1] = { type: "center" };
+    cells[1][2] = null; // spanned by center
+    cells[2][1] = null; // spanned by center
+    cells[2][2] = null; // spanned by center
+
+    return cells;
+  }, [chartData]);
+
+  if (!chartData || !grid) {
+    return (
+      <div className="my-4 rounded-lg border border-gold/20 p-6 text-center text-sm text-stone/40">
+        命盤計算中...
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-4 rounded-lg border border-gold/20 overflow-hidden">
+      <div className="grid grid-cols-4 grid-rows-4">
+        {grid.flatMap((row, r) =>
+          row.map((cell, c) => {
+            if (!cell) return null;
+            if (cell.type === "center") {
+              return (
+                <CenterCell
+                  key={`${r}-${c}`}
+                  solarDate={chartData.solarDate}
+                  lunarDate={chartData.lunarDate}
+                  gender={gender}
+                  fiveElements={chartData.fiveElementsClass}
+                  soul={chartData.soul}
+                  body={chartData.body}
+                  zodiac={chartData.zodiac}
+                />
+              );
+            }
+            return (
+              <PalaceCell
+                key={`${r}-${c}`}
+                palace={cell.palace}
+                isActive={cell.isActive}
+              />
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function ZiweiChart(props: ZiweiChartProps) {
   return (
     <ZiweiChartErrorBoundary>
-      <div className="my-4 rounded-lg border border-gold/20 overflow-hidden">
-        <Iztrolabe
-          birthday={birthday}
-          birthTime={birthTime}
-          gender={gender}
-          birthdayType={birthdayType}
-          lang="zh-TW"
-          width="100%"
-        />
-      </div>
+      <ZiweiChartInner {...props} />
     </ZiweiChartErrorBoundary>
   );
 }

@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["react-iztro", "iztro-hook"],
   images: {
     remotePatterns: [
       {
