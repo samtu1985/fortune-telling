@@ -6,6 +6,7 @@ interface ZiweiInput {
   birthTime: string; // HH:mm
   gender: string; // 男 or 女
   isLunar: boolean;
+  isLeapMonth?: boolean;
 }
 
 /**
@@ -40,12 +41,12 @@ export function generateZiweiChart(input: ZiweiInput): string {
   const genderStr = input.gender === "女" ? "女" : "男";
 
   const chart = input.isLunar
-    ? astro.byLunar(input.birthDate, timeIdx, genderStr, false, true, "zh-TW")
+    ? astro.byLunar(input.birthDate, timeIdx, genderStr, !!input.isLeapMonth, true, "zh-TW")
     : astro.bySolar(input.birthDate, timeIdx, genderStr, true, "zh-TW");
 
   const lines: string[] = [];
 
-  lines.push("══════ 紫微斗數命盤（由程式精確排盤）══════");
+  lines.push("<ziwei-chart source=\"iztro+fortel-ziweidoushu\" method=\"紫微斗數精確排盤\">");
   lines.push("");
   lines.push(`陽曆：${chart.solarDate}`);
   lines.push(`農曆：${chart.lunarDate}`);
@@ -58,7 +59,7 @@ export function generateZiweiChart(input: ZiweiInput): string {
   lines.push(`命宮地支：${chart.earthlyBranchOfSoulPalace}`);
   lines.push(`身宮地支：${chart.earthlyBranchOfBodyPalace}`);
   lines.push("");
-  lines.push("────── 十二宮位排盤 ──────");
+  lines.push("【十二宮位排盤】");
 
   for (const p of chart.palaces) {
     lines.push("");
@@ -103,7 +104,7 @@ export function generateZiweiChart(input: ZiweiInput): string {
 
   // Summary: 大限順序
   lines.push("");
-  lines.push("────── 大限總覽 ──────");
+  lines.push("【大限總覽】");
   const decadalOrder = chart.palaces
     .filter((p: { decadal?: { range?: number[] } }) => p.decadal?.range)
     .sort((a: { decadal: { range: number[] } }, b: { decadal: { range: number[] } }) => a.decadal.range[0] - b.decadal.range[0]);
@@ -124,7 +125,8 @@ export function generateZiweiChart(input: ZiweiInput): string {
     const board = new DestinyBoard(DestinyConfigBuilder.withText(fortelText));
 
     lines.push("");
-    lines.push("────── 中州派交叉驗證（fortel-ziweidoushu）──────");
+    lines.push("【中州派交叉驗證（fortel-ziweidoushu）】");
+    lines.push("※ 以下為中州派算法結果，與上方排盤如有差異屬門派差異，非計算錯誤");
     lines.push(`命主：${board.destinyMaster?.toString() || "?"}`);
     lines.push(`身主：${board.bodyMaster?.toString() || "?"}`);
 
@@ -140,7 +142,7 @@ export function generateZiweiChart(input: ZiweiInput): string {
   }
 
   lines.push("");
-  lines.push("══════ 排盤結束 ══════");
+  lines.push("</ziwei-chart>");
 
   return lines.join("\n");
 }

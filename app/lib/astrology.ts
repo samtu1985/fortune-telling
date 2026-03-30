@@ -186,14 +186,14 @@ export function generateNatalChart(input: AstrologyInput): string | null {
 
   const lines: string[] = [];
 
-  lines.push("══════ 西洋星座星盤（由程式精確計算）══════");
+  lines.push("<natal-chart source=\"Moshier-ephemeris\" house-system=\"Placidus\" zodiac=\"tropical\" precision=\"arc-minutes\">");
   lines.push("");
   lines.push(`出生時間：${input.birthDate} ${input.birthTime}`);
   lines.push(`出生地點：${input.birthPlace}（${coords.lat.toFixed(3)}°N, ${coords.lng.toFixed(3)}°E）`);
   lines.push("");
 
   // Angles
-  lines.push("────── 重要軸點 ──────");
+  lines.push("【重要軸點】");
   for (const angle of horoscope.Angles.all) {
     const sign = ZODIAC_NAMES[angle.Sign.label] || angle.Sign.label;
     const deg = Math.floor(angle.ChartPosition.Ecliptic.DecimalDegrees % 30);
@@ -203,7 +203,7 @@ export function generateNatalChart(input: AstrologyInput): string | null {
 
   // Planets
   lines.push("");
-  lines.push("────── 行星位置 ──────");
+  lines.push("【行星位置】");
   for (const body of horoscope.CelestialBodies.all) {
     const name = PLANET_NAMES[body.label];
     if (!name) continue; // Skip Sirius etc.
@@ -220,7 +220,7 @@ export function generateNatalChart(input: AstrologyInput): string | null {
 
   // Houses
   lines.push("");
-  lines.push("────── 宮位 (Placidus) ──────");
+  lines.push("【宮位 (Placidus)】");
   for (const house of horoscope.Houses) {
     const sign = ZODIAC_NAMES[house.Sign.label] || house.Sign.label;
     const startDeg = house.ChartPosition.StartPosition.Ecliptic.DecimalDegrees;
@@ -230,7 +230,7 @@ export function generateNatalChart(input: AstrologyInput): string | null {
 
   // Aspects
   lines.push("");
-  lines.push("────── 主要相位 ──────");
+  lines.push("【主要相位】");
   const aspects = horoscope.Aspects.all
     .filter(
       (a: { label: string }) =>
@@ -246,7 +246,7 @@ export function generateNatalChart(input: AstrologyInput): string | null {
   }
 
   lines.push("");
-  lines.push("══════ 星盤計算結束 ══════");
+  lines.push("</natal-chart>");
 
   return lines.join("\n");
 }

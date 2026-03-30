@@ -5,6 +5,7 @@ interface BaziInput {
   birthTime: string; // HH:mm
   gender: string; // 男 or 女
   isLunar: boolean;
+  isLeapMonth?: boolean;
 }
 
 export function generateBaziChart(input: BaziInput): string {
@@ -18,9 +19,10 @@ export function generateBaziChart(input: BaziInput): string {
 
   let solar: InstanceType<typeof Solar>;
   if (input.isLunar) {
-    // Convert lunar to solar first
+    // Convert lunar to solar first (negative month = leap month)
     const { Lunar } = require("lunar-typescript");
-    const lunar = Lunar.fromYmdHms(year, month, day, hour, minute, 0);
+    const lunarMonth = input.isLeapMonth ? -month : month;
+    const lunar = Lunar.fromYmdHms(year, lunarMonth, day, hour, minute, 0);
     solar = lunar.getSolar();
   } else {
     solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
@@ -32,7 +34,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   const lines: string[] = [];
 
-  lines.push("══════ 八字命盤（由程式精確排盤）══════");
+  lines.push("<bazi-chart source=\"lunar-typescript\" method=\"萬年曆精確排盤\">");
   lines.push("");
   lines.push(`陽曆：${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 ${hour}:${minStr}`);
   lines.push(`農曆：${lunar.getYearInChinese()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`);
@@ -40,7 +42,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 四柱
   lines.push("");
-  lines.push("────── 四柱排盤 ──────");
+  lines.push("【四柱排盤】");
   lines.push(`年柱：${bazi.getYear()}（${bazi.getYearWuXing()}）納音：${bazi.getYearNaYin()}`);
   lines.push(`月柱：${bazi.getMonth()}（${bazi.getMonthWuXing()}）納音：${bazi.getMonthNaYin()}`);
   lines.push(`日柱：${bazi.getDay()}（${bazi.getDayWuXing()}）納音：${bazi.getDayNaYin()}　← 日主`);
@@ -53,7 +55,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 十神
   lines.push("");
-  lines.push("────── 十神配置 ──────");
+  lines.push("【十神配置】");
   lines.push(`年柱天干十神：${bazi.getYearShiShenGan()}　地支十神：${(bazi.getYearShiShenZhi() as string[]).join("、")}`);
   lines.push(`月柱天干十神：${bazi.getMonthShiShenGan()}　地支十神：${(bazi.getMonthShiShenZhi() as string[]).join("、")}`);
   lines.push(`日柱地支十神：${(bazi.getDayShiShenZhi() as string[]).join("、")}`);
@@ -61,7 +63,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 藏干
   lines.push("");
-  lines.push("────── 地支藏干 ──────");
+  lines.push("【地支藏干】");
   lines.push(`年支 ${bazi.getYearZhi()} 藏：${(bazi.getYearHideGan() as string[]).join("、")}`);
   lines.push(`月支 ${bazi.getMonthZhi()} 藏：${(bazi.getMonthHideGan() as string[]).join("、")}`);
   lines.push(`日支 ${bazi.getDayZhi()} 藏：${(bazi.getDayHideGan() as string[]).join("、")}`);
@@ -69,7 +71,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 地勢（十二長生）
   lines.push("");
-  lines.push("────── 十二長生 ──────");
+  lines.push("【十二長生】");
   lines.push(`年柱：${bazi.getYearDiShi()}`);
   lines.push(`月柱：${bazi.getMonthDiShi()}`);
   lines.push(`日柱：${bazi.getDayDiShi()}`);
@@ -77,20 +79,20 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 胎元、命宮、身宮
   lines.push("");
-  lines.push("────── 胎元・命宮・身宮 ──────");
+  lines.push("【胎元・命宮・身宮】");
   lines.push(`胎元：${bazi.getTaiYuan()}（${bazi.getTaiYuanNaYin()}）`);
   lines.push(`命宮：${bazi.getMingGong()}（${bazi.getMingGongNaYin()}）`);
   lines.push(`身宮：${bazi.getShenGong()}（${bazi.getShenGongNaYin()}）`);
 
   // 旬空
   lines.push("");
-  lines.push("────── 旬空 ──────");
+  lines.push("【旬空】");
   lines.push(`年柱旬空：${bazi.getYearXunKong()}`);
   lines.push(`日柱旬空：${bazi.getDayXunKong()}`);
 
   // 五行統計
   lines.push("");
-  lines.push("────── 五行力量分析 ──────");
+  lines.push("【五行力量分析】");
   const allGan = [bazi.getYearGan(), bazi.getMonthGan(), dayGan, bazi.getTimeGan()];
   const allZhi = [bazi.getYearZhi(), bazi.getMonthZhi(), bazi.getDayZhi(), bazi.getTimeZhi()];
   const allHideGan = [
@@ -121,7 +123,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 大運
   lines.push("");
-  lines.push("────── 大運 ──────");
+  lines.push("【大運】");
   const yun = bazi.getYun(isMale ? 1 : 0);
   lines.push(`起運：${yun.getStartYear()}年${yun.getStartMonth()}月${yun.getStartDay()}日`);
 
@@ -134,7 +136,7 @@ export function generateBaziChart(input: BaziInput): string {
 
   // 近期流年
   lines.push("");
-  lines.push("────── 近期流年 ──────");
+  lines.push("【近期流年】");
   const currentYear = new Date().getFullYear();
   // Find the 大運 that contains current year
   for (const dy of daYunList) {
@@ -148,7 +150,7 @@ export function generateBaziChart(input: BaziInput): string {
   }
 
   lines.push("");
-  lines.push("══════ 排盤結束 ══════");
+  lines.push("</bazi-chart>");
 
   return lines.join("\n");
 }
