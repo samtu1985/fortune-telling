@@ -11,6 +11,7 @@ import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
 import ZiweiChart from "@/app/components/ZiweiChart";
 import MentionDropdown from "@/app/components/MentionDropdown";
+import SavedCharts from "@/app/components/SavedCharts";
 
 type DivinationType = "bazi" | "ziwei" | "zodiac";
 
@@ -134,7 +135,7 @@ export default function Home() {
   const [conv, setConv] = useState<ConversationState>(emptyConversation);
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [activeTab, setActiveTab] = useState<"input" | "saved">("input");
+  const [activeTab, setActiveTab] = useState<"input" | "saved" | "charts">("input");
   const [newDiscussionConfirm, setNewDiscussionConfirm] = useState(false);
   const [savedMessageIds, setSavedMessageIds] = useState<Set<number>>(new Set());
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -1125,6 +1126,16 @@ export default function Home() {
             >
               已保存對話
             </button>
+            <button
+              onClick={() => setActiveTab("charts")}
+              className={`px-4 py-2.5 text-sm font-serif tracking-wide transition-colors border-b-2 -mb-px ${
+                activeTab === "charts"
+                  ? "border-gold text-gold"
+                  : "border-transparent text-stone/50 hover:text-stone"
+              }`}
+            >
+              已保存命盤
+            </button>
           </div>
 
           {activeTab === "input" ? (
@@ -1135,8 +1146,10 @@ export default function Home() {
               profiles={profiles}
               onProfilesChange={loadProfiles}
             />
-          ) : (
+          ) : activeTab === "saved" ? (
             <SavedConversations type={selectedType} />
+          ) : (
+            <SavedCharts type={selectedType} profiles={profiles} />
           )}
         </section>
       )}
