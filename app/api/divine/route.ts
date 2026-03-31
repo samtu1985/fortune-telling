@@ -262,6 +262,11 @@ export async function POST(request: NextRequest) {
   const processedMessages = chatMessages.map((msg, index) => {
     if (msg.role !== "user") return msg;
 
+    // Skip if message already contains injected chart data (e.g., from @mention on the client)
+    if (msg.content.includes("由排盤程式精確計算的命盤數據") || msg.content.includes("由排盤程式為此人精確計算的命盤數據")) {
+      return msg;
+    }
+
     const birthData = parseBirthData(msg.content);
     if (!birthData) return msg;
 
