@@ -10,6 +10,7 @@ import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
 import ZiweiChart from "@/app/components/ZiweiChart";
+import MentionDropdown from "@/app/components/MentionDropdown";
 
 type DivinationType = "bazi" | "ziwei" | "zodiac";
 
@@ -136,6 +137,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"input" | "saved">("input");
   const [newDiscussionConfirm, setNewDiscussionConfirm] = useState(false);
   const [savedMessageIds, setSavedMessageIds] = useState<Set<number>>(new Set());
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
 
   // Sync conversation state when switching types
   useEffect(() => {
@@ -430,20 +433,113 @@ export default function Home() {
     []
   );
 
+  // @ mention handling
+  const handleFollowUpChange = useCallback(
+    (e: ChangeEvent<HTMLTextAreaElement>) => {
+      const val = e.target.value;
+      setFollowUp(val);
+
+      // Detect @ trigger: find the last @ before cursor
+      const cursorPos = e.target.selectionStart;
+      const textBeforeCursor = val.slice(0, cursorPos);
+      const atMatch = textBeforeCursor.match(/@([^\s@]*)$/);
+
+      if (atMatch) {
+        setMentionOpen(true);
+        setMentionQuery(atMatch[1]);
+      } else {
+        setMentionOpen(false);
+        setMentionQuery("");
+      }
+    },
+    []
+  );
+
+  const handleMentionSelect = useCallback(
+    (label: string) => {
+      // Replace the @query with @label in the text
+      const textarea = inputRef.current;
+      if (!textarea) return;
+
+      const cursorPos = textarea.selectionStart;
+      const textBeforeCursor = followUp.slice(0, cursorPos);
+      const textAfterCursor = followUp.slice(cursorPos);
+      const atIdx = textBeforeCursor.lastIndexOf("@");
+
+      if (atIdx === -1) return;
+
+      const newText = textBeforeCursor.slice(0, atIdx) + `@${label} ` + textAfterCursor;
+      setFollowUp(newText);
+      setMentionOpen(false);
+      setMentionQuery("");
+
+      // Refocus and set cursor after the inserted mention
+      setTimeout(() => {
+        textarea.focus();
+        const newCursor = atIdx + label.length + 2; // @ + label + space
+        textarea.setSelectionRange(newCursor, newCursor);
+      }, 0);
+    },
+    [followUp]
+  );
+
+  // Build mention profiles list for the dropdown
+  const mentionProfiles = profiles.map((p) => ({
+    id: p.id,
+    label: p.label,
+    hasChart: !!p.savedCharts?.[selectedType as keyof NonNullable<Profile["savedCharts"]>],
+  }));
+
+  // Inject chart data for @mentions in the message
+  const injectMentionCharts = useCallback(
+    (message: string): string => {
+      if (!selectedType) return message;
+      const chartKey = selectedType as keyof NonNullable<Profile["savedCharts"]>;
+
+      // Find all @mentions in the message
+      const mentionRegex = /@(\S+)/g;
+      let match;
+      const injections: string[] = [];
+
+      while ((match = mentionRegex.exec(message)) !== null) {
+        const label = match[1];
+        const profile = profiles.find((p) => p.label === label);
+        if (!profile) continue;
+
+        const chart = profile.savedCharts?.[chartKey];
+        if (chart) {
+          injections.push(
+            `\n\n【以下是「${label}」由排盤程式精確計算的命盤數據，你必須完全依照這些數據進行解讀，不得自行排盤或編造任何數據】\n\n${chart}`
+          );
+        } else {
+          injections.push(
+            `\n\n【系統提示】使用者提到了「${label}」，但此人尚未在本場景生成並保存命盤。請提醒使用者先為「${label}」生成命盤後再進行分析。`
+          );
+        }
+      }
+
+      return message + injections.join("");
+    },
+    [selectedType, profiles]
+  );
+
   const handleFollowUp = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       if ((!followUp.trim() && followUpImages.length === 0) || conv.loading) return;
       if (!selectedType) return;
       isNearBottomRef.current = true;
+      setMentionOpen(false);
 
       const type = selectedType;
       const userMsg = followUp.trim() || "請分析這張圖片";
+      const msgWithCharts = injectMentionCharts(userMsg);
       const imgs = followUpImages.length > 0 ? [...followUpImages] : undefined;
       setFollowUp("");
       setFollowUpImages([]);
 
       const currentMessages = conversationsRef.current[type].messages;
+      // Show original message (without chart injections) to the user
       const updatedMessages: Message[] = [
         ...currentMessages,
         { role: "user", content: userMsg, images: imgs },
@@ -458,16 +554,16 @@ export default function Home() {
         messages: updatedMessages,
       }));
 
-      await streamResponse(
-        type,
-        updatedMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-          images: m.images,
-        }))
-      );
+      // Send message with chart injections to the API
+      const apiMessages = updatedMessages.map((m, i) => ({
+        role: m.role,
+        content: i === updatedMessages.length - 1 ? msgWithCharts : m.content,
+        images: m.images,
+      }));
+
+      await streamResponse(type, apiMessages);
     },
-    [followUp, followUpImages, conv.loading, selectedType, streamResponse]
+    [followUp, followUpImages, conv.loading, selectedType, streamResponse, injectMentionCharts]
   );
 
   const handleReset = useCallback(() => {
@@ -773,23 +869,36 @@ export default function Home() {
                   />
                 </svg>
               </button>
-              <textarea
-                ref={inputRef}
-                value={followUp}
-                onChange={(e) => setFollowUp(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                    e.preventDefault();
-                    if (followUp.trim() || followUpImages.length > 0) {
-                      e.currentTarget.form?.requestSubmit();
+              <div className="relative flex-1">
+                {/* @ Mention Dropdown */}
+                {mentionOpen && (
+                  <MentionDropdown
+                    profiles={mentionProfiles}
+                    query={mentionQuery}
+                    onSelect={handleMentionSelect}
+                    onClose={() => setMentionOpen(false)}
+                  />
+                )}
+                <textarea
+                  ref={inputRef}
+                  value={followUp}
+                  onChange={handleFollowUpChange}
+                  onKeyDown={(e) => {
+                    // If mention dropdown is open, don't submit on Enter
+                    if (mentionOpen) return;
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      if (followUp.trim() || followUpImages.length > 0) {
+                        e.currentTarget.form?.requestSubmit();
+                      }
                     }
-                  }
-                }}
-                placeholder="繼續追問..."
-                disabled={conv.loading}
-                rows={5}
-                className="flex-1 resize-none"
-              />
+                  }}
+                  placeholder="繼續追問... 輸入 @ 可引用已保存的命盤"
+                  disabled={conv.loading}
+                  rows={5}
+                  className="flex-1 w-full resize-none"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={
