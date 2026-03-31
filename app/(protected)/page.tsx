@@ -4,6 +4,8 @@ import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "reac
 import DivinationCard from "@/app/components/DivinationCard";
 import InputForm from "@/app/components/InputForm";
 import ResultDisplay from "@/app/components/ResultDisplay";
+import SavedConversations from "@/app/components/SavedConversations";
+import ConfirmDialog from "@/app/components/ConfirmDialog";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
@@ -25,6 +27,22 @@ type Message = {
   images?: string[];
 };
 
+type Profile = {
+  id: string;
+  label: string;
+  birthDate: string;
+  birthTime: string;
+  gender: string;
+  birthPlace: string;
+  calendarType: string;
+  isLeapMonth: boolean;
+  savedCharts?: {
+    bazi?: string;
+    ziwei?: string;
+    zodiac?: string;
+  };
+};
+
 type ConversationState = {
   messages: Message[];
   streamingContent: string;
@@ -32,6 +50,9 @@ type ConversationState = {
   streaming: boolean;
   loading: boolean;
   ziweiBirthInfo?: ZiweiBirthInfo;
+  chartData?: string;
+  profileId?: string;
+  profileLabel?: string;
 };
 
 const emptyConversation: ConversationState = {
@@ -111,14 +132,34 @@ export default function Home() {
   // Current conversation derived from selected type
   const [conv, setConv] = useState<ConversationState>(emptyConversation);
 
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [activeTab, setActiveTab] = useState<"input" | "saved">("input");
+  const [newDiscussionConfirm, setNewDiscussionConfirm] = useState(false);
+  const [savedMessageIds, setSavedMessageIds] = useState<Set<number>>(new Set());
+
   // Sync conversation state when switching types
   useEffect(() => {
     if (selectedType) {
       setConv({ ...conversationsRef.current[selectedType] });
       setFollowUp("");
       setFollowUpImages([]);
+      setSavedMessageIds(new Set());
+      setActiveTab("input");
     }
   }, [selectedType]);
+
+  const loadProfiles = useCallback(() => {
+    fetch("/api/profiles")
+      .then((res) => res.json())
+      .then((data) => setProfiles(data.profiles || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadProfiles();
+    window.addEventListener("profiles-updated", loadProfiles);
+    return () => window.removeEventListener("profiles-updated", loadProfiles);
+  }, [loadProfiles]);
 
   const conversationStarted = conv.messages.length > 0 || conv.streaming;
 
@@ -219,6 +260,12 @@ export default function Home() {
               if (parsed.reasoning) {
                 fullReasoning += parsed.reasoning;
               }
+              if (parsed.chartData) {
+                conversationsRef.current[type] = {
+                  ...conversationsRef.current[type],
+                  chartData: parsed.chartData,
+                };
+              }
             } catch {
               // skip
             }
@@ -296,7 +343,7 @@ export default function Home() {
   );
 
   const handleInitialSubmit = useCallback(
-    async (userMessage: string, images?: string[]) => {
+    async (userMessage: string, images?: string[], profileId?: string, profileLabel?: string) => {
       if (!selectedType) return;
       isNearBottomRef.current = true;
       const type = selectedType;
@@ -342,11 +389,17 @@ export default function Home() {
         ...conversationsRef.current[type],
         messages: [userMsg],
         ziweiBirthInfo,
+        chartData: undefined,
+        profileId,
+        profileLabel,
       };
       setConv((prev) => ({
         ...prev,
         messages: [userMsg],
         ziweiBirthInfo,
+        chartData: undefined,
+        profileId,
+        profileLabel,
       }));
 
       await streamResponse(type, [
@@ -426,6 +479,71 @@ export default function Home() {
     setFollowUp("");
     setFollowUpImages([]);
   }, [selectedType]);
+
+  const handleSaveConversation = useCallback(
+    async (messageIndex: number) => {
+      if (!selectedType) return;
+      const messages = conversationsRef.current[selectedType].messages;
+      const aiMsg = messages[messageIndex];
+      if (!aiMsg || aiMsg.role !== "assistant") return;
+
+      let userQuestion = "";
+      for (let i = messageIndex - 1; i >= 0; i--) {
+        if (messages[i].role === "user") {
+          userQuestion = messages[i].content;
+          break;
+        }
+      }
+
+      const profileLabel = conversationsRef.current[selectedType].profileLabel;
+
+      await fetch("/api/saved-conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: selectedType,
+          userQuestion,
+          aiResponse: aiMsg.content,
+          aiReasoning: aiMsg.reasoning,
+          profileLabel,
+        }),
+      });
+
+      setSavedMessageIds((prev) => new Set(prev).add(messageIndex));
+      window.dispatchEvent(new Event("conversation-saved"));
+    },
+    [selectedType]
+  );
+
+  const handleNewDiscussion = useCallback(() => {
+    if (!selectedType) return;
+    conversationsRef.current[selectedType] = { ...emptyConversation };
+    setConv({ ...emptyConversation });
+    setSavedMessageIds(new Set());
+    setNewDiscussionConfirm(false);
+    setActiveTab("input");
+  }, [selectedType]);
+
+  const handleSaveChart = useCallback(
+    async () => {
+      if (!selectedType) return;
+      const { chartData, profileId } = conversationsRef.current[selectedType];
+      if (!chartData || !profileId) return;
+
+      await fetch(`/api/profiles/${profileId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          savedCharts: {
+            ...profiles.find((p) => p.id === profileId)?.savedCharts,
+            [selectedType]: chartData,
+          },
+        }),
+      });
+      loadProfiles();
+    },
+    [selectedType, profiles, loadProfiles]
+  );
 
   // Switch to a type (from conversation mode back button → go to selection)
   const handleBackToSelection = useCallback(() => {
@@ -557,6 +675,8 @@ export default function Home() {
                     reasoning={msg.reasoning || ""}
                     streaming={false}
                     hideDisclaimer
+                    onSave={() => handleSaveConversation(i)}
+                    isSaved={savedMessageIds.has(i)}
                   />
                 </div>
               )
@@ -571,6 +691,21 @@ export default function Home() {
                   streaming
                   hideDisclaimer
                 />
+              </div>
+            )}
+
+            {/* Save chart button */}
+            {!conv.streaming && conv.chartData && conv.profileId && (
+              <div className="flex justify-center py-2">
+                <button
+                  onClick={handleSaveChart}
+                  className="text-xs text-gold-dim/60 hover:text-gold-dim transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-gold/10 rounded-full"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  保存命盤至「{conv.profileLabel}」
+                </button>
               </div>
             )}
           </div>
@@ -682,8 +817,23 @@ export default function Home() {
             <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
               以上分析由 AI 生成，僅供參考
             </p>
+            <button
+              onClick={() => setNewDiscussionConfirm(true)}
+              className="w-full mt-3 py-2 text-xs text-stone/40 hover:text-stone/60 transition-colors tracking-wide"
+            >
+              開始新討論
+            </button>
           </div>
         </div>
+
+        <ConfirmDialog
+          open={newDiscussionConfirm}
+          title="開始新討論"
+          message="目前的對話將會清除，確定要開始新討論嗎？"
+          confirmLabel="確定"
+          onConfirm={handleNewDiscussion}
+          onCancel={() => setNewDiscussionConfirm(false)}
+        />
       </main>
     );
   }
@@ -824,14 +974,44 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Input Form */}
+      {/* Input Form / Saved Conversations Tabs */}
       {selectedType && !conversationStarted && (
         <section className="max-w-2xl mx-auto px-6 pb-8">
-          <InputForm
-            type={selectedType}
-            onSubmit={handleInitialSubmit}
-            loading={conv.loading}
-          />
+          {/* Tabs */}
+          <div className="flex gap-1 mb-6 border-b border-gold/10">
+            <button
+              onClick={() => setActiveTab("input")}
+              className={`px-4 py-2.5 text-sm font-serif tracking-wide transition-colors border-b-2 -mb-px ${
+                activeTab === "input"
+                  ? "border-gold text-gold"
+                  : "border-transparent text-stone/50 hover:text-stone"
+              }`}
+            >
+              輸入資料
+            </button>
+            <button
+              onClick={() => setActiveTab("saved")}
+              className={`px-4 py-2.5 text-sm font-serif tracking-wide transition-colors border-b-2 -mb-px ${
+                activeTab === "saved"
+                  ? "border-gold text-gold"
+                  : "border-transparent text-stone/50 hover:text-stone"
+              }`}
+            >
+              已保存對話
+            </button>
+          </div>
+
+          {activeTab === "input" ? (
+            <InputForm
+              type={selectedType}
+              onSubmit={handleInitialSubmit}
+              loading={conv.loading}
+              profiles={profiles}
+              onProfilesChange={loadProfiles}
+            />
+          ) : (
+            <SavedConversations type={selectedType} />
+          )}
         </section>
       )}
 
