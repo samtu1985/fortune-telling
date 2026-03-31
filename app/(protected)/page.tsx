@@ -154,11 +154,14 @@ export default function Home() {
     }
   }, [selectedType]);
 
-  const loadProfiles = useCallback(() => {
-    fetch("/api/profiles")
-      .then((res) => res.json())
-      .then((data) => setProfiles(data.profiles || []))
-      .catch(() => {});
+  const loadProfiles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/profiles");
+      const data = await res.json();
+      setProfiles(data.profiles || []);
+    } catch {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {
@@ -644,7 +647,7 @@ export default function Home() {
       });
       if (res.ok) {
         setChartSaved(true);
-        loadProfiles();
+        await loadProfiles();
       }
     },
     [selectedType, profiles, loadProfiles]

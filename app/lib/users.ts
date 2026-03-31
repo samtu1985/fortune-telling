@@ -65,9 +65,8 @@ export async function readUsers(): Promise<UsersStore> {
     try {
       const { head } = await import("@vercel/blob");
       const meta = await head(BLOB_PATH);
-      const token = process.env.BLOB_READ_WRITE_TOKEN!;
-      const res = await fetch(meta.url, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Use downloadUrl (signed, time-limited) to avoid CDN cache returning stale data
+      const res = await fetch(meta.downloadUrl, {
         cache: "no-store",
       });
       if (!res.ok) {
