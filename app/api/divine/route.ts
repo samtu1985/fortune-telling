@@ -255,6 +255,9 @@ export async function POST(request: NextRequest) {
   // Add follow-up chart rule to system prompt
   systemPrompt += FOLLOWUP_CHART_RULE;
 
+  // Collect generated charts for client-side saving
+  const generatedCharts: { index: number; chart: string }[] = [];
+
   // Process ALL user messages: generate charts for any message containing birth data
   const processedMessages = chatMessages.map((msg, index) => {
     if (msg.role !== "user") return msg;
@@ -273,6 +276,7 @@ export async function POST(request: NextRequest) {
           zodiac: "不得自行推算或修改任何行星位置",
         };
         systemPrompt += `\n\n【以下是由排盤程式精確計算的命盤數據，你必須完全依照這些數據進行解讀，${tagMap[type] || "不得自行排盤"}】\n\n${chartText}`;
+        generatedCharts.push({ index, chart: chartText });
       } else if (type === "zodiac" && birthData.birthPlace) {
         systemPrompt += `\n\n【系統提示】無法查詢到「${birthData.birthPlace}」的座標資料，星盤未能自動生成。請僅根據出生日期提供太陽星座分析，並提醒使用者：缺少精確座標將無法計算上升星座與宮位配置。`;
       }
@@ -280,6 +284,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Follow-up messages: inject chart into message content
       if (chartText) {
+        generatedCharts.push({ index, chart: chartText });
         return {
           ...msg,
           content: msg.content + `\n\n【以下是由排盤程式為此人精確計算的命盤數據，你必須完全依照這些數據進行解讀，不得自行排盤或編造任何數據】\n\n${chartText}`,
@@ -344,6 +349,13 @@ export async function POST(request: NextRequest) {
       if (!reader) {
         controller.close();
         return;
+      }
+
+      // Emit chart data for client-side chart saving
+      for (const { index, chart } of generatedCharts) {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ chartData: chart, messageIndex: index })}\n\n`)
+        );
       }
 
       let buffer = "";
