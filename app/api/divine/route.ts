@@ -6,6 +6,123 @@ import { generateNatalChart } from "@/app/lib/astrology";
 const BYTEPLUS_API_URL =
   "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions";
 
+// Helper: extract birth data from any message text (structured or natural language)
+function parseBirthData(content: string): {
+  birthDate: string;
+  birthTime: string;
+  gender: string;
+  birthPlace: string;
+  isLunar: boolean;
+  isLeapMonth: boolean;
+} | null {
+  let birthDate: string | null = null;
+  let birthTime: string | null = null;
+
+  // Try structured format: 出生日期：YYYY-MM-DD / 出生時間：HH:MM
+  const structDateMatch = content.match(/出生日期[：:]\s*(\S+)/);
+  const structTimeMatch = content.match(/出生時間[：:]\s*(\S+)/);
+
+  if (structDateMatch && structTimeMatch) {
+    birthDate = structDateMatch[1].replace(/（.*）/, "");
+    birthTime = structTimeMatch[1].replace(/（.*）/, "");
+  } else {
+    // Flexible date: YYYY-MM-DD, YYYY/MM/DD, YYYY年M月D日
+    const flexDateMatch = content.match(/(\d{4})[年\-/](\d{1,2})[月\-/](\d{1,2})日?/);
+    // Flexible time: 下午3點30分, 15:00, 3點, 凌晨2點
+    const flexTimeMatch = content.match(/(凌晨|早上|上午|中午|下午|傍晚|晚上)?(\d{1,2})[點時:：](\d{0,2})分?/);
+
+    if (flexDateMatch) {
+      birthDate = `${flexDateMatch[1]}-${flexDateMatch[2].padStart(2, "0")}-${flexDateMatch[3].padStart(2, "0")}`;
+    }
+    if (flexTimeMatch) {
+      let h = parseInt(flexTimeMatch[2]);
+      const period = flexTimeMatch[1];
+      if (period === "下午" || period === "傍晚" || period === "晚上") {
+        if (h < 12) h += 12;
+      } else if (period === "凌晨" || period === "早上" || period === "上午") {
+        if (h === 12) h = 0;
+      } else if (period === "中午") {
+        if (h === 12) h = 12;
+        else if (h < 12) h += 12;
+      }
+      const m = flexTimeMatch[3] || "00";
+      birthTime = `${h.toString().padStart(2, "0")}:${m.padStart(2, "0")}`;
+    }
+  }
+
+  if (!birthDate || !birthTime) return null;
+
+  // Gender
+  const genderStructMatch = content.match(/性別[：:]\s*(男|女)/);
+  const genderFlexMatch = content.match(/(男生|女生|男性|女性)/);
+  let gender = "男";
+  if (genderStructMatch) gender = genderStructMatch[1];
+  else if (genderFlexMatch) gender = genderFlexMatch[1].startsWith("女") ? "女" : "男";
+
+  // Place
+  const placeMatch =
+    content.match(/出生地點[：:]\s*(\S+)/) ||
+    content.match(/出生地[：:]\s*(\S+)/) ||
+    content.match(/出生在(\S+)/);
+  const birthPlace = placeMatch?.[1] || "";
+
+  // Calendar type
+  const calendarMatch =
+    content.match(/（(農曆(?:（閏月）)?|國曆)）/) ||
+    content.match(/(農曆|陰曆|閏月)/);
+  const calendarStr = calendarMatch?.[1] || "";
+  const isLunar = calendarStr.includes("農曆") || calendarStr.includes("陰曆");
+  const isLeapMonth = calendarStr.includes("閏月");
+
+  return { birthDate, birthTime, gender, birthPlace, isLunar, isLeapMonth };
+}
+
+// Generate chart text for a given type and birth data
+function generateChartForType(
+  type: string,
+  data: { birthDate: string; birthTime: string; gender: string; birthPlace: string; isLunar: boolean; isLeapMonth: boolean }
+): string | null {
+  try {
+    if (type === "bazi") {
+      return generateBaziChart({
+        birthDate: data.birthDate,
+        birthTime: data.birthTime,
+        gender: data.gender,
+        isLunar: data.isLunar,
+        isLeapMonth: data.isLeapMonth,
+      });
+    }
+    if (type === "ziwei") {
+      return generateZiweiChart({
+        birthDate: data.birthDate,
+        birthTime: data.birthTime,
+        gender: data.gender,
+        isLunar: data.isLunar,
+        isLeapMonth: data.isLeapMonth,
+      });
+    }
+    if (type === "zodiac" && data.birthPlace) {
+      return generateNatalChart({
+        birthDate: data.birthDate,
+        birthTime: data.birthTime,
+        birthPlace: data.birthPlace,
+      }) || null;
+    }
+  } catch (e) {
+    console.error(`[divine] Failed to generate ${type} chart:`, e);
+  }
+  return null;
+}
+
+const FOLLOWUP_CHART_RULE = `
+
+【追問中的命盤計算規則】
+如果使用者在追問中提供了其他人的出生資料（例如想做合盤、比較、或幫他人看命），
+系統會自動為該人計算命盤，並以對應的標籤附加在該訊息中。
+你同樣必須完全依照這些程式計算的數據進行解讀，不得自行排盤或編造任何數據。
+若追問訊息中未附帶程式計算的命盤數據，代表系統無法解析該人的出生資訊——
+此時你應該請使用者提供完整的出生資料（日期、時間、性別、地點），而不是自行推算。`;
+
 const SYSTEM_PROMPTS: Record<string, string> = {
   bazi: `你是一位精通八字命理的命盤「解讀者」。你的唯一職責是解讀由排盤程式計算好的命盤數據。
 
@@ -135,110 +252,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // For bazi type, generate chart and inject into system prompt
-  if (type === "bazi" && chatMessages.length > 0) {
-    const firstMsg = chatMessages[0];
-    if (firstMsg.role === "user") {
-      try {
-        const dateMatch = firstMsg.content.match(/出生日期：(\S+)/);
-        const timeMatch = firstMsg.content.match(/出生時間：(\S+)/);
-        const genderMatch = firstMsg.content.match(/性別：(\S+)/);
-        const calendarMatch = firstMsg.content.match(/（(農曆(?:（閏月）)?|國曆)）/);
+  // Add follow-up chart rule to system prompt
+  systemPrompt += FOLLOWUP_CHART_RULE;
 
-        if (dateMatch && timeMatch) {
-          const birthDate = dateMatch[1].replace(/（.*）/, "");
-          const birthTime = timeMatch[1].replace(/（.*）/, "");
-          const gender = genderMatch?.[1] || "男";
-          const calendarStr = calendarMatch?.[1] || "";
-          const isLunar = calendarStr.startsWith("農曆");
-          const isLeapMonth = calendarStr.includes("閏月");
+  // Process ALL user messages: generate charts for any message containing birth data
+  const processedMessages = chatMessages.map((msg, index) => {
+    if (msg.role !== "user") return msg;
 
-          const chartText = generateBaziChart({
-            birthDate,
-            birthTime,
-            gender,
-            isLunar,
-            isLeapMonth,
-          });
+    const birthData = parseBirthData(msg.content);
+    if (!birthData) return msg;
 
-          systemPrompt = systemPrompt + "\n\n【以下是由排盤程式精確計算的命盤數據，你必須完全依照這些數據進行解讀，不得自行排盤或修改任何四柱干支】\n\n" + chartText;
-        }
-      } catch (e) {
-        console.error("[divine] Failed to generate bazi chart:", e);
+    const chartText = generateChartForType(type, birthData);
+
+    if (index === 0) {
+      // First message: inject chart into system prompt (higher authority)
+      if (chartText) {
+        const tagMap: Record<string, string> = {
+          bazi: "不得自行排盤或修改任何四柱干支",
+          ziwei: "不得自行排盤或修改任何星曜位置",
+          zodiac: "不得自行推算或修改任何行星位置",
+        };
+        systemPrompt += `\n\n【以下是由排盤程式精確計算的命盤數據，你必須完全依照這些數據進行解讀，${tagMap[type] || "不得自行排盤"}】\n\n${chartText}`;
+      } else if (type === "zodiac" && birthData.birthPlace) {
+        systemPrompt += `\n\n【系統提示】無法查詢到「${birthData.birthPlace}」的座標資料，星盤未能自動生成。請僅根據出生日期提供太陽星座分析，並提醒使用者：缺少精確座標將無法計算上升星座與宮位配置。`;
       }
-    }
-  }
-
-  // For ziwei type, generate chart and inject into system prompt
-  if (type === "ziwei" && chatMessages.length > 0) {
-    const firstMsg = chatMessages[0];
-    if (firstMsg.role === "user") {
-      try {
-        const dateMatch = firstMsg.content.match(/出生日期：(\S+)/);
-        const timeMatch = firstMsg.content.match(/出生時間：(\S+)/);
-        const genderMatch = firstMsg.content.match(/性別：(\S+)/);
-        const calendarMatch = firstMsg.content.match(/（(農曆(?:（閏月）)?|國曆)）/);
-
-        if (dateMatch && timeMatch) {
-          const birthDate = dateMatch[1].replace(/（.*）/, "");
-          const birthTime = timeMatch[1].replace(/（.*）/, "");
-          const gender = genderMatch?.[1] || "男";
-          const calendarStr = calendarMatch?.[1] || "";
-          const isLunar = calendarStr.startsWith("農曆");
-          const isLeapMonth = calendarStr.includes("閏月");
-
-          const chartText = generateZiweiChart({
-            birthDate,
-            birthTime,
-            gender,
-            isLunar,
-            isLeapMonth,
-          });
-
-          systemPrompt = systemPrompt + "\n\n【以下是由排盤程式精確計算的命盤數據，你必須完全依照這些數據進行解讀，不得自行排盤或修改任何星曜位置】\n\n" + chartText;
-        }
-      } catch (e) {
-        console.error("[divine] Failed to generate ziwei chart:", e);
-        // Continue without chart — AI will do its best
+      return msg; // first message content stays unchanged
+    } else {
+      // Follow-up messages: inject chart into message content
+      if (chartText) {
+        return {
+          ...msg,
+          content: msg.content + `\n\n【以下是由排盤程式為此人精確計算的命盤數據，你必須完全依照這些數據進行解讀，不得自行排盤或編造任何數據】\n\n${chartText}`,
+        };
       }
+      return msg;
     }
-  }
-
-  // For zodiac type, generate natal chart and inject into system prompt (not user message)
-  // This gives the chart data higher authority, preventing the AI from ignoring it
-  if (type === "zodiac" && chatMessages.length > 0) {
-    const firstMsg = chatMessages[0];
-    if (firstMsg.role === "user") {
-      try {
-        const dateMatch = firstMsg.content.match(/出生日期：(\S+)/);
-        const timeMatch = firstMsg.content.match(/出生時間：(\S+)/);
-        const placeMatch = firstMsg.content.match(/出生地點：(\S+)/);
-
-        if (dateMatch && timeMatch && placeMatch) {
-          const birthDate = dateMatch[1].replace(/（.*）/, "");
-          const birthTime = timeMatch[1].replace(/（.*）/, "");
-          const birthPlace = placeMatch[1];
-
-          const chartText = generateNatalChart({
-            birthDate,
-            birthTime,
-            birthPlace,
-          });
-
-          if (chartText) {
-            systemPrompt = systemPrompt + "\n\n【以下是由天文程式精確計算的星盤數據，你必須完全依照這些數據進行解讀，不得自行推算或修改任何行星位置】\n\n" + chartText;
-          } else {
-            systemPrompt = systemPrompt + "\n\n【系統提示】無法查詢到「" + birthPlace + "」的座標資料，星盤未能自動生成。請僅根據出生日期提供太陽星座分析，並提醒使用者：缺少精確座標將無法計算上升星座與宮位配置。";
-          }
-        }
-      } catch (e) {
-        console.error("[divine] Failed to generate natal chart:", e);
-      }
-    }
-  }
+  });
 
   // Convert messages: if a message has images, use multimodal content format
-  const apiMessages = chatMessages.map((msg) => {
+  const apiMessages = processedMessages.map((msg) => {
     if (msg.images && msg.images.length > 0) {
       return {
         role: msg.role,
