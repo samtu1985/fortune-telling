@@ -7,6 +7,8 @@ interface ResultDisplayProps {
   reasoning: string;
   streaming: boolean;
   hideDisclaimer?: boolean;
+  onSave?: () => void;
+  isSaved?: boolean;
 }
 
 interface TableData {
@@ -157,6 +159,8 @@ export default function ResultDisplay({
   reasoning,
   streaming,
   hideDisclaimer,
+  onSave,
+  isSaved,
 }: ResultDisplayProps) {
   const [showReasoning, setShowReasoning] = useState(false);
 
@@ -220,6 +224,37 @@ export default function ResultDisplay({
               dangerouslySetInnerHTML={{ __html: renderedContent }}
             />
           </div>
+        </div>
+      )}
+
+      {/* Save conversation button */}
+      {content && !streaming && onSave && (
+        <div className="flex justify-end px-6 pb-2">
+          <button
+            onClick={onSave}
+            disabled={isSaved}
+            className={`text-xs flex items-center gap-1 min-h-[32px] px-2 transition-colors ${
+              isSaved
+                ? "text-gold-dim/50 cursor-default"
+                : "text-stone/40 hover:text-gold-dim"
+            }`}
+          >
+            {isSaved ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                已保存
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                保存
+              </>
+            )}
+          </button>
         </div>
       )}
 
