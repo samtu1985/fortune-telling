@@ -10,13 +10,43 @@ export interface UserProfile {
   birthPlace: string;
 }
 
+export interface SavedProfile {
+  id: string;
+  label: string;
+  birthDate: string;
+  birthTime: string;
+  gender: string;
+  birthPlace: string;
+  calendarType: "solar" | "lunar";
+  isLeapMonth: boolean;
+  savedCharts?: {
+    bazi?: string;
+    ziwei?: string;
+    zodiac?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavedConversation {
+  id: string;
+  type: "bazi" | "ziwei" | "zodiac";
+  userQuestion: string;
+  aiResponse: string;
+  aiReasoning?: string;
+  profileLabel?: string;
+  savedAt: string;
+}
+
 export interface UserData {
   name: string | null;
   image: string | null;
   status: UserStatus;
   createdAt: string;
   approvedAt: string | null;
-  profile?: UserProfile;
+  profile?: UserProfile;              // legacy, will be migrated
+  profiles?: SavedProfile[];
+  savedConversations?: SavedConversation[];
 }
 
 export type UsersStore = Record<string, UserData>;
@@ -82,9 +112,34 @@ export async function writeUsers(users: UsersStore): Promise<void> {
   await fs.writeFile(LOCAL_FILE, JSON.stringify(users, null, 2), "utf-8");
 }
 
+function migrateUserData(user: UserData): UserData {
+  // Migrate legacy single profile to profiles array
+  if (user.profile && !user.profiles) {
+    const legacy = user.profile;
+    user.profiles = [
+      {
+        id: crypto.randomUUID(),
+        label: "本人",
+        birthDate: legacy.birthDate || "",
+        birthTime: legacy.birthTime || "",
+        gender: legacy.gender || "",
+        birthPlace: legacy.birthPlace || "",
+        calendarType: "solar",
+        isLeapMonth: false,
+        createdAt: user.createdAt,
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+    delete user.profile;
+  }
+  return user;
+}
+
 export async function getUser(email: string): Promise<UserData | null> {
   const users = await readUsers();
-  return users[email] || null;
+  const user = users[email];
+  if (!user) return null;
+  return migrateUserData(user);
 }
 
 export async function registerUser(
@@ -139,18 +194,113 @@ export async function deleteUser(email: string): Promise<boolean> {
   return true;
 }
 
-export async function getProfile(email: string): Promise<UserProfile | null> {
+const MAX_PROFILES = 10;
+
+export async function getProfiles(email: string): Promise<SavedProfile[]> {
   const users = await readUsers();
-  return users[email]?.profile ?? null;
+  const user = users[email];
+  if (!user) return [];
+  migrateUserData(user);
+  return user.profiles || [];
 }
 
-export async function updateProfile(
+export async function createProfile(
   email: string,
-  profile: UserProfile
+  profile: Omit<SavedProfile, "id" | "createdAt" | "updatedAt">
+): Promise<SavedProfile | null> {
+  const users = await readUsers();
+  if (!users[email]) return null;
+  migrateUserData(users[email]);
+  const profiles = users[email].profiles || [];
+  if (profiles.length >= MAX_PROFILES) return null;
+
+  const now = new Date().toISOString();
+  const newProfile: SavedProfile = {
+    ...profile,
+    id: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+  };
+  profiles.push(newProfile);
+  users[email].profiles = profiles;
+  await writeUsers(users);
+  return newProfile;
+}
+
+export async function updateProfileById(
+  email: string,
+  id: string,
+  updates: Partial<Omit<SavedProfile, "id" | "createdAt">>
 ): Promise<boolean> {
   const users = await readUsers();
   if (!users[email]) return false;
-  users[email].profile = profile;
+  migrateUserData(users[email]);
+  const profiles = users[email].profiles || [];
+  const idx = profiles.findIndex((p) => p.id === id);
+  if (idx === -1) return false;
+  profiles[idx] = { ...profiles[idx], ...updates, updatedAt: new Date().toISOString() };
+  users[email].profiles = profiles;
+  await writeUsers(users);
+  return true;
+}
+
+export async function deleteProfileById(
+  email: string,
+  id: string
+): Promise<boolean> {
+  const users = await readUsers();
+  if (!users[email]) return false;
+  migrateUserData(users[email]);
+  const profiles = users[email].profiles || [];
+  const idx = profiles.findIndex((p) => p.id === id);
+  if (idx === -1) return false;
+  profiles.splice(idx, 1);
+  users[email].profiles = profiles;
+  await writeUsers(users);
+  return true;
+}
+
+export async function getSavedConversations(
+  email: string,
+  type?: string
+): Promise<SavedConversation[]> {
+  const users = await readUsers();
+  const user = users[email];
+  if (!user) return [];
+  const all = user.savedConversations || [];
+  if (type) return all.filter((c) => c.type === type);
+  return all;
+}
+
+export async function createSavedConversation(
+  email: string,
+  conv: Omit<SavedConversation, "id" | "savedAt">
+): Promise<SavedConversation | null> {
+  const users = await readUsers();
+  if (!users[email]) return null;
+  const conversations = users[email].savedConversations || [];
+  const newConv: SavedConversation = {
+    ...conv,
+    id: crypto.randomUUID(),
+    savedAt: new Date().toISOString(),
+  };
+  conversations.push(newConv);
+  users[email].savedConversations = conversations;
+  await writeUsers(users);
+  return newConv;
+}
+
+export async function deleteSavedConversation(
+  email: string,
+  id: string
+): Promise<boolean> {
+  const users = await readUsers();
+  if (!users[email]) return false;
+  const conversations = users[email].savedConversations || [];
+  const idx = conversations.findIndex((c) => c.id === id);
+  if (idx === -1) return false;
+  conversations.splice(idx, 1);
+  users[email].savedConversations = conversations;
   await writeUsers(users);
   return true;
 }
