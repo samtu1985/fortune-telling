@@ -139,7 +139,12 @@ export async function getUser(email: string): Promise<UserData | null> {
   const users = await readUsers();
   const user = users[email];
   if (!user) return null;
-  return migrateUserData(user);
+  const hadLegacyProfile = !!user.profile && !user.profiles;
+  migrateUserData(user);
+  if (hadLegacyProfile) {
+    await writeUsers(users);
+  }
+  return user;
 }
 
 export async function registerUser(
@@ -200,7 +205,11 @@ export async function getProfiles(email: string): Promise<SavedProfile[]> {
   const users = await readUsers();
   const user = users[email];
   if (!user) return [];
+  const hadLegacyProfile = !!user.profile && !user.profiles;
   migrateUserData(user);
+  if (hadLegacyProfile) {
+    await writeUsers(users);
+  }
   return user.profiles || [];
 }
 
@@ -262,7 +271,7 @@ export async function deleteProfileById(
 
 export async function getSavedConversations(
   email: string,
-  type?: string
+  type?: "bazi" | "ziwei" | "zodiac"
 ): Promise<SavedConversation[]> {
   const users = await readUsers();
   const user = users[email];
