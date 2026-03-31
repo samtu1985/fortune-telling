@@ -139,6 +139,7 @@ export default function Home() {
   const [savedMessageIds, setSavedMessageIds] = useState<Set<number>>(new Set());
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
+  const [chartSaved, setChartSaved] = useState(false);
 
   // Sync conversation state when switching types
   useEffect(() => {
@@ -147,6 +148,7 @@ export default function Home() {
       setFollowUp("");
       setFollowUpImages([]);
       setSavedMessageIds(new Set());
+      setChartSaved(false);
       setActiveTab("input");
     }
   }, [selectedType]);
@@ -287,6 +289,8 @@ export default function Home() {
                 ...prev,
                 streamingContent: fullContent,
                 streamingReasoning: fullReasoning,
+                // Sync chartData from ref (emitted before AI stream starts)
+                chartData: conversationsRef.current[type].chartData,
               };
             }
             return prev;
@@ -616,6 +620,7 @@ export default function Home() {
     conversationsRef.current[selectedType] = { ...emptyConversation };
     setConv({ ...emptyConversation });
     setSavedMessageIds(new Set());
+    setChartSaved(false);
     setNewDiscussionConfirm(false);
     setActiveTab("input");
   }, [selectedType]);
@@ -626,7 +631,7 @@ export default function Home() {
       const { chartData, profileId } = conversationsRef.current[selectedType];
       if (!chartData || !profileId) return;
 
-      await fetch(`/api/profiles/${profileId}`, {
+      const res = await fetch(`/api/profiles/${profileId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -636,7 +641,10 @@ export default function Home() {
           },
         }),
       });
-      loadProfiles();
+      if (res.ok) {
+        setChartSaved(true);
+        loadProfiles();
+      }
     },
     [selectedType, profiles, loadProfiles]
   );
@@ -793,15 +801,24 @@ export default function Home() {
             {/* Save chart button */}
             {!conv.streaming && conv.chartData && conv.profileId && (
               <div className="flex justify-center py-2">
-                <button
-                  onClick={handleSaveChart}
-                  className="text-xs text-gold-dim/60 hover:text-gold-dim transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-gold/10 rounded-full"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                  保存命盤至「{conv.profileLabel}」
-                </button>
+                {chartSaved ? (
+                  <span className="text-xs text-gold-dim/50 flex items-center gap-1.5 px-3 py-1.5">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    命盤已保存至「{conv.profileLabel}」
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleSaveChart}
+                    className="text-xs text-gold-dim/60 hover:text-gold-dim transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-gold/10 rounded-full"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    保存命盤至「{conv.profileLabel}」
+                  </button>
+                )}
               </div>
             )}
           </div>
