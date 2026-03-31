@@ -1,6 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ConfirmDialog from "./ConfirmDialog";
+
+interface Profile {
+  id: string;
+  label: string;
+  birthDate: string;
+  birthTime: string;
+  gender: string;
+  birthPlace: string;
+  calendarType: string;
+  isLeapMonth: boolean;
+}
 
 interface ProfileModalProps {
   open: boolean;
@@ -8,31 +20,50 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ open, onClose }: ProfileModalProps) {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Form state
+  const [label, setLabel] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [gender, setGender] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [calendarType, setCalendarType] = useState("solar");
+  const [isLeapMonth, setIsLeapMonth] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
+  const resetForm = () => {
+    setLabel("");
+    setBirthDate("");
+    setBirthTime("");
+    setGender("");
+    setBirthPlace("");
+    setCalendarType("solar");
+    setIsLeapMonth(false);
+    setEditingId(null);
+    setIsAdding(false);
+  };
+
+  const loadProfiles = () => {
     setLoading(true);
-    fetch("/api/profile")
+    fetch("/api/profiles")
       .then((res) => res.json())
-      .then((data) => {
-        if (data.profile) {
-          setBirthDate(data.profile.birthDate || "");
-          setBirthTime(data.profile.birthTime || "");
-          setGender(data.profile.gender || "");
-          setBirthPlace(data.profile.birthPlace || "");
-        }
-      })
+      .then((data) => setProfiles(data.profiles || []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (open) {
+      loadProfiles();
+      resetForm();
+    }
   }, [open]);
 
-  // Close on Escape key
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -42,105 +73,205 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
+  const startEdit = (p: Profile) => {
+    setEditingId(p.id);
+    setIsAdding(false);
+    setLabel(p.label);
+    setBirthDate(p.birthDate);
+    setBirthTime(p.birthTime);
+    setGender(p.gender);
+    setBirthPlace(p.birthPlace);
+    setCalendarType(p.calendarType || "solar");
+    setIsLeapMonth(p.isLeapMonth || false);
+  };
+
+  const startAdd = () => {
+    resetForm();
+    setIsAdding(true);
+  };
+
   const handleSave = async () => {
+    if (!label.trim()) return;
     setSaving(true);
     try {
-      const profile = { birthDate, birthTime, gender, birthPlace };
-      await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      window.dispatchEvent(new Event("profile-updated"));
-      onClose();
+      const body = { label: label.trim(), birthDate, birthTime, gender, birthPlace, calendarType, isLeapMonth };
+      if (editingId) {
+        await fetch(`/api/profiles/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } else {
+        await fetch("/api/profiles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+      window.dispatchEvent(new Event("profiles-updated"));
+      loadProfiles();
+      resetForm();
     } finally {
       setSaving(false);
     }
   };
 
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/profiles/${id}`, { method: "DELETE" });
+    window.dispatchEvent(new Event("profiles-updated"));
+    loadProfiles();
+    setDeleteConfirm(null);
+    if (editingId === id) resetForm();
+  };
+
   if (!open) return null;
+
+  const showForm = isAdding || editingId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-
-      {/* Modal */}
       <div
-        className="relative w-full max-w-md p-6 rounded-lg border border-gold/20 animate-fade-in-up"
+        className="relative w-full max-w-md max-h-[85dvh] flex flex-col rounded-lg border border-gold/20 animate-fade-in-up"
         style={{ background: "var(--parchment)", animationDuration: "0.3s" }}
       >
-        <h2 className="font-serif text-lg text-gold tracking-wide mb-1">
-          管理個人基本資訊
-        </h2>
-        <p className="text-xs text-stone/60 mb-6">
-          儲存後將自動帶入命理推算表單
-        </p>
+        <div className="p-6 pb-3 shrink-0">
+          <h2 className="font-serif text-lg text-gold tracking-wide mb-1">
+            管理出生資料檔案
+          </h2>
+          <p className="text-xs text-stone/60">
+            已保存 {profiles.length}/10 筆
+          </p>
+        </div>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label>出生日期</label>
-              <input
-                type="date"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-              />
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
             </div>
+          ) : showForm ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label>名稱 *</label>
+                <input
+                  type="text"
+                  placeholder="例：本人、母親、另一半"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label>出生日期</label>
+                <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label>出生時間</label>
+                <input type="time" value={birthTime} onChange={(e) => setBirthTime(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label>性別</label>
+                <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                  <option value="">不提供</option>
+                  <option value="男">男</option>
+                  <option value="女">女</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label>出生地點</label>
+                <input type="text" placeholder="例：台北" value={birthPlace} onChange={(e) => setBirthPlace(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label>曆法</label>
+                <select value={calendarType} onChange={(e) => { setCalendarType(e.target.value); setIsLeapMonth(false); }}>
+                  <option value="solar">國曆（陽曆）</option>
+                  <option value="lunar">農曆（陰曆）</option>
+                </select>
+                {calendarType === "lunar" && (
+                  <label className="flex items-center gap-2 mt-1.5 text-xs text-stone/70 cursor-pointer">
+                    <input type="checkbox" checked={isLeapMonth} onChange={(e) => setIsLeapMonth(e.target.checked)} className="accent-gold" />
+                    該月為閏月
+                  </label>
+                )}
+              </div>
 
-            <div className="space-y-1.5">
-              <label>出生時間（精確到分鐘）</label>
-              <input
-                type="time"
-                value={birthTime}
-                onChange={(e) => setBirthTime(e.target.value)}
-              />
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={resetForm}
+                  className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
+                >
+                  返回
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !label.trim()}
+                  className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest disabled:opacity-50"
+                >
+                  {saving ? "儲存中..." : "儲存"}
+                </button>
+              </div>
             </div>
+          ) : (
+            <div className="space-y-2">
+              {profiles.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between px-3 py-2.5 rounded border border-gold/10"
+                  style={{ background: "rgba(var(--glass-rgb), 0.02)" }}
+                >
+                  <div>
+                    <span className="text-sm text-cream font-serif">{p.label}</span>
+                    {p.birthDate && (
+                      <span className="text-xs text-stone/50 ml-2">{p.birthDate}</span>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => startEdit(p)}
+                      className="text-xs text-gold-dim hover:text-gold transition-colors px-2 py-1 min-h-[32px]"
+                    >
+                      編輯
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(p.id)}
+                      className="text-xs text-stone/40 hover:text-red-seal transition-colors px-2 py-1 min-h-[32px]"
+                    >
+                      刪除
+                    </button>
+                  </div>
+                </div>
+              ))}
 
-            <div className="space-y-1.5">
-              <label>性別</label>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-              >
-                <option value="">不提供</option>
-                <option value="男">男</option>
-                <option value="女">女</option>
-              </select>
+              {profiles.length < 10 && (
+                <button
+                  onClick={startAdd}
+                  className="w-full py-2.5 min-h-[44px] rounded-sm text-sm text-gold-dim border border-dashed border-gold/15 hover:border-gold/30 hover:text-gold transition-colors font-serif tracking-widest"
+                >
+                  + 新增檔案
+                </button>
+              )}
+
+              <div className="pt-3">
+                <button
+                  onClick={onClose}
+                  className="w-full py-2.5 min-h-[44px] rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
+                >
+                  關閉
+                </button>
+              </div>
             </div>
-
-            <div className="space-y-1.5">
-              <label>出生地點（城市）</label>
-              <input
-                type="text"
-                placeholder="例：台北、高雄、東京、紐約"
-                value={birthPlace}
-                onChange={(e) => setBirthPlace(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
-          >
-            取消
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest disabled:opacity-50"
-          >
-            {saving ? "儲存中..." : "儲存"}
-          </button>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="刪除檔案"
+        message="確定要刪除這筆資料嗎？已保存的命盤數據也會一併刪除。"
+        confirmLabel="刪除"
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }
