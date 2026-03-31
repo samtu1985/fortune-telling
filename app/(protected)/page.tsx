@@ -261,13 +261,25 @@ export default function Home() {
           return prev;
         });
       } catch (err) {
-        const errorMsg: Message = {
-          role: "assistant",
-          content: `連線錯誤：${err instanceof Error ? err.message : "未知錯誤"}`,
-        };
+        // If we already received partial content, preserve it instead of showing an error
+        // This handles mobile background tab suspension breaking the SSE connection
+        const partialContent = conversationsRef.current[type].streamingContent;
+        const partialReasoning = conversationsRef.current[type].streamingReasoning;
+
+        const assistantMsg: Message = partialContent
+          ? {
+              role: "assistant",
+              content: partialContent + "\n\n---\n*（連線中斷，以上為已接收的部分回應。可透過追問繼續。）*",
+              reasoning: partialReasoning,
+            }
+          : {
+              role: "assistant",
+              content: `連線錯誤：${err instanceof Error ? err.message : "未知錯誤"}`,
+            };
+
         conversationsRef.current[type] = {
           ...conversationsRef.current[type],
-          messages: [...conversationsRef.current[type].messages, errorMsg],
+          messages: [...conversationsRef.current[type].messages, assistantMsg],
           streamingContent: "",
           streamingReasoning: "",
           loading: false,
