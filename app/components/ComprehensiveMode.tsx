@@ -275,44 +275,19 @@ export default function ComprehensiveMode({
 
     // Auto-start follow-up discussion if no consensus yet
     if (!firstResult.consensus) {
-      setIsAutoDiscussing(true);
       autoDiscussRef.current = true;
-
-      let currentMsgs = firstResult.messages;
-
-      while (autoDiscussRef.current) {
-        const contextMsg: MasterMessage = {
-          role: "user",
-          content: "請針對前面其他老師已經提出的觀點進行回應，不要重複自己先前說過的分析。可以補充新的角度、引用不同的命盤依據來佐證或反駁。如果三位老師大致上已經達到一致意見，就由你進行總結。",
-        };
-        currentMsgs = [...currentMsgs, contextMsg];
-        setMessages(currentMsgs);
-
-        const result = await runRound(currentMsgs, true);
-        currentMsgs = result.messages;
-
-        if (result.consensus) break;
-
-        if (autoDiscussRef.current) {
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-      }
-
-      setIsAutoDiscussing(false);
+      setIsAutoDiscussing(true);
+      await runAutoLoop(firstResult.messages);
     }
 
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, [aiQuestion, chartRequest, runRound]);
+  }, [aiQuestion, chartRequest, runRound]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-discussion
-  const handleStartAutoDiscuss = useCallback(async () => {
-    setIsAutoDiscussing(true);
-    autoDiscussRef.current = true;
-
-    let currentMsgs = [...messages];
+  // Shared auto-discussion loop — called from multiple places
+  const runAutoLoop = useCallback(async (startMessages: MasterMessage[]) => {
+    let currentMsgs = startMessages;
 
     while (autoDiscussRef.current) {
-      // Add a meta prompt to continue discussion
       const contextMsg: MasterMessage = {
         role: "user",
         content: "請針對前面其他老師已經提出的觀點進行回應，不要重複自己先前說過的分析。可以補充新的角度、引用不同的命盤依據來佐證或反駁。如果三位老師大致上已經達到一致意見，就由你進行總結。",
@@ -323,23 +298,46 @@ export default function ComprehensiveMode({
       const result = await runRound(currentMsgs, true);
       currentMsgs = result.messages;
 
-      // Stop if consensus was reached
-      if (result.consensus) {
-        break;
-      }
+      if (result.consensus) break;
 
-      // Small delay between rounds
       if (autoDiscussRef.current) {
         await new Promise((r) => setTimeout(r, 1000));
       }
     }
 
     setIsAutoDiscussing(false);
-  }, [messages, runRound]);
+    autoDiscussRef.current = false;
+  }, [runRound]);
+
+  // Start auto-discussion (can be called while a round is in progress)
+  const handleStartAutoDiscuss = useCallback(async () => {
+    if (isAutoDiscussing) return; // already running
+    autoDiscussRef.current = true;
+    setIsAutoDiscussing(true);
+
+    // If currently loading (a round is in progress), don't start a new loop.
+    // The flag is set — when the current operation finishes, it will check
+    // and continue automatically via the effect below.
+    if (!loading) {
+      await runAutoLoop([...messages]);
+    }
+  }, [isAutoDiscussing, loading, messages, runAutoLoop]);
 
   const handleStopAutoDiscuss = useCallback(() => {
     autoDiscussRef.current = false;
+    // isAutoDiscussing will be set to false when the current round finishes
   }, []);
+
+  // When loading finishes and auto-discuss flag is on, continue the loop
+  const prevLoadingRef = useRef(false);
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading && autoDiscussRef.current && !isAutoDiscussing) {
+      // A round just finished and user toggled auto on during it
+      setIsAutoDiscussing(true);
+      runAutoLoop([...messages]);
+    }
+    prevLoadingRef.current = loading;
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Follow-up question
   const handleFollowUp = useCallback(
@@ -779,10 +777,10 @@ export default function ComprehensiveMode({
             {!isAutoDiscussing ? (
               <button
                 onClick={handleStartAutoDiscuss}
-                disabled={loading || messages.length === 0}
+                disabled={messages.length === 0}
                 className="px-4 py-2 text-xs text-gold-dim border border-gold/15 rounded-full hover:bg-gold/10 transition-colors disabled:opacity-40"
               >
-                開始 AI 自動對話
+                {loading ? "等待發言完成後開始..." : "開始 AI 自動對話"}
               </button>
             ) : (
               <button
