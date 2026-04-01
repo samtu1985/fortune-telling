@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "react";
 import DivinationCard from "@/app/components/DivinationCard";
-import InputForm from "@/app/components/InputForm";
+import InputForm, { type ChartRequest, timeToShichen } from "@/app/components/InputForm";
 import ResultDisplay from "@/app/components/ResultDisplay";
 import SavedConversations from "@/app/components/SavedConversations";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
@@ -55,6 +55,12 @@ type ConversationState = {
   chartData?: string;
   profileId?: string;
   profileLabel?: string;
+};
+
+type ChartPreview = {
+  chart: string;
+  request: ChartRequest;
+  ziweiBirthInfo?: ZiweiBirthInfo;
 };
 
 const emptyConversation: ConversationState = {
@@ -141,6 +147,9 @@ export default function Home() {
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [chartSaved, setChartSaved] = useState(false);
+  const [chartPreview, setChartPreview] = useState<ChartPreview | null>(null);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("我的命運");
 
   // Sync conversation state when switching types
   useEffect(() => {
@@ -150,6 +159,8 @@ export default function Home() {
       setFollowUpImages([]);
       setSavedMessageIds(new Set());
       setChartSaved(false);
+      setChartPreview(null);
+      setAiQuestion("我的命運");
       setActiveTab("input");
     }
   }, [selectedType]);
@@ -362,25 +373,36 @@ export default function Home() {
     []
   );
 
-  const handleInitialSubmit = useCallback(
-    async (userMessage: string, images?: string[], profileId?: string, profileLabel?: string) => {
+  // Step 1: Generate chart only (no AI yet)
+  const handleGenerateChart = useCallback(
+    async (request: ChartRequest) => {
       if (!selectedType) return;
-      isNearBottomRef.current = true;
-      const type = selectedType;
-      const userMsg: Message = { role: "user", content: userMessage, images };
+      setChartLoading(true);
+      try {
+        const res = await fetch("/api/chart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: request.type,
+            birthDate: request.birthDate,
+            birthTime: request.birthTime,
+            gender: request.gender,
+            birthPlace: request.birthPlace,
+            isLunar: request.calendarType === "lunar",
+            isLeapMonth: request.isLeapMonth,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || "命盤生成失敗");
+          return;
+        }
+        const { chart } = await res.json();
 
-      // Parse ziwei birth info for visual chart
-      let ziweiBirthInfo: ZiweiBirthInfo | undefined;
-      if (type === "ziwei") {
-        const dateMatch = userMessage.match(/出生日期：(\S+)/);
-        const timeMatch = userMessage.match(/出生時間：(\S+)/);
-        const genderMatch = userMessage.match(/性別：(\S+)/);
-        const calendarMatch = userMessage.match(/（(農曆|國曆)）/);
-        if (dateMatch && timeMatch) {
-          const birthDate = dateMatch[1].replace(/（.*）/, "");
-          const birthTime = timeMatch[1].replace(/（.*）/, "");
-          const [h] = birthTime.split(":").map(Number);
-          // Convert hour to iztro time index
+        // Parse ziwei birth info for visual chart
+        let ziweiBirthInfo: ZiweiBirthInfo | undefined;
+        if (request.type === "ziwei") {
+          const [h] = request.birthTime.split(":").map(Number);
           let timeIdx = 0;
           if (h >= 23 || h < 1) timeIdx = 0;
           else if (h < 3) timeIdx = 1;
@@ -394,40 +416,77 @@ export default function Home() {
           else if (h < 19) timeIdx = 9;
           else if (h < 21) timeIdx = 10;
           else timeIdx = 11;
-
           ziweiBirthInfo = {
-            birthday: birthDate,
+            birthday: request.birthDate,
             birthTime: timeIdx,
-            gender: genderMatch?.[1] === "女" ? "女" : "男",
-            birthdayType: calendarMatch?.[1] === "農曆" ? "lunar" : "solar",
+            gender: request.gender === "女" ? "女" : "男",
+            birthdayType: request.calendarType === "lunar" ? "lunar" : "solar",
           };
         }
+
+        setChartPreview({ chart, request, ziweiBirthInfo });
+        setAiQuestion("我的命運");
+      } finally {
+        setChartLoading(false);
+      }
+    },
+    [selectedType]
+  );
+
+  // Step 2: Start AI conversation with the previewed chart
+  const handleStartAiConversation = useCallback(
+    async () => {
+      if (!selectedType || !chartPreview) return;
+      isNearBottomRef.current = true;
+      const type = selectedType;
+      const { chart, request, ziweiBirthInfo } = chartPreview;
+
+      const isChineseType = type === "bazi" || type === "ziwei";
+      const shichen = isChineseType ? timeToShichen(request.birthTime) : "";
+      const calendarLabel = request.calendarType === "lunar"
+        ? `農曆${request.isLeapMonth ? "（閏月）" : ""}`
+        : "國曆";
+
+      let userMessage: string;
+      if (type === "bazi" || type === "ziwei") {
+        userMessage = `出生日期：${request.birthDate}（${calendarLabel}）
+出生時間：${request.birthTime}${shichen ? `（${shichen}）` : ""}
+出生地點：${request.birthPlace}
+性別：${request.gender || "未提供"}
+特別想了解的方向：${aiQuestion}`;
+      } else {
+        userMessage = `出生日期：${request.birthDate}
+出生時間：${request.birthTime}
+出生地點：${request.birthPlace}
+特別想了解的方向：${aiQuestion}`;
       }
 
-      // Set messages for this type
+      const userMsg: Message = { role: "user", content: userMessage };
+
       conversationsRef.current[type] = {
         ...conversationsRef.current[type],
         messages: [userMsg],
         ziweiBirthInfo,
-        chartData: undefined,
-        profileId,
-        profileLabel,
+        chartData: chart,
+        profileId: request.profileId,
+        profileLabel: request.profileLabel,
       };
       setConv((prev) => ({
         ...prev,
         messages: [userMsg],
         ziweiBirthInfo,
-        chartData: undefined,
-        profileId,
-        profileLabel,
+        chartData: chart,
+        profileId: request.profileId,
+        profileLabel: request.profileLabel,
       }));
+      setChartPreview(null);
 
       await streamResponse(type, [
-        { role: "user", content: userMessage, images },
+        { role: "user", content: userMessage },
       ]);
       setTimeout(() => inputRef.current?.focus(), 100);
     },
-    [selectedType, streamResponse]
+    [selectedType, chartPreview, aiQuestion, streamResponse]
   );
 
   const handleFollowUpImageUpload = useCallback(
@@ -634,6 +693,8 @@ export default function Home() {
     setConv({ ...emptyConversation });
     setSavedMessageIds(new Set());
     setChartSaved(false);
+    setChartPreview(null);
+    setAiQuestion("我的命運");
     setNewDiscussionConfirm(false);
     setActiveTab("input");
   }, [selectedType]);
@@ -1157,13 +1218,108 @@ export default function Home() {
           </div>
 
           {activeTab === "input" ? (
-            <InputForm
-              type={selectedType}
-              onSubmit={handleInitialSubmit}
-              loading={conv.loading}
-              profiles={profiles}
-              onProfilesChange={loadProfiles}
-            />
+            chartPreview ? (
+              /* Chart Preview Stage */
+              <div className="space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
+                <div className="gold-line mb-4" />
+
+                {/* Ziwei visual chart */}
+                {selectedType === "ziwei" && chartPreview.ziweiBirthInfo && (
+                  <ZiweiChart
+                    birthday={chartPreview.ziweiBirthInfo.birthday}
+                    birthTime={chartPreview.ziweiBirthInfo.birthTime}
+                    gender={chartPreview.ziweiBirthInfo.gender}
+                    birthdayType={chartPreview.ziweiBirthInfo.birthdayType}
+                  />
+                )}
+
+                {/* Chart data display */}
+                <div className="border border-gold/10 rounded-lg p-4" style={{ background: "rgba(var(--glass-rgb), 0.02)" }}>
+                  <h3 className="text-sm font-serif text-gold mb-3">命盤數據</h3>
+                  <pre className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
+                    {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
+                  </pre>
+                </div>
+
+                {/* Save chart to profile */}
+                {chartPreview.request.profileId && (
+                  <div className="flex justify-center">
+                    {chartSaved ? (
+                      <span className="text-xs text-gold-dim/50 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        命盤已保存至「{chartPreview.request.profileLabel}」
+                      </span>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          const req = chartPreview.request;
+                          if (!req.profileId) return;
+                          const newSavedCharts = {
+                            ...profiles.find((p) => p.id === req.profileId)?.savedCharts,
+                            [selectedType]: chartPreview.chart,
+                          };
+                          const res = await fetch(`/api/profiles/${req.profileId}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ savedCharts: newSavedCharts }),
+                          });
+                          if (res.ok) {
+                            setChartSaved(true);
+                            setProfiles((prev) =>
+                              prev.map((p) =>
+                                p.id === req.profileId ? { ...p, savedCharts: newSavedCharts } : p
+                              )
+                            );
+                          }
+                        }}
+                        className="text-xs text-gold-dim/60 hover:text-gold-dim transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-gold/10 rounded-full"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        保存命盤至「{chartPreview.request.profileLabel}」
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* AI question input */}
+                <div className="border-t border-gold/10 pt-5 space-y-3">
+                  <label className="text-sm font-serif text-gold">想了解的方向</label>
+                  <input
+                    type="text"
+                    value={aiQuestion}
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    placeholder="例：近期事業運、感情發展、健康狀況..."
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setChartPreview(null); setChartSaved(false); }}
+                      className="flex-1 py-3 rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
+                    >
+                      返回修改
+                    </button>
+                    <button
+                      onClick={handleStartAiConversation}
+                      disabled={!aiQuestion.trim()}
+                      className="flex-1 py-3 rounded-sm text-sm text-gold border border-gold/20 bg-gold/15 hover:bg-gold/25 transition-colors font-serif tracking-widest disabled:opacity-40"
+                    >
+                      開始 AI 分析
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <InputForm
+                type={selectedType}
+                onSubmit={handleGenerateChart}
+                loading={chartLoading}
+                profiles={profiles}
+                onProfilesChange={loadProfiles}
+              />
+            )
           ) : activeTab === "saved" ? (
             <SavedConversations type={selectedType} />
           ) : (
