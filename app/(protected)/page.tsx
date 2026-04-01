@@ -150,6 +150,19 @@ export default function Home() {
   const [chartPreview, setChartPreview] = useState<ChartPreview | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [aiQuestion, setAiQuestion] = useState("我的命運");
+  const [reasoningDepth, setReasoningDepth] = useState("high");
+  const reasoningDepthRef = useRef(reasoningDepth);
+  reasoningDepthRef.current = reasoningDepth;
+
+  // Listen for reasoning depth changes from UserMenu
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const depth = (e as CustomEvent).detail;
+      if (depth) setReasoningDepth(depth);
+    };
+    window.addEventListener("reasoning-depth-changed", handler);
+    return () => window.removeEventListener("reasoning-depth-changed", handler);
+  }, []);
 
   // Sync conversation state when switching types
   useEffect(() => {
@@ -237,7 +250,7 @@ export default function Home() {
         const response = await fetch("/api/divine", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, messages: chatMessages }),
+          body: JSON.stringify({ type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current }),
         });
 
         if (!response.ok) {

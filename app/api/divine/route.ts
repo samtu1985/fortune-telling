@@ -239,9 +239,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { type, messages: chatMessages } = body as {
+  const { type, messages: chatMessages, reasoningDepth } = body as {
     type: string;
     messages: { role: string; content: string; images?: string[] }[];
+    reasoningDepth?: string;
   };
 
   let systemPrompt = SYSTEM_PROMPTS[type];
@@ -328,8 +329,8 @@ export async function POST(request: NextRequest) {
         { role: "system", content: systemPrompt },
         ...apiMessages,
       ],
-      thinking: { type: "enabled" },
-      reasoning_effort: "high",
+      thinking: { type: reasoningDepth === "off" ? "disabled" : "enabled" },
+      ...(reasoningDepth && reasoningDepth !== "off" && { reasoning_effort: reasoningDepth }),
       max_completion_tokens: 16384,
       stream: true,
       stream_options: { include_usage: true },

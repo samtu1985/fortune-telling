@@ -38,6 +38,8 @@ export interface SavedConversation {
   savedAt: string;
 }
 
+export type ReasoningDepth = "high" | "medium" | "low" | "off";
+
 export interface UserData {
   name: string | null;
   image: string | null;
@@ -47,6 +49,7 @@ export interface UserData {
   profile?: UserProfile;              // legacy, will be migrated
   profiles?: SavedProfile[];
   savedConversations?: SavedConversation[];
+  reasoningDepth?: ReasoningDepth;
 }
 
 export type UsersStore = Record<string, UserData>;
@@ -229,6 +232,26 @@ export async function deleteUser(email: string): Promise<boolean> {
   const users = await readUsers();
   if (!users[email]) return false;
   delete users[email];
+  await writeUsers(users);
+  return true;
+}
+
+export async function getReasoningDepth(email: string): Promise<ReasoningDepth> {
+  try {
+    const users = await readUsers();
+    return users[email]?.reasoningDepth || "high";
+  } catch {
+    return "high";
+  }
+}
+
+export async function setReasoningDepth(
+  email: string,
+  depth: ReasoningDepth
+): Promise<boolean> {
+  const users = await readUsers();
+  if (!users[email]) return false;
+  users[email].reasoningDepth = depth;
   await writeUsers(users);
   return true;
 }
