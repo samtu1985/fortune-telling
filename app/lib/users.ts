@@ -66,7 +66,10 @@ export async function readUsers(): Promise<UsersStore> {
       const { head } = await import("@vercel/blob");
       const meta = await head(BLOB_PATH);
       const token = process.env.BLOB_READ_WRITE_TOKEN!;
-      const res = await fetch(meta.url, {
+      // Add cache-busting param to bypass CDN cache after writes
+      const url = new URL(meta.url);
+      url.searchParams.set("t", Date.now().toString());
+      const res = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
