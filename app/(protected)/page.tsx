@@ -12,8 +12,9 @@ import UserMenu from "@/app/components/UserMenu";
 import ZiweiChart from "@/app/components/ZiweiChart";
 import MentionDropdown from "@/app/components/MentionDropdown";
 import SavedCharts from "@/app/components/SavedCharts";
+import ComprehensiveMode from "@/app/components/ComprehensiveMode";
 
-type DivinationType = "bazi" | "ziwei" | "zodiac";
+type DivinationType = "bazi" | "ziwei" | "zodiac" | "comprehensive";
 
 type ZiweiBirthInfo = {
   birthday: string;
@@ -116,6 +117,14 @@ const DIVINATION_TYPES = [
     description:
       "透過太陽、月亮、上升星座與行星相位，解讀性格本質、情感模式與生命課題。",
   },
+  {
+    id: "comprehensive" as DivinationType,
+    title: "三師論道",
+    subtitle: "Comprehensive Analysis",
+    symbol: "道",
+    description:
+      "八字、紫微、星座三位大師同場論道，從不同命理觀點交叉分析，激盪出更全面的洞察。",
+  },
 ];
 
 export default function Home() {
@@ -131,10 +140,11 @@ export default function Home() {
   selectedTypeRef.current = selectedType;
 
   // Per-scene conversation state persisted across tab switches
-  const conversationsRef = useRef<Record<DivinationType, ConversationState>>({
+  const conversationsRef = useRef<Record<string, ConversationState>>({
     bazi: { ...emptyConversation },
     ziwei: { ...emptyConversation },
     zodiac: { ...emptyConversation },
+    comprehensive: { ...emptyConversation },
   });
 
   // Current conversation derived from selected type
@@ -505,7 +515,7 @@ export default function Home() {
   // Start AI conversation directly from a saved chart
   const handleStartFromSavedChart = useCallback(
     (profile: Profile, chart: string) => {
-      if (!selectedType) return;
+      if (!selectedType || selectedType === "comprehensive") return;
       // Set up chart preview with the saved chart data, then let user enter question
       const request: ChartRequest = {
         type: selectedType,
@@ -804,6 +814,18 @@ export default function Home() {
       conversationsRef.current[dt.id].messages.length > 0 ||
       conversationsRef.current[dt.id].streaming
   );
+
+  // ── Comprehensive mode (separate component) ──
+  if (selectedType === "comprehensive") {
+    return (
+      <ComprehensiveMode
+        profiles={profiles}
+        onProfilesChange={loadProfiles}
+        onBack={() => setSelectedType(null)}
+        reasoningDepth={reasoningDepth}
+      />
+    );
+  }
 
   // ── Conversation mode ──
   if (selectedType && conversationStarted) {
@@ -1224,7 +1246,7 @@ export default function Home() {
         )}
 
         {/* Desktop: Full cards */}
-        <div className="hidden sm:grid sm:grid-cols-3 gap-5">
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {DIVINATION_TYPES.map((dt, i) => (
             <DivinationCard
               key={dt.id}
@@ -1383,9 +1405,9 @@ export default function Home() {
               />
             )
           ) : activeTab === "saved" ? (
-            <SavedConversations type={selectedType} />
+            <SavedConversations type={selectedType as "bazi" | "ziwei" | "zodiac"} />
           ) : (
-            <SavedCharts type={selectedType} profiles={profiles} onStartChat={handleStartFromSavedChart} />
+            <SavedCharts type={selectedType as "bazi" | "ziwei" | "zodiac"} profiles={profiles} onStartChat={handleStartFromSavedChart} />
           )}
         </section>
       )}
