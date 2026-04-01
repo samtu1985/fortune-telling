@@ -220,7 +220,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             </button>
             {showSavedChart && (
               <div className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap pl-4 border-l-2 border-gold/15 max-h-48 overflow-y-auto">
-                {savedChart}
+                {savedChart.replace(/<[^>]+>/g, "").trim()}
               </div>
             )}
           </div>
