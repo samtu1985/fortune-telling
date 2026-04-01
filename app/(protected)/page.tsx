@@ -489,6 +489,55 @@ export default function Home() {
     [selectedType, chartPreview, aiQuestion, streamResponse]
   );
 
+  // Start AI conversation directly from a saved chart
+  const handleStartFromSavedChart = useCallback(
+    (profile: Profile, chart: string) => {
+      if (!selectedType) return;
+      // Set up chart preview with the saved chart data, then let user enter question
+      const request: ChartRequest = {
+        type: selectedType,
+        birthDate: profile.birthDate,
+        birthTime: profile.birthTime,
+        gender: profile.gender,
+        birthPlace: profile.birthPlace,
+        calendarType: profile.calendarType || "solar",
+        isLeapMonth: profile.isLeapMonth || false,
+        profileId: profile.id,
+        profileLabel: profile.label,
+      };
+
+      let ziweiBirthInfo: ZiweiBirthInfo | undefined;
+      if (selectedType === "ziwei") {
+        const [h] = profile.birthTime.split(":").map(Number);
+        let timeIdx = 0;
+        if (h >= 23 || h < 1) timeIdx = 0;
+        else if (h < 3) timeIdx = 1;
+        else if (h < 5) timeIdx = 2;
+        else if (h < 7) timeIdx = 3;
+        else if (h < 9) timeIdx = 4;
+        else if (h < 11) timeIdx = 5;
+        else if (h < 13) timeIdx = 6;
+        else if (h < 15) timeIdx = 7;
+        else if (h < 17) timeIdx = 8;
+        else if (h < 19) timeIdx = 9;
+        else if (h < 21) timeIdx = 10;
+        else timeIdx = 11;
+        ziweiBirthInfo = {
+          birthday: profile.birthDate,
+          birthTime: timeIdx,
+          gender: profile.gender === "女" ? "女" : "男",
+          birthdayType: (profile.calendarType || "solar") === "lunar" ? "lunar" : "solar",
+        };
+      }
+
+      setChartPreview({ chart, request, ziweiBirthInfo });
+      setChartSaved(true); // Already saved
+      setAiQuestion("我的命運");
+      setActiveTab("input");
+    },
+    [selectedType]
+  );
+
   const handleFollowUpImageUpload = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
@@ -1323,7 +1372,7 @@ export default function Home() {
           ) : activeTab === "saved" ? (
             <SavedConversations type={selectedType} />
           ) : (
-            <SavedCharts type={selectedType} profiles={profiles} />
+            <SavedCharts type={selectedType} profiles={profiles} onStartChat={handleStartFromSavedChart} />
           )}
         </section>
       )}

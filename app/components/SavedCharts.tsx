@@ -7,6 +7,8 @@ interface Profile {
   birthTime: string;
   gender: string;
   birthPlace: string;
+  calendarType?: string;
+  isLeapMonth?: boolean;
   savedCharts?: {
     bazi?: string;
     ziwei?: string;
@@ -17,6 +19,7 @@ interface Profile {
 interface SavedChartsProps {
   type: "bazi" | "ziwei" | "zodiac";
   profiles: Profile[];
+  onStartChat?: (profile: Profile, chart: string) => void;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -25,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
   zodiac: "星盤",
 };
 
-export default function SavedCharts({ type, profiles }: SavedChartsProps) {
+export default function SavedCharts({ type, profiles, onStartChat }: SavedChartsProps) {
   const chartKey = type as keyof NonNullable<Profile["savedCharts"]>;
   const withCharts = profiles.filter((p) => p.savedCharts?.[chartKey]);
   const label = TYPE_LABELS[type] || "命盤";
@@ -71,6 +74,17 @@ export default function SavedCharts({ type, profiles }: SavedChartsProps) {
                 .replace(/<[^>]+>/g, "")
                 .trim()}
             </pre>
+            {onStartChat && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onStartChat(p, p.savedCharts![chartKey]!);
+                }}
+                className="mt-3 w-full py-2.5 rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest"
+              >
+                以此命盤開始 AI 分析
+              </button>
+            )}
           </div>
         </details>
       ))}
