@@ -7,8 +7,8 @@ interface Profile {
   birthTime: string;
   gender: string;
   birthPlace: string;
-  calendarType?: string;
-  isLeapMonth?: boolean;
+  calendarType: string;
+  isLeapMonth: boolean;
   savedCharts?: {
     bazi?: string;
     ziwei?: string;

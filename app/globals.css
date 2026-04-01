@@ -3,44 +3,44 @@
 
 :root {
   --ink: #1a1714;
-  --parchment: #0f0e0c;
-  --parchment-light: #1c1a17;
-  --gold: #c4a35a;
-  --gold-dim: #8b7640;
-  --gold-bright: #e8c97a;
-  --stone: #6b6560;
-  --mist: #a39e96;
-  --cream: #d4cfc7;
-  --red-seal: #8b2020;
+  --parchment: #100e0b;
+  --parchment-light: #1e1b17;
+  --gold: #d4ad4a;
+  --gold-dim: #9e8345;
+  --gold-bright: #f0d078;
+  --stone: #847b72;
+  --mist: #b5ada4;
+  --cream: #ece6db;
+  --red-seal: #9b2525;
   --glass-rgb: 255, 255, 255;
-  --card-shadow: rgba(196, 163, 90, 0.08);
-  --input-bg: rgba(255, 255, 255, 0.03);
-  --input-border: rgba(196, 163, 90, 0.2);
-  --input-focus-shadow: rgba(196, 163, 90, 0.15);
-  --overlay-gold: rgba(196, 163, 90, 0.03);
-  --overlay-red: rgba(139, 32, 32, 0.02);
-  --overlay-gold-2: rgba(196, 163, 90, 0.02);
+  --card-shadow: rgba(212, 173, 74, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(212, 173, 74, 0.22);
+  --input-focus-shadow: rgba(212, 173, 74, 0.18);
+  --overlay-gold: rgba(212, 173, 74, 0.03);
+  --overlay-red: rgba(155, 37, 37, 0.02);
+  --overlay-gold-2: rgba(212, 173, 74, 0.02);
 }
 
 [data-theme="light"] {
-  --ink: #f5f0e8;
-  --parchment: #f8f4ec;
-  --parchment-light: #ece7dc;
-  --gold: #8b7028;
-  --gold-dim: #a68d3e;
-  --gold-bright: #6b5518;
-  --stone: #8a8480;
-  --mist: #6b6560;
-  --cream: #2a2520;
-  --red-seal: #a02828;
+  --ink: #f6f1e7;
+  --parchment: #f5efe4;
+  --parchment-light: #e8e0d2;
+  --gold: #8a6d1e;
+  --gold-dim: #a58530;
+  --gold-bright: #6b5010;
+  --stone: #7a716a;
+  --mist: #5e5650;
+  --cream: #1e1a14;
+  --red-seal: #a82c2c;
   --glass-rgb: 0, 0, 0;
-  --card-shadow: rgba(139, 112, 40, 0.12);
-  --input-bg: rgba(0, 0, 0, 0.03);
-  --input-border: rgba(139, 112, 40, 0.25);
-  --input-focus-shadow: rgba(139, 112, 40, 0.15);
-  --overlay-gold: rgba(139, 112, 40, 0.04);
-  --overlay-red: rgba(160, 40, 40, 0.03);
-  --overlay-gold-2: rgba(139, 112, 40, 0.03);
+  --card-shadow: rgba(138, 109, 30, 0.14);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --input-border: rgba(138, 109, 30, 0.28);
+  --input-focus-shadow: rgba(138, 109, 30, 0.18);
+  --overlay-gold: rgba(138, 109, 30, 0.04);
+  --overlay-red: rgba(168, 44, 44, 0.03);
+  --overlay-gold-2: rgba(138, 109, 30, 0.03);
 }
 
 @theme inline {
