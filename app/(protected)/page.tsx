@@ -635,22 +635,28 @@ export default function Home() {
       const { chartData, profileId } = conversationsRef.current[selectedType];
       if (!chartData || !profileId) return;
 
+      const newSavedCharts = {
+        ...profiles.find((p) => p.id === profileId)?.savedCharts,
+        [selectedType]: chartData,
+      };
+
       const res = await fetch(`/api/profiles/${profileId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          savedCharts: {
-            ...profiles.find((p) => p.id === profileId)?.savedCharts,
-            [selectedType]: chartData,
-          },
-        }),
+        body: JSON.stringify({ savedCharts: newSavedCharts }),
       });
       if (res.ok) {
         setChartSaved(true);
-        await loadProfiles();
+        // Update profiles state directly instead of re-fetching from Blob
+        // (avoids CDN cache returning stale data)
+        setProfiles((prev) =>
+          prev.map((p) =>
+            p.id === profileId ? { ...p, savedCharts: newSavedCharts } : p
+          )
+        );
       }
     },
-    [selectedType, profiles, loadProfiles]
+    [selectedType, profiles]
   );
 
   // Switch to a type (from conversation mode back button → go to selection)
