@@ -269,7 +269,37 @@ export default function ComprehensiveMode({
 
     const initialMessages = [userMsg];
     setMessages(initialMessages);
-    await runRound(initialMessages);
+
+    // First round: each master gives their initial analysis
+    const firstResult = await runRound(initialMessages);
+
+    // Auto-start discussion if no consensus yet
+    if (!firstResult.consensus) {
+      setIsAutoDiscussing(true);
+      autoDiscussRef.current = true;
+
+      let currentMsgs = firstResult.messages;
+
+      while (autoDiscussRef.current) {
+        const contextMsg: MasterMessage = {
+          role: "user",
+          content: "請繼續討論，回應其他老師的觀點，可以補充、附和或提出不同看法。如果三位老師大致上已經達到一致意見，就由你進行總結。",
+        };
+        currentMsgs = [...currentMsgs, contextMsg];
+        setMessages(currentMsgs);
+
+        const result = await runRound(currentMsgs);
+        currentMsgs = result.messages;
+
+        if (result.consensus) break;
+
+        if (autoDiscussRef.current) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+
+      setIsAutoDiscussing(false);
+    }
 
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [aiQuestion, chartRequest, runRound]);
@@ -619,6 +649,42 @@ export default function ComprehensiveMode({
 
       {/* Messages */}
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+        <div className="max-w-5xl mx-auto">
+          {/* Charts reference at top of discussion */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            {MASTERS.map((m) => {
+              const chart = charts[m.id];
+              if (!chart) return null;
+              return (
+                <details
+                  key={m.id}
+                  className={`rounded-lg border overflow-hidden ${m.bgClass}`}
+                >
+                  <summary className="px-3 py-2 cursor-pointer hover:bg-gold/5 transition-colors flex items-center gap-1.5 text-xs">
+                    <span className={m.color}>{m.symbol}</span>
+                    <span className={`font-serif ${m.color}`}>{m.label}命盤</span>
+                    <svg className="w-3 h-3 text-stone/30 ml-auto transition-transform details-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </summary>
+                  <div className="px-3 pb-3 border-t border-gold/5">
+                    <pre className="text-[10px] text-stone/70 leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
+                      {chart.replace(/<[^>]+>/g, "").trim()}
+                    </pre>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+
+          {/* Ziwei visual chart */}
+          {ziweiBirthInfo && charts.ziwei && (
+            <div className="mb-6">
+              <ZiweiChart {...ziweiBirthInfo} />
+            </div>
+          )}
+        </div>
+
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.map((msg, i) => {
             if (msg.role === "user") {
