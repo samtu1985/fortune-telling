@@ -155,10 +155,12 @@ export default function ComprehensiveMode({
   );
 
   // Run one full round: all three masters respond in order
+  // Returns { messages, consensus } — consensus is true if [CONSENSUS] was detected
   const runRound = useCallback(
-    async (currentMessages: MasterMessage[]) => {
+    async (currentMessages: MasterMessage[]): Promise<{ messages: MasterMessage[]; consensus: boolean }> => {
       setLoading(true);
       let msgs = [...currentMessages];
+      let consensusReached = false;
 
       for (const master of MASTER_ORDER) {
         // Check if auto-discuss was stopped
@@ -168,9 +170,21 @@ export default function ComprehensiveMode({
 
         try {
           const content = await streamMaster(master, msgs);
-          const newMsg: MasterMessage = { role: "assistant", content, master };
+
+          // Check for consensus marker
+          const hasConsensus = content.includes("[CONSENSUS]");
+          const cleanContent = content.replace(/\s*\[CONSENSUS\]\s*/g, "").trim();
+
+          const newMsg: MasterMessage = { role: "assistant", content: cleanContent, master };
           msgs = [...msgs, newMsg];
           setMessages(msgs);
+
+          if (hasConsensus) {
+            consensusReached = true;
+            // Stop auto-discussion
+            autoDiscussRef.current = false;
+            break;
+          }
         } catch (err) {
           const errorMsg: MasterMessage = {
             role: "assistant",
@@ -184,7 +198,7 @@ export default function ComprehensiveMode({
       }
 
       setLoading(false);
-      return msgs;
+      return { messages: msgs, consensus: consensusReached };
     },
     [streamMaster]
   );
@@ -271,12 +285,18 @@ export default function ComprehensiveMode({
       // Add a meta prompt to continue discussion
       const contextMsg: MasterMessage = {
         role: "user",
-        content: "請繼續討論，回應其他老師的觀點，可以補充、附和或提出不同看法。",
+        content: "請繼續討論，回應其他老師的觀點，可以補充、附和或提出不同看法。如果三位老師大致上已經達到一致意見，就由你進行總結。",
       };
       currentMsgs = [...currentMsgs, contextMsg];
       setMessages(currentMsgs);
 
-      currentMsgs = await runRound(currentMsgs);
+      const result = await runRound(currentMsgs);
+      currentMsgs = result.messages;
+
+      // Stop if consensus was reached
+      if (result.consensus) {
+        break;
+      }
 
       // Small delay between rounds
       if (autoDiscussRef.current) {
