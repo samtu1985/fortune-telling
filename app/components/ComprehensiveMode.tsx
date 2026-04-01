@@ -157,14 +157,14 @@ export default function ComprehensiveMode({
   // Run one full round: all three masters respond in order
   // Returns { messages, consensus } — consensus is true if [CONSENSUS] was detected
   const runRound = useCallback(
-    async (currentMessages: MasterMessage[]): Promise<{ messages: MasterMessage[]; consensus: boolean }> => {
+    async (currentMessages: MasterMessage[], isAutoRound = false): Promise<{ messages: MasterMessage[]; consensus: boolean }> => {
       setLoading(true);
       let msgs = [...currentMessages];
       let consensusReached = false;
 
       for (const master of MASTER_ORDER) {
-        // Check if auto-discuss was stopped
-        if (autoDiscussRef.current === false && msgs.length > currentMessages.length) {
+        // Only check stop signal during auto-discussion rounds (not the first round)
+        if (isAutoRound && !autoDiscussRef.current) {
           break;
         }
 
@@ -288,7 +288,7 @@ export default function ComprehensiveMode({
         currentMsgs = [...currentMsgs, contextMsg];
         setMessages(currentMsgs);
 
-        const result = await runRound(currentMsgs);
+        const result = await runRound(currentMsgs, true);
         currentMsgs = result.messages;
 
         if (result.consensus) break;
@@ -320,7 +320,7 @@ export default function ComprehensiveMode({
       currentMsgs = [...currentMsgs, contextMsg];
       setMessages(currentMsgs);
 
-      const result = await runRound(currentMsgs);
+      const result = await runRound(currentMsgs, true);
       currentMsgs = result.messages;
 
       // Stop if consensus was reached
