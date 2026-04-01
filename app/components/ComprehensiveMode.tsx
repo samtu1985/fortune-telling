@@ -273,7 +273,7 @@ export default function ComprehensiveMode({
     // First round: each master gives their initial analysis
     const firstResult = await runRound(initialMessages);
 
-    // Auto-start discussion if no consensus yet
+    // Auto-start follow-up discussion if no consensus yet
     if (!firstResult.consensus) {
       setIsAutoDiscussing(true);
       autoDiscussRef.current = true;
@@ -283,7 +283,7 @@ export default function ComprehensiveMode({
       while (autoDiscussRef.current) {
         const contextMsg: MasterMessage = {
           role: "user",
-          content: "請繼續討論，回應其他老師的觀點，可以補充、附和或提出不同看法。如果三位老師大致上已經達到一致意見，就由你進行總結。",
+          content: "請針對前面其他老師已經提出的觀點進行回應，不要重複自己先前說過的分析。可以補充新的角度、引用不同的命盤依據來佐證或反駁。如果三位老師大致上已經達到一致意見，就由你進行總結。",
         };
         currentMsgs = [...currentMsgs, contextMsg];
         setMessages(currentMsgs);
@@ -315,7 +315,7 @@ export default function ComprehensiveMode({
       // Add a meta prompt to continue discussion
       const contextMsg: MasterMessage = {
         role: "user",
-        content: "請繼續討論，回應其他老師的觀點，可以補充、附和或提出不同看法。如果三位老師大致上已經達到一致意見，就由你進行總結。",
+        content: "請針對前面其他老師已經提出的觀點進行回應，不要重複自己先前說過的分析。可以補充新的角度、引用不同的命盤依據來佐證或反駁。如果三位老師大致上已經達到一致意見，就由你進行總結。",
       };
       currentMsgs = [...currentMsgs, contextMsg];
       setMessages(currentMsgs);
@@ -688,6 +688,8 @@ export default function ComprehensiveMode({
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.map((msg, i) => {
             if (msg.role === "user") {
+              // Hide auto-discussion system prompts from the UI
+              if (msg.content.startsWith("請針對前面其他老師")) return null;
               return (
                 <div key={i} className="flex justify-end">
                   <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 leading-relaxed">
