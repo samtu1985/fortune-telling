@@ -161,23 +161,31 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         calendarType,
         isLeapMonth,
       };
+      let updated = profiles;
       if (selectedProfileId) {
-        await fetch(`/api/profiles/${selectedProfileId}`, {
+        const res = await fetch(`/api/profiles/${selectedProfileId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (res.ok) {
+          updated = profiles.map((p) => (p.id === selectedProfileId ? { ...p, ...body } : p));
+        }
       } else {
         const res = await fetch("/api/profiles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
-        if (data.profile) setSelectedProfileId(data.profile.id);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            setSelectedProfileId(data.profile.id);
+            updated = [...profiles, data.profile];
+          }
+        }
       }
-      onProfilesChange();
-      window.dispatchEvent(new Event("profiles-updated"));
+      window.dispatchEvent(new CustomEvent("profiles-updated", { detail: updated }));
     } finally {
       setSavingProfile(false);
     }

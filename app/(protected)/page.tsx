@@ -166,8 +166,17 @@ export default function Home() {
 
   useEffect(() => {
     loadProfiles();
-    window.addEventListener("profiles-updated", loadProfiles);
-    return () => window.removeEventListener("profiles-updated", loadProfiles);
+    const handleProfilesUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (Array.isArray(detail)) {
+        // Use profiles data directly from the event to avoid CDN cache staleness
+        setProfiles(detail);
+      } else {
+        loadProfiles();
+      }
+    };
+    window.addEventListener("profiles-updated", handleProfilesUpdated);
+    return () => window.removeEventListener("profiles-updated", handleProfilesUpdated);
   }, [loadProfiles]);
 
   const conversationStarted = conv.messages.length > 0 || conv.streaming;

@@ -95,21 +95,32 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
     setSaving(true);
     try {
       const body = { label: label.trim(), birthDate, birthTime, gender, birthPlace, calendarType, isLeapMonth };
+      let updated = profiles;
       if (editingId) {
-        await fetch(`/api/profiles/${editingId}`, {
+        const res = await fetch(`/api/profiles/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (res.ok) {
+          updated = profiles.map((p) => (p.id === editingId ? { ...p, ...body } : p));
+          setProfiles(updated);
+        }
       } else {
-        await fetch("/api/profiles", {
+        const res = await fetch("/api/profiles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            updated = [...profiles, data.profile];
+            setProfiles(updated);
+          }
+        }
       }
-      window.dispatchEvent(new Event("profiles-updated"));
-      loadProfiles();
+      window.dispatchEvent(new CustomEvent("profiles-updated", { detail: updated }));
       resetForm();
     } finally {
       setSaving(false);
@@ -117,9 +128,12 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/profiles/${id}`, { method: "DELETE" });
-    window.dispatchEvent(new Event("profiles-updated"));
-    loadProfiles();
+    const res = await fetch(`/api/profiles/${id}`, { method: "DELETE" });
+    const updated = res.ok ? profiles.filter((p) => p.id !== id) : profiles;
+    if (res.ok) {
+      setProfiles(updated);
+    }
+    window.dispatchEvent(new CustomEvent("profiles-updated", { detail: updated }));
     setDeleteConfirm(null);
     if (editingId === id) resetForm();
   };
