@@ -72,15 +72,18 @@ export async function readUsers(): Promise<UsersStore> {
       });
       if (!res.ok) {
         console.error("[users] Blob fetch failed:", res.status, res.statusText);
-        return {};
+        // Throw instead of returning {} to prevent downstream writes from wiping data
+        throw new Error(`Blob fetch failed: ${res.status}`);
       }
       return await res.json();
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "BlobNotFoundError") {
+        // Blob doesn't exist yet — this is normal for first run
         return {};
       }
       console.error("[users] Failed to read from Blob:", e instanceof Error ? e.message : e);
-      return {};
+      // Re-throw to prevent callers from writing empty data back
+      throw e;
     }
   }
 
@@ -95,6 +98,25 @@ export async function readUsers(): Promise<UsersStore> {
 }
 
 export async function writeUsers(users: UsersStore): Promise<void> {
+  const newCount = Object.keys(users).length;
+
+  // Safety check: prevent accidental data wipe
+  // If we're about to write significantly fewer users than what's stored, abort
+  if (useBlob() && newCount > 0) {
+    try {
+      const existing = await readUsers();
+      const existingCount = Object.keys(existing).length;
+      if (existingCount > 2 && newCount < existingCount * 0.5) {
+        console.error(
+          `[users] WRITE ABORTED: would reduce users from ${existingCount} to ${newCount}. This looks like a data wipe.`
+        );
+        return;
+      }
+    } catch {
+      // If we can't read existing data, proceed with write
+    }
+  }
+
   if (useBlob()) {
     const { put } = await import("@vercel/blob");
     await put(BLOB_PATH, JSON.stringify(users, null, 2), {
@@ -153,7 +175,16 @@ export async function registerUser(
   image: string | null
 ): Promise<void> {
   console.log("[users] registerUser called:", email, "useBlob:", useBlob());
-  const users = await readUsers();
+
+  let users: UsersStore;
+  try {
+    users = await readUsers();
+  } catch (e) {
+    // If we can't read users, do NOT write (would wipe data)
+    console.error("[users] registerUser: readUsers failed, skipping write to protect data:", e);
+    return;
+  }
+
   const isAdmin = email === ADMIN_EMAIL;
 
   if (!users[email]) {
