@@ -162,7 +162,10 @@ export default function ComprehensiveMode({
       let msgs = [...currentMessages];
       let consensusReached = false;
 
-      for (const master of MASTER_ORDER) {
+      for (let mi = 0; mi < MASTER_ORDER.length; mi++) {
+        const master = MASTER_ORDER[mi];
+        const isLastMaster = mi === MASTER_ORDER.length - 1;
+
         // Only check stop signal during auto-discussion rounds (not the first round)
         if (isAutoRound && !autoDiscussRef.current) {
           break;
@@ -179,9 +182,10 @@ export default function ComprehensiveMode({
           msgs = [...msgs, newMsg];
           setMessages(msgs);
 
-          if (hasConsensus) {
+          // Only stop the round on consensus if this is the last master
+          // so every master gets a chance to speak each round
+          if (hasConsensus && isLastMaster) {
             consensusReached = true;
-            // Stop auto-discussion
             autoDiscussRef.current = false;
             break;
           }
@@ -194,6 +198,16 @@ export default function ComprehensiveMode({
           msgs = [...msgs, errorMsg];
           setMessages(msgs);
           break;
+        }
+      }
+
+      // If any master marked consensus but wasn't the last, check after the full round
+      if (!consensusReached) {
+        const lastThree = msgs.slice(-MASTER_ORDER.length);
+        if (lastThree.some((m) => m.role === "assistant" && m.content.includes("[CONSENSUS]"))) {
+          // Shouldn't happen since we strip [CONSENSUS], but safety check
+          consensusReached = true;
+          autoDiscussRef.current = false;
         }
       }
 
