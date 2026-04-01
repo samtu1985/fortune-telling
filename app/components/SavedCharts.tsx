@@ -67,7 +67,9 @@ export default function SavedCharts({ type, profiles }: SavedChartsProps) {
           </summary>
           <div className="px-4 pb-4 border-t border-gold/5">
             <pre className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap mt-3 max-h-96 overflow-y-auto">
-              {p.savedCharts![chartKey]}
+              {p.savedCharts![chartKey]!
+                .replace(/<[^>]+>/g, "")
+                .trim()}
             </pre>
           </div>
         </details>
