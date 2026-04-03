@@ -304,7 +304,7 @@ export default function ComprehensiveMode({
     while (autoDiscussRef.current) {
       const contextMsg: MasterMessage = {
         role: "user",
-        content: "請針對前面其他老師已經提出的觀點進行回應，不要重複自己先前說過的分析。可以補充新的角度、引用不同的命盤依據來佐證或反駁。如果三位老師大致上已經達到一致意見，就由你進行總結。",
+        content: "請針對前面其他老師已經提出的觀點進行回應，特別是你不同意或有不同解讀的地方。不要重複自己先前說過的分析。重點放在：1. 指出其他老師的分析哪裡跟你的系統看法不同 2. 用你的命盤依據反駁或提出替代解讀 3. 如果真的同意，也要補充對方沒提到的面向。只有在三位老師已經充分交鋒、具體問題上真正取得一致後，才由星座老師做總結。",
       };
       currentMsgs = [...currentMsgs, contextMsg];
       setMessages(currentMsgs);
