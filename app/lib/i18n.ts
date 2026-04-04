@@ -233,6 +233,10 @@ const translations: Record<Locale, TranslationSet> = {
     "comprehensive.chartGenFailed": "命盤生成失敗",
     "comprehensive.lunar": "農曆",
     "comprehensive.solar": "國曆",
+    "comprehensive.downloadPdf": "下載對話紀錄 (PDF)",
+    "comprehensive.generatingPdf": "生成 PDF 中...",
+    "comprehensive.discussionEnded": "論道結束",
+    "comprehensive.maxRoundsReached": "已達最大討論輪數",
 
     // Birth info labels
     "birth.date": "出生日期",
@@ -528,6 +532,10 @@ const translations: Record<Locale, TranslationSet> = {
     "comprehensive.chartGenFailed": "命盘生成失败",
     "comprehensive.lunar": "农历",
     "comprehensive.solar": "公历",
+    "comprehensive.downloadPdf": "下载对话记录 (PDF)",
+    "comprehensive.generatingPdf": "生成 PDF 中...",
+    "comprehensive.discussionEnded": "论道结束",
+    "comprehensive.maxRoundsReached": "已达最大讨论轮数",
 
     "birth.date": "出生日期",
     "birth.time": "出生时间",
@@ -816,6 +824,10 @@ const translations: Record<Locale, TranslationSet> = {
     "comprehensive.chartGenFailed": "Chart generation failed",
     "comprehensive.lunar": "Lunar",
     "comprehensive.solar": "Solar",
+    "comprehensive.downloadPdf": "Download conversation (PDF)",
+    "comprehensive.generatingPdf": "Generating PDF...",
+    "comprehensive.discussionEnded": "Discussion ended",
+    "comprehensive.maxRoundsReached": "Maximum discussion rounds reached",
 
     "birth.date": "Birth date",
     "birth.time": "Birth time",
@@ -1104,6 +1116,10 @@ const translations: Record<Locale, TranslationSet> = {
     "comprehensive.chartGenFailed": "命盤生成に失敗しました",
     "comprehensive.lunar": "旧暦",
     "comprehensive.solar": "新暦",
+    "comprehensive.downloadPdf": "会話記録をダウンロード (PDF)",
+    "comprehensive.generatingPdf": "PDF生成中...",
+    "comprehensive.discussionEnded": "論道終了",
+    "comprehensive.maxRoundsReached": "最大討論ラウンドに達しました",
 
     "birth.date": "生年月日",
     "birth.time": "出生時刻",

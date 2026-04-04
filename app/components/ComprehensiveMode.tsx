@@ -77,12 +77,18 @@ export default function ComprehensiveMode({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
 
+  const [discussionEnded, setDiscussionEnded] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isNearBottomRef = useRef(true);
   const autoDiscussRef = useRef(false);
+  const roundCountRef = useRef(0);
   const reasoningDepthRef = useRef(reasoningDepth);
   reasoningDepthRef.current = reasoningDepth;
+
+  const MAX_ROUNDS = 5;
 
   // Auto-scroll
   const handleScroll = useCallback(() => {
@@ -278,6 +284,8 @@ export default function ComprehensiveMode({
     if (!aiQuestion.trim()) return;
     setPhase("discussion");
     isNearBottomRef.current = true;
+    roundCountRef.current = 0;
+    setDiscussionEnded(false);
 
     const isChineseType = true;
     const shichen = isChineseType ? timeToShichen(chartRequest?.birthTime || "") : "";
@@ -314,9 +322,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
     let currentMsgs = startMessages;
 
     while (autoDiscussRef.current) {
+      roundCountRef.current += 1;
+      const isLastRound = roundCountRef.current >= MAX_ROUNDS;
+
       const contextMsg: MasterMessage = {
         role: "user",
-        content: "請針對前面其他老師已經提出的觀點進行回應，特別是你不同意或有不同解讀的地方。不要重複自己先前說過的分析。重點放在：1. 指出其他老師的分析哪裡跟你的系統看法不同 2. 用你的命盤依據反駁或提出替代解讀 3. 如果真的同意，也要補充對方沒提到的面向。只有在三位老師已經充分交鋒、具體問題上真正取得一致後，才由星座老師做總結。",
+        content: isLastRound
+          ? "這是最後一輪討論。請每位老師做最後總結：1. 你的核心觀點 2. 跟其他老師最大的分歧點 3. 給問卦者最重要的一個建議。最後由星座老師統整三位老師的共識與分歧，加上 [CONSENSUS] 標記。"
+          : "請針對前面其他老師已經提出的觀點進行回應，特別是你不同意或有不同解讀的地方。不要重複自己先前說過的分析。重點放在：1. 指出其他老師的分析哪裡跟你的系統看法不同 2. 用你的命盤依據反駁或提出替代解讀 3. 如果真的同意，也要補充對方沒提到的面向。只有在三位老師已經充分交鋒、具體問題上真正取得一致後，才由星座老師做總結。",
       };
       currentMsgs = [...currentMsgs, contextMsg];
       setMessages(currentMsgs);
@@ -324,7 +337,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       const result = await runRound(currentMsgs, true);
       currentMsgs = result.messages;
 
-      if (result.consensus) break;
+      if (result.consensus || isLastRound) {
+        setDiscussionEnded(true);
+        break;
+      }
 
       if (autoDiscussRef.current) {
         await new Promise((r) => setTimeout(r, 1000));
@@ -467,12 +483,90 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
     setStreamingMaster(null);
     setIsAutoDiscussing(false);
     autoDiscussRef.current = false;
+    roundCountRef.current = 0;
+    setDiscussionEnded(false);
     setSavedMessageIds(new Set());
     setNewDiscussionConfirm(false);
     setAiQuestion(t("main.defaultQuestion"));
   }, [t]);
 
   const getMasterInfo = (id?: MasterType) => MASTERS.find((m) => m.id === id);
+
+  // PDF download
+  const handleDownloadPdf = useCallback(async () => {
+    setPdfGenerating(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const { jsPDF } = await import("jspdf");
+
+      const MASTER_COLORS: Record<string, string> = {
+        bazi: "#d97706",
+        ziwei: "#8b5cf6",
+        zodiac: "#06b6d4",
+      };
+
+      // Build HTML content
+      const container = document.createElement("div");
+      container.style.cssText = "width:700px;padding:40px;font-family:serif;background:#fff;color:#1e1a14;position:absolute;left:-9999px;top:0;";
+      container.innerHTML = `
+        <div style="text-align:center;margin-bottom:32px;">
+          <h1 style="color:#7a5c10;font-size:28px;margin:0;">天機 Fortune-For.me</h1>
+          <p style="color:#847b72;font-size:13px;margin-top:4px;">三師論道 — ${t("comprehensive.discussionEnded")}</p>
+          <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,#7a5c10,transparent);margin:16px auto;"></div>
+        </div>
+        ${messages
+          .filter((m) => m.role === "user" && !m.content.startsWith("請針對") && !m.content.startsWith("這是最後"))
+          .slice(0, 1)
+          .map((m) => `<div style="background:#f5f0e5;border-radius:8px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/</g, "&lt;")}</div>`)
+          .join("")}
+        ${messages
+          .filter((m) => m.role === "assistant" && m.master)
+          .map((m) => {
+            const color = MASTER_COLORS[m.master!] || "#666";
+            const info = getMasterInfo(m.master);
+            return `
+              <div style="border-left:3px solid ${color};padding:12px 16px;margin-bottom:12px;background:${color}08;border-radius:0 8px 8px 0;">
+                <div style="font-size:14px;font-weight:600;color:${color};margin-bottom:8px;">${info?.symbol || ""} ${info?.label || m.master}</div>
+                <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/</g, "&lt;")}</div>
+              </div>`;
+          })
+          .join("")}
+        <div style="text-align:center;margin-top:24px;color:#847b72;font-size:11px;">
+          <p>以上分析由 AI 生成，僅供參考</p>
+          <p style="margin-top:4px;">${new Date().toLocaleDateString()}</p>
+        </div>
+      `;
+      document.body.appendChild(container);
+
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      document.body.removeChild(container);
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      // Handle multi-page
+      const pageHeight = 297; // A4 height in mm
+      let position = 0;
+      let remaining = imgHeight;
+
+      while (remaining > 0) {
+        if (position > 0) pdf.addPage();
+        pdf.addImage(
+          canvas.toDataURL("image/jpeg", 0.95),
+          "JPEG", 0, -position, imgWidth, imgHeight
+        );
+        position += pageHeight;
+        remaining -= pageHeight;
+      }
+
+      pdf.save(`fortune-for-me-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+      console.error("[pdf] Failed to generate:", e);
+    } finally {
+      setPdfGenerating(false);
+    }
+  }, [messages, getMasterInfo, t]);
 
   // Ziwei visual chart info
   const ziweiBirthInfo = chartRequest
@@ -866,14 +960,37 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           </form>
 
           <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
-            以上分析由 AI 生成，僅供參考
+            {t("main.aiDisclaimer")}
           </p>
+
+          {/* PDF Download — shown after discussion ends */}
+          {discussionEnded && !loading && !isAutoDiscussing && (
+            <button
+              onClick={handleDownloadPdf}
+              disabled={pdfGenerating}
+              className="w-full mt-4 py-3 text-sm border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-all duration-500 font-serif tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+            >
+              {pdfGenerating ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  {t("comprehensive.generatingPdf")}
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  {t("comprehensive.downloadPdf")}
+                </>
+              )}
+            </button>
+          )}
 
           <button
             onClick={() => setNewDiscussionConfirm(true)}
             className="w-full mt-3 py-2 text-xs text-stone/40 hover:text-stone/60 transition-colors tracking-wide"
           >
-            開始新討論
+            {t("main.newDiscussion")}
           </button>
         </div>
       </div>
