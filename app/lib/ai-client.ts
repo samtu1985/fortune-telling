@@ -110,28 +110,32 @@ function buildAnthropicRequest(config: MasterAIConfig, options: AIRequestOptions
 
 /**
  * Parse an SSE line from either OpenAI or Anthropic streaming format,
- * returning { content?, reasoning?, done? }.
+ * returning { content?, reasoning?, done?, usage? }.
  */
 export function parseSSELine(
   data: string,
   isAnthropic: boolean
-): { content?: string; reasoning?: string; done?: boolean } | null {
+): { content?: string; reasoning?: string; done?: boolean; usage?: { input: number; output: number } } | null {
   if (data === "[DONE]") return { done: true };
 
   try {
     const parsed = JSON.parse(data);
 
     if (isAnthropic) {
-      // Anthropic SSE events:
-      // error → surface as content so user sees the error
       if (parsed.type === "error") {
         const errMsg = parsed.error?.message || "Anthropic API 錯誤";
         return { content: `\n\n[錯誤] ${errMsg}`, done: true };
       }
-      // content_block_delta with type "text_delta" → content
-      // content_block_delta with type "thinking_delta" → reasoning
-      // message_stop → done
       if (parsed.type === "message_stop") return { done: true };
+      // Anthropic sends usage in message_delta event
+      if (parsed.type === "message_delta" && parsed.usage) {
+        return {
+          usage: {
+            input: parsed.usage.input_tokens || 0,
+            output: parsed.usage.output_tokens || 0,
+          },
+        };
+      }
       if (parsed.type === "content_block_delta") {
         if (parsed.delta?.type === "text_delta" && parsed.delta.text) {
           return { content: parsed.delta.text };
@@ -143,7 +147,16 @@ export function parseSSELine(
       return null;
     }
 
-    // OpenAI-compatible format
+    // OpenAI-compatible: usage arrives in the final chunk
+    if (parsed.usage) {
+      return {
+        usage: {
+          input: parsed.usage.prompt_tokens || 0,
+          output: parsed.usage.completion_tokens || 0,
+        },
+      };
+    }
+
     const delta = parsed.choices?.[0]?.delta;
     if (!delta) return null;
     const result: { content?: string; reasoning?: string } = {};
