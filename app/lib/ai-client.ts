@@ -116,6 +116,11 @@ export function parseSSELine(
 
     if (isAnthropic) {
       // Anthropic SSE events:
+      // error → surface as content so user sees the error
+      if (parsed.type === "error") {
+        const errMsg = parsed.error?.message || "Anthropic API 錯誤";
+        return { content: `\n\n[錯誤] ${errMsg}`, done: true };
+      }
       // content_block_delta with type "text_delta" → content
       // content_block_delta with type "thinking_delta" → reasoning
       // message_stop → done

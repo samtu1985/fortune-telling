@@ -168,6 +168,14 @@ export async function POST(request: NextRequest) {
     maxCompletionTokens: 4096,
   });
 
+  // Log message structure for debugging
+  if (config.provider === "anthropic") {
+    const bodyObj = req.body as Record<string, unknown>;
+    const msgs = bodyObj.messages as { role: string; content: string }[];
+    console.log(`[divine-multi] ${master} anthropic messages:`, msgs.map((m) => `${m.role}: ${m.content.slice(0, 50)}...`));
+    if (bodyObj.thinking) console.log(`[divine-multi] ${master} thinking:`, bodyObj.thinking);
+  }
+
   const response = await fetch(req.url, {
     method: "POST",
     headers: req.headers,
@@ -182,10 +190,22 @@ export async function POST(request: NextRequest) {
       const parsed = JSON.parse(errorText);
       if (parsed.error?.message) errorMsg += ` — ${parsed.error.message}`;
     } catch { /* use default */ }
-    return new Response(
-      JSON.stringify({ error: errorMsg }),
-      { status: response.status, headers: { "Content-Type": "application/json" } }
-    );
+    // Return error as SSE so the frontend stream handler can display it
+    const encoder = new TextEncoder();
+    const errorStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: `[錯誤] ${errorMsg}` })}\n\n`));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+    return new Response(errorStream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
 
   const encoder = new TextEncoder();
