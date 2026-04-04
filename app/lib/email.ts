@@ -4,8 +4,10 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM = process.env.RESEND_FROM_EMAIL || "noreply@fortune-for.me";
-const SITE_URL = process.env.NEXTAUTH_URL || "https://fortune-for.me";
+const FROM = process.env.RESEND_FROM_EMAIL || "noreply@fortunefor.me";
+const SITE_URL = process.env.NEXTAUTH_URL || "https://fortunefor.me";
+
+console.log("[email] Resend configured:", !!resend, "FROM:", FROM, "SITE_URL:", SITE_URL);
 
 export async function sendResetPasswordEmail(
   to: string,
@@ -67,10 +69,11 @@ export async function sendVerificationEmail(
   }
 
   try {
-    await resend.emails.send({ from: FROM, to, subject, html });
-    console.log("[email] Verification email sent to:", to);
+    console.log("[email] Sending verification email from:", FROM, "to:", to);
+    const result = await resend.emails.send({ from: FROM, to, subject, html });
+    console.log("[email] Verification email result:", JSON.stringify(result));
   } catch (e) {
-    console.error("[email] Failed to send verification email:", e);
+    console.error("[email] Failed to send verification email:", e instanceof Error ? e.message : e);
   }
 }
 
