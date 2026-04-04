@@ -54,6 +54,7 @@ export default function AdminPage() {
   const { t } = useLocale();
 
   const STATUS_LABELS: Record<string, { text: string; color: string }> = useMemo(() => ({
+    unverified: { text: t("admin.statusUnverified"), color: "text-orange-400" },
     pending: { text: t("admin.statusPending"), color: "text-yellow-500" },
     approved: { text: t("admin.statusApproved"), color: "text-green-500" },
     disabled: { text: t("admin.statusDisabled"), color: "text-red-400" },
