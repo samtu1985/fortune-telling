@@ -331,8 +331,15 @@ export async function POST(request: NextRequest) {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[divine] ${config.provider} API error ${response.status}:`, errorText);
+    // Extract human-readable error message
+    let errorMsg = `AI API 錯誤: ${response.status}`;
+    try {
+      const parsed = JSON.parse(errorText);
+      if (parsed.error?.message) errorMsg += ` — ${parsed.error.message}`;
+    } catch { /* use default */ }
     return new Response(
-      JSON.stringify({ error: `AI API 錯誤: ${response.status}`, details: errorText }),
+      JSON.stringify({ error: errorMsg }),
       { status: response.status, headers: { "Content-Type": "application/json" } }
     );
   }

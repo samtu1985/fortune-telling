@@ -171,8 +171,14 @@ export async function POST(request: NextRequest) {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[divine-multi] ${config.provider} API error ${response.status}:`, errorText);
+    let errorMsg = `API 錯誤: ${response.status}`;
+    try {
+      const parsed = JSON.parse(errorText);
+      if (parsed.error?.message) errorMsg += ` — ${parsed.error.message}`;
+    } catch { /* use default */ }
     return new Response(
-      JSON.stringify({ error: `API 錯誤: ${response.status}`, details: errorText }),
+      JSON.stringify({ error: errorMsg }),
       { status: response.status, headers: { "Content-Type": "application/json" } }
     );
   }

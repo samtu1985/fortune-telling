@@ -29,7 +29,7 @@ export const PROVIDERS: Record<string, { label: string; defaultUrl: string; defa
   anthropic: {
     label: "Anthropic (Claude)",
     defaultUrl: "https://api.anthropic.com/v1/messages",
-    defaultModel: "claude-sonnet-4-20250514",
+    defaultModel: "claude-sonnet-4-0",
   },
   google: {
     label: "Google (Gemini)",

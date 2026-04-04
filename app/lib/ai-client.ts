@@ -47,7 +47,7 @@ export function buildRequest(config: MasterAIConfig, options: AIRequestOptions) 
 }
 
 function buildAnthropicRequest(config: MasterAIConfig, options: AIRequestOptions) {
-  const { systemPrompt, messages, reasoningDepth, maxCompletionTokens = 4096 } = options;
+  const { systemPrompt, messages, maxCompletionTokens = 4096 } = options;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -68,6 +68,11 @@ function buildAnthropicRequest(config: MasterAIConfig, options: AIRequestOptions
     }
   }
 
+  // Ensure messages start with a user message (Anthropic requirement)
+  if (anthropicMessages.length > 0 && anthropicMessages[0].role !== "user") {
+    anthropicMessages.unshift({ role: "user", content: "請開始分析。" });
+  }
+
   const body: Record<string, unknown> = {
     model: config.modelId,
     system: systemPrompt,
@@ -75,17 +80,6 @@ function buildAnthropicRequest(config: MasterAIConfig, options: AIRequestOptions
     max_tokens: maxCompletionTokens,
     stream: true,
   };
-
-  // Extended thinking for Claude
-  if (reasoningDepth && reasoningDepth !== "off") {
-    const budgetMap: Record<string, number> = { high: 10000, medium: 5000, low: 2000 };
-    body.thinking = {
-      type: "enabled",
-      budget_tokens: budgetMap[reasoningDepth] || 5000,
-    };
-    // When thinking is enabled, max_tokens must be larger than budget
-    body.max_tokens = maxCompletionTokens + (budgetMap[reasoningDepth] || 5000);
-  }
 
   return { url: config.apiUrl, headers, body, isAnthropic: true };
 }
