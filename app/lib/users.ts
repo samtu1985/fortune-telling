@@ -183,17 +183,39 @@ export async function registerCredentialsUser(params: {
   email: string;
   password: string;
   name?: string;
+  verifyToken: string;
 }): Promise<void> {
   const passwordHash = await bcrypt.hash(params.password, 10);
+  const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   await db.insert(users).values({
     email: params.email,
     name: params.name || params.username,
     username: params.username,
     passwordHash,
     authProvider: "credentials",
-    status: "pending",
+    status: "unverified",
+    resetToken: params.verifyToken,
+    resetTokenExpiry: expiry,
     createdAt: new Date(),
   });
+}
+
+export async function verifyEmail(token: string): Promise<{ email: string; name: string | null } | null> {
+  const row = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.resetToken, token), eq(users.status, "unverified")))
+    .limit(1);
+
+  if (!row[0]) return null;
+  if (!row[0].resetTokenExpiry || row[0].resetTokenExpiry < new Date()) return null;
+
+  await db
+    .update(users)
+    .set({ status: "pending", resetToken: null, resetTokenExpiry: null })
+    .where(eq(users.id, row[0].id));
+
+  return { email: row[0].email, name: row[0].name };
 }
 
 export async function verifyCredentials(

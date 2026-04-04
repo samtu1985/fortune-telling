@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
+import { randomUUID } from "crypto";
 import {
   checkUsernameAvailable,
   checkEmailAvailable,
   registerCredentialsUser,
 } from "@/app/lib/users";
+import { sendVerificationEmail } from "@/app/lib/email";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -51,7 +53,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await registerCredentialsUser({ username, email, password });
+    const verifyToken = randomUUID();
+    await registerCredentialsUser({ username, email, password, verifyToken });
+    await sendVerificationEmail(email, verifyToken);
     return Response.json({ success: true }, { status: 201 });
   } catch (e) {
     console.error("[register] Failed:", e);
