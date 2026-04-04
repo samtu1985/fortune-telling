@@ -47,7 +47,7 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai";
+type Tab = "users" | "ai" | "usage";
 
 export default function AdminPage() {
   const { t } = useLocale();
@@ -120,6 +120,14 @@ export default function AdminPage() {
   const [storageType, setStorageType] = useState<string>("");
   const [storageError, setStorageError] = useState<string>("");
 
+  // --- Usage state ---
+  const [usageRange, setUsageRange] = useState("1m");
+  const [usageData, setUsageData] = useState<{
+    summary: { totalCalls: number; totalInputTokens: number; totalOutputTokens: number };
+    byUser: { email: string; name: string | null; image: string | null; calls: number; inputTokens: number; outputTokens: number; models: Record<string, number> }[];
+  } | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+
   // --- AI Settings state ---
   const [aiSettings, setAiSettings] = useState<Record<string, MasterAIConfig>>({});
   const [aiLoading, setAiLoading] = useState(true);
@@ -166,6 +174,27 @@ export default function AdminPage() {
     fetchUsers();
     fetchAISettings();
   }, [fetchUsers, fetchAISettings]);
+
+  const fetchUsage = useCallback(async (range: string) => {
+    setUsageLoading(true);
+    try {
+      const res = await fetch(`/api/admin/usage?range=${range}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUsageData(data);
+      }
+    } catch (e) {
+      console.error("[admin] Failed to fetch usage:", e);
+    } finally {
+      setUsageLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "usage") {
+      fetchUsage(usageRange);
+    }
+  }, [activeTab, usageRange, fetchUsage]);
 
   const updateStatus = async (
     email: string,
@@ -297,6 +326,12 @@ export default function AdminPage() {
     }
   };
 
+  const formatTokens = (n: number): string => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return String(n);
+  };
+
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
   return (
@@ -376,6 +411,19 @@ export default function AdminPage() {
           >
             {t("admin.aiTab")}
             {activeTab === "ai" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("usage")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "usage"
+                ? "text-gold"
+                : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            {t("admin.usageTab")}
+            {activeTab === "usage" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
             )}
           </button>
@@ -873,6 +921,95 @@ export default function AdminPage() {
                 })}
               </div>
             )}
+          </>
+        )}
+
+        {activeTab === "usage" && (
+          <>
+            {/* Time range selector */}
+            <div className="flex justify-center gap-1 mb-6">
+              {(["1d", "1w", "1m", "3m", "6m", "1y"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setUsageRange(r)}
+                  className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${
+                    usageRange === r
+                      ? "bg-gold/20 text-gold border border-gold/30"
+                      : "text-stone/60 hover:text-stone border border-transparent"
+                  }`}
+                >
+                  {r.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {usageLoading ? (
+              <div className="text-center py-12">
+                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              </div>
+            ) : usageData ? (
+              <>
+                {/* Summary cards */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="rounded-lg border border-gold/10 p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <p className="text-2xl font-bold text-gold">{usageData.summary.totalCalls}</p>
+                    <p className="text-xs text-stone/60 mt-1">{t("admin.totalCalls")}</p>
+                  </div>
+                  <div className="rounded-lg border border-gold/10 p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <p className="text-2xl font-bold text-gold">{formatTokens(usageData.summary.totalInputTokens)}</p>
+                    <p className="text-xs text-stone/60 mt-1">{t("admin.totalInputTokens")}</p>
+                  </div>
+                  <div className="rounded-lg border border-gold/10 p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <p className="text-2xl font-bold text-gold">{formatTokens(usageData.summary.totalOutputTokens)}</p>
+                    <p className="text-xs text-stone/60 mt-1">{t("admin.totalOutputTokens")}</p>
+                  </div>
+                </div>
+
+                {/* User detail table */}
+                {usageData.byUser.length === 0 ? (
+                  <p className="text-center text-stone/60 py-12">{t("admin.noUsageData")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {usageData.byUser.map((user) => (
+                      <div
+                        key={user.email}
+                        className="rounded-lg border border-gold/10 p-4"
+                        style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          {user.image ? (
+                            <img src={user.image} alt="" className="w-8 h-8 rounded-full border border-gold/20" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-xs text-gold">
+                              {user.name?.[0] || "?"}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-cream font-medium truncate">{user.name || user.email}</p>
+                            <p className="text-xs text-stone/50 truncate">{user.email}</p>
+                          </div>
+                          <span className="text-lg font-bold text-gold">{user.calls}</span>
+                          <span className="text-xs text-stone/50">{t("admin.usageCalls")}</span>
+                        </div>
+                        <div className="flex gap-4 text-xs text-stone/60">
+                          <span>Input: <span className="text-cream">{formatTokens(user.inputTokens)}</span></span>
+                          <span>Output: <span className="text-cream">{formatTokens(user.outputTokens)}</span></span>
+                        </div>
+                        {Object.keys(user.models).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {Object.keys(user.models).map((model) => (
+                              <span key={model} className="text-[10px] px-2 py-0.5 rounded-full border border-gold/15 text-stone/60">
+                                {model}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : null}
           </>
         )}
       </section>
