@@ -244,6 +244,7 @@ export async function POST(request: NextRequest) {
 
   // Load AI config (shared key for both single and multi-master modes)
   const config = await getAIConfig(type);
+  console.log(`[divine] ${type} → ${config.provider} / ${config.modelId}`);
   if (!config.apiKey) {
     return new Response(
       JSON.stringify({ error: `AI 引擎尚未設定 API Key (${type})` }),

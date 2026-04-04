@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
 
   // Load AI config for this master (key: "bazi", "ziwei", "zodiac")
   const config = await getAIConfig(master);
+  console.log(`[divine-multi] ${master} → ${config.provider} / ${config.modelId}`);
   if (!config.apiKey) {
     return new Response(
       JSON.stringify({ error: `AI 引擎尚未設定 API Key (${master})` }),
