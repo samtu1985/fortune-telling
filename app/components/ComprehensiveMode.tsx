@@ -79,6 +79,8 @@ export default function ComprehensiveMode({
 
   const [discussionEnded, setDiscussionEnded] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [casePhase, setCasePhase] = useState<"idle" | "consent" | "processing" | "preview" | "done">("idle");
+  const [caseSummary, setCaseSummary] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -488,6 +490,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
     setSavedMessageIds(new Set());
     setNewDiscussionConfirm(false);
     setAiQuestion(t("main.defaultQuestion"));
+    setCasePhase("idle");
+    setCaseSummary("");
   }, [t]);
 
   const getMasterInfo = (id?: MasterType) => MASTERS.find((m) => m.id === id);
@@ -561,12 +565,33 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       }
 
       pdf.save(`fortune-for-me-${new Date().toISOString().slice(0, 10)}.pdf`);
+      // After successful download, ask about case study
+      setTimeout(() => setCasePhase("consent"), 1000);
     } catch (e) {
       console.error("[pdf] Failed to generate:", e);
     } finally {
       setPdfGenerating(false);
     }
   }, [messages, getMasterInfo, t]);
+
+  const handleCaseStudySubmit = useCallback(async () => {
+    setCasePhase("processing");
+    try {
+      const userQuestion = messages.find((m) => m.role === "user")?.content || "";
+      const res = await fetch("/api/case-studies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, question: userQuestion }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setCaseSummary(data.summary);
+      setCasePhase("preview");
+    } catch (e) {
+      console.error("[case-study] Failed:", e);
+      setCasePhase("idle");
+    }
+  }, [messages]);
 
   // Ziwei visual chart info
   const ziweiBirthInfo = chartRequest
@@ -984,6 +1009,61 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                 </>
               )}
             </button>
+          )}
+
+          {/* Case study consent flow */}
+          {casePhase === "consent" && (
+            <div className="mt-4 p-4 rounded-lg border border-gold/20" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.03)" }}>
+              <p className="text-sm text-cream mb-3">{t("case.consent")}</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setCasePhase("idle")}
+                  className="px-4 py-2 text-xs text-stone hover:text-cream transition-colors"
+                >
+                  {t("case.consentNo")}
+                </button>
+                <button
+                  onClick={handleCaseStudySubmit}
+                  className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors"
+                >
+                  {t("case.consentYes")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {casePhase === "processing" && (
+            <div className="mt-4 p-4 rounded-lg border border-gold/20 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.03)" }}>
+              <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin mr-2" />
+              <span className="text-sm text-stone">{t("case.processing")}</span>
+            </div>
+          )}
+
+          {casePhase === "preview" && (
+            <div className="mt-4 p-4 rounded-lg border border-gold/20 space-y-3" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.03)" }}>
+              <p className="text-xs text-stone font-medium">{t("case.preview")}</p>
+              <p className="text-sm text-cream leading-relaxed">{caseSummary}</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setCasePhase("idle")}
+                  className="px-4 py-2 text-xs text-stone hover:text-cream transition-colors"
+                >
+                  {t("case.cancelSubmit")}
+                </button>
+                <button
+                  onClick={() => setCasePhase("done")}
+                  className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors"
+                >
+                  {t("case.confirmSubmit")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {casePhase === "done" && (
+            <div className="mt-4 p-4 rounded-lg border border-green-500/20 text-center" style={{ backgroundColor: "rgba(34,197,94,0.03)" }}>
+              <p className="text-sm text-green-500">{t("case.thankYou")}</p>
+            </div>
           )}
 
           <button
