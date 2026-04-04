@@ -20,6 +20,11 @@ export const users = pgTable("users", {
   status: varchar("status", { length: 20 }).notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
+  username: varchar("username", { length: 50 }).unique(),
+  passwordHash: text("password_hash"),
+  authProvider: varchar("auth_provider", { length: 20 }).notNull().default("google"),
+  resetToken: text("reset_token"),
+  resetTokenExpiry: timestamp("reset_token_expiry", { withTimezone: true }),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
