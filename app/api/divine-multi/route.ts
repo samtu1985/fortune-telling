@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAIConfig } from "@/app/lib/ai-settings";
-import { buildRequest } from "@/app/lib/ai-client";
+import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 
 const MASTER_PROMPTS: Record<string, string> = {
   bazi: `你是「八字老師」，精通八字命理，正在跟紫微老師、星座老師一起聊天討論。
@@ -201,21 +201,17 @@ export async function POST(request: NextRequest) {
           const trimmed = line.trim();
           if (!trimmed || !trimmed.startsWith("data: ")) continue;
           const data = trimmed.slice(6);
-          if (data === "[DONE]") {
+
+          const result = parseSSELine(data, req.isAnthropic);
+          if (!result) continue;
+          if (result.done) {
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             continue;
           }
-
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta;
-            if (delta?.content) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ content: delta.content })}\n\n`)
-              );
-            }
-          } catch {
-            // skip
+          if (result.content) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
+            );
           }
         }
       }

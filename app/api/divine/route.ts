@@ -3,7 +3,7 @@ import { generateBaziChart } from "@/app/lib/bazi";
 import { generateZiweiChart } from "@/app/lib/ziwei";
 import { generateNatalChart } from "@/app/lib/astrology";
 import { getAIConfig } from "@/app/lib/ai-settings";
-import { buildRequest } from "@/app/lib/ai-client";
+import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -369,28 +369,22 @@ export async function POST(request: NextRequest) {
           const trimmed = line.trim();
           if (!trimmed || !trimmed.startsWith("data: ")) continue;
           const data = trimmed.slice(6);
-          if (data === "[DONE]") {
+
+          const result = parseSSELine(data, req.isAnthropic);
+          if (!result) continue;
+          if (result.done) {
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             continue;
           }
-
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta;
-            if (delta?.content) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ content: delta.content })}\n\n`)
-              );
-            }
-            if (delta?.reasoning_content) {
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ reasoning: delta.reasoning_content })}\n\n`
-                )
-              );
-            }
-          } catch {
-            // skip malformed chunks
+          if (result.content) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
+            );
+          }
+          if (result.reasoning) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ reasoning: result.reasoning })}\n\n`)
+            );
           }
         }
       }

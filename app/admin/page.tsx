@@ -65,7 +65,6 @@ export default function AdminPage() {
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [providerDropdownOpen, setProviderDropdownOpen] = useState(false);
   const [editForm, setEditForm] = useState<MasterAIConfig>({
     provider: "byteplus",
     modelId: "",
@@ -151,7 +150,6 @@ export default function AdminPage() {
       apiKey: "",
       apiUrl: existing?.apiUrl || defaultProvider?.defaultUrl || "",
     });
-    setProviderDropdownOpen(false);
     setEditingKey(key);
   };
 
@@ -485,46 +483,27 @@ export default function AdminPage() {
                       {/* Edit form */}
                       {isEditing && (
                         <div className="mt-3 space-y-3 border-t border-gold/10 pt-3">
-                          {/* Provider */}
-                          <div className="relative">
-                            <label className="block text-xs text-stone/70 mb-1">
+                          {/* Provider - radio buttons */}
+                          <div>
+                            <label className="block text-xs text-stone/70 mb-2">
                               AI 供應商
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => setProviderDropdownOpen(!providerDropdownOpen)}
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none text-left flex items-center justify-between"
-                              style={{ backgroundColor: "var(--parchment)" }}
-                            >
-                              <span>{providers[editForm.provider]?.label || editForm.provider}</span>
-                              <svg className={`w-4 h-4 text-stone transition-transform ${providerDropdownOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
-                            {providerDropdownOpen && (
-                              <div
-                                className="absolute z-50 left-0 right-0 mt-1 rounded-lg border border-gold/20 shadow-lg overflow-hidden"
-                                style={{ backgroundColor: "var(--parchment-light)" }}
-                              >
-                                {Object.entries(providers).map(([id, info]) => (
-                                  <button
-                                    key={id}
-                                    type="button"
-                                    onClick={() => {
-                                      handleProviderChange(id);
-                                      setProviderDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                                      editForm.provider === id
-                                        ? "text-gold bg-gold/10"
-                                        : "text-cream hover:bg-gold/5"
-                                    }`}
-                                  >
-                                    {info.label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(providers).map(([id, info]) => (
+                                <button
+                                  key={id}
+                                  type="button"
+                                  onClick={() => handleProviderChange(id)}
+                                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                    editForm.provider === id
+                                      ? "border-gold/50 text-gold bg-gold/10"
+                                      : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                  }`}
+                                >
+                                  {info.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
 
                           {/* Model ID */}
@@ -538,8 +517,9 @@ export default function AdminPage() {
                               onChange={(e) =>
                                 setEditForm((f) => ({ ...f, modelId: e.target.value }))
                               }
-                              placeholder="e.g. gpt-4o, claude-sonnet-4-20250514"
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none" style={{ backgroundColor: "var(--parchment)" }}
+                              placeholder={providers[editForm.provider]?.defaultModel || "模型名稱"}
+                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                              style={{ backgroundColor: "var(--parchment)" }}
                             />
                           </div>
 
@@ -554,9 +534,15 @@ export default function AdminPage() {
                               onChange={(e) =>
                                 setEditForm((f) => ({ ...f, apiUrl: e.target.value }))
                               }
-                              placeholder="https://api.openai.com/v1/chat/completions"
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none" style={{ backgroundColor: "var(--parchment)" }}
+                              placeholder={providers[editForm.provider]?.defaultUrl || "https://..."}
+                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                              style={{ backgroundColor: "var(--parchment)" }}
                             />
+                            {editForm.provider === "anthropic" && (
+                              <p className="text-xs text-stone/40 mt-1">
+                                Claude 使用 Messages API，系統會自動處理請求格式
+                              </p>
+                            )}
                           </div>
 
                           {/* API Key */}
@@ -576,7 +562,8 @@ export default function AdminPage() {
                                 setEditForm((f) => ({ ...f, apiKey: e.target.value }))
                               }
                               placeholder={config?.hasKey ? "保留原有 Key" : "輸入 API Key"}
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none" style={{ backgroundColor: "var(--parchment)" }}
+                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                              style={{ backgroundColor: "var(--parchment)" }}
                             />
                           </div>
 
