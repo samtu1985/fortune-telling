@@ -1181,12 +1181,12 @@ ${t("birth.topic")}：${aiQuestion}`;
           {t("main.selectType")}
         </p>
 
-        {/* Mobile: Compact horizontal tabs */}
+        {/* Mobile: Compact horizontal tabs — basic types */}
         <div
           className="animate-fade-in-up flex sm:hidden gap-2"
           style={{ animationDelay: "600ms", opacity: 0 }}
         >
-          {DIVINATION_TYPES.map((dt) => (
+          {DIVINATION_TYPES.filter((dt) => dt.id !== "comprehensive").map((dt) => (
             <button
               key={dt.id}
               onClick={() => setSelectedType(dt.id)}
@@ -1222,6 +1222,38 @@ ${t("birth.topic")}：${aiQuestion}`;
           ))}
         </div>
 
+        {/* Mobile: Premium comprehensive button */}
+        {(() => {
+          const dt = DIVINATION_TYPES.find((d) => d.id === "comprehensive")!;
+          const isActive = selectedType === ("comprehensive" as DivinationType);
+          return (
+            <div className="animate-fade-in-up sm:hidden mt-3" style={{ animationDelay: "700ms", opacity: 0 }}>
+              <div className="mx-auto w-3/4 h-px mb-3" style={{ background: "linear-gradient(90deg, transparent, var(--gold), transparent)" }} />
+              <button
+                onClick={() => setSelectedType("comprehensive")}
+                className={`
+                  w-full py-3 px-4 rounded-sm border text-center transition-all duration-300 flex items-center justify-center gap-2
+                  ${isActive
+                    ? "border-gold/60 bg-gold/[0.06]"
+                    : "border-gold/20 active:border-gold/30"
+                  }
+                `}
+                style={!isActive ? { backgroundColor: "rgba(var(--glass-rgb), 0.02)" } : undefined}
+              >
+                <span className={`text-2xl transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-50"}`}>
+                  {dt.symbol}
+                </span>
+                <span className={`text-xs font-serif tracking-wide transition-colors duration-300 ${isActive ? "text-gold" : "text-cream/70"}`}>
+                  {dt.title}
+                </span>
+                <span className="text-[9px] tracking-[1px] px-1.5 py-0.5 border border-gold/25 rounded-full text-gold/50 font-display uppercase ml-1">
+                  Premium
+                </span>
+              </button>
+            </div>
+          );
+        })()}
+
         {/* Mobile: Selected type description */}
         {selectedType && !conversationStarted && (
           <p className="sm:hidden text-center text-sm text-mist/60 mt-4 px-2 leading-relaxed">
@@ -1229,9 +1261,9 @@ ${t("birth.topic")}：${aiQuestion}`;
           </p>
         )}
 
-        {/* Desktop: Full cards */}
-        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {DIVINATION_TYPES.map((dt, i) => (
+        {/* Desktop: Basic type cards */}
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {DIVINATION_TYPES.filter((dt) => dt.id !== "comprehensive").map((dt, i) => (
             <DivinationCard
               key={dt.id}
               title={dt.title}
@@ -1246,6 +1278,73 @@ ${t("birth.topic")}：${aiQuestion}`;
             />
           ))}
         </div>
+
+        {/* Gold divider */}
+        <div
+          className="hidden sm:block animate-fade-in-up my-8"
+          style={{ animationDelay: "1050ms", opacity: 0 }}
+        >
+          <div className="mx-auto w-full max-w-md h-px" style={{ background: "linear-gradient(90deg, transparent, var(--gold), transparent)" }} />
+        </div>
+
+        {/* Desktop: Premium comprehensive card */}
+        {(() => {
+          const dt = DIVINATION_TYPES.find((d) => d.id === "comprehensive")!;
+          const isActive = selectedType === ("comprehensive" as DivinationType);
+          return (
+            <div
+              className="hidden sm:block animate-fade-in-up max-w-2xl mx-auto"
+              style={{ animationDelay: "1100ms", opacity: 0 }}
+            >
+              <button
+                onClick={() => setSelectedType("comprehensive")}
+                className="w-full text-left group"
+              >
+                <div
+                  className={`
+                    relative overflow-hidden rounded-sm border transition-all duration-500
+                    ${isActive
+                      ? "border-gold/60 bg-gold/[0.06]"
+                      : "border-gold/25 hover:border-gold/40"
+                    }
+                  `}
+                  style={{
+                    backgroundColor: !isActive ? "rgba(var(--glass-rgb), 0.02)" : undefined,
+                    boxShadow: isActive
+                      ? "0 0 30px var(--card-shadow)"
+                      : "0 0 40px rgba(var(--gold-rgb, 201,183,124), 0.06)",
+                  }}
+                >
+                  <div className="h-[2px] transition-all duration-500" style={{ background: "linear-gradient(90deg, transparent, var(--gold), transparent)" }} />
+                  <div className="p-6 sm:p-8 flex items-center gap-6">
+                    <div className={`text-5xl transition-all duration-500 ${isActive ? "opacity-100" : "opacity-50 group-hover:opacity-70"}`}>
+                      {dt.symbol}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className={`font-serif text-xl sm:text-2xl font-semibold tracking-wide transition-colors duration-300 ${isActive ? "text-gold" : "text-cream group-hover:text-gold-bright"}`}>
+                          {dt.title}
+                        </h3>
+                        <span className="text-[10px] tracking-[2px] px-2 py-0.5 border border-gold/30 rounded-full text-gold/70 font-display uppercase">
+                          Premium
+                        </span>
+                      </div>
+                      <p className="font-display text-sm text-stone italic mb-2">{dt.subtitle}</p>
+                      <p className="text-sm text-mist/70 leading-relaxed">{dt.description}</p>
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div className="absolute top-4 right-4 seal-appear">
+                      <div className="w-8 h-8 rounded-full border-2 border-red-seal/60 flex items-center justify-center">
+                        <div className="w-3 h-3 rounded-full bg-red-seal/80" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+          );
+        })()}
       </section>
 
       {/* Input Form / Saved Conversations Tabs */}
