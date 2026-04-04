@@ -5,6 +5,8 @@ import { generateNatalChart } from "@/app/lib/astrology";
 import { getAIConfig } from "@/app/lib/ai-settings";
 import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
+import { auth } from "@/app/lib/auth";
+import { logUsage } from "@/app/lib/usage";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -236,6 +238,9 @@ export async function POST(request: NextRequest) {
     locale?: Locale;
   };
 
+  const session = await auth();
+  const userEmail = session?.user?.email || "unknown";
+
   let systemPrompt = SYSTEM_PROMPTS[type];
   if (!systemPrompt) {
     return new Response(
@@ -375,6 +380,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      let totalInput = 0;
+      let totalOutput = 0;
+
       let buffer = "";
 
       while (true) {
@@ -396,6 +404,11 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             continue;
           }
+          if (result.usage) {
+            totalInput += result.usage.input;
+            totalOutput += result.usage.output;
+            continue;
+          }
           if (result.content) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
@@ -408,6 +421,17 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+
+      // Log usage (fire-and-forget)
+      logUsage({
+        userEmail,
+        masterType: type,
+        mode: "single",
+        provider: config.provider,
+        modelId: config.modelId,
+        inputTokens: totalInput,
+        outputTokens: totalOutput,
+      });
 
       controller.close();
     },
