@@ -48,7 +48,7 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai" | "usage";
+type Tab = "users" | "ai" | "usage" | "cases";
 
 export default function AdminPage() {
   const { t } = useLocale();
@@ -129,6 +129,10 @@ export default function AdminPage() {
   } | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
 
+  const [cases, setCases] = useState<{ id: string; summary: string; masterTypes: string; createdAt: string }[]>([]);
+  const [casesLoading, setCasesLoading] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<{ id: string; summary: string; fullContent: string; originalQuestion: string; masterTypes: string; createdAt: string } | null>(null);
+
   // --- AI Settings state ---
   const [aiSettings, setAiSettings] = useState<Record<string, MasterAIConfig>>({});
   const [aiLoading, setAiLoading] = useState(true);
@@ -196,6 +200,39 @@ export default function AdminPage() {
       fetchUsage(usageRange);
     }
   }, [activeTab, usageRange, fetchUsage]);
+
+  const fetchCases = useCallback(async () => {
+    setCasesLoading(true);
+    try {
+      const res = await fetch("/api/admin/case-studies");
+      if (res.ok) {
+        const data = await res.json();
+        setCases(data.cases || []);
+      }
+    } catch (e) {
+      console.error("[admin] Failed to fetch cases:", e);
+    } finally {
+      setCasesLoading(false);
+    }
+  }, []);
+
+  const fetchCaseDetail = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/case-studies/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedCase(data);
+      }
+    } catch (e) {
+      console.error("[admin] Failed to fetch case detail:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "cases") {
+      fetchCases();
+    }
+  }, [activeTab, fetchCases]);
 
   const updateStatus = async (
     email: string,
@@ -425,6 +462,19 @@ export default function AdminPage() {
           >
             {t("admin.usageTab")}
             {activeTab === "usage" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("cases")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "cases"
+                ? "text-gold"
+                : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            {t("admin.casesTab")}
+            {activeTab === "cases" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
             )}
           </button>
@@ -1016,6 +1066,59 @@ export default function AdminPage() {
                 )}
               </>
             ) : null}
+          </>
+        )}
+
+        {activeTab === "cases" && (
+          <>
+            {casesLoading ? (
+              <div className="text-center py-12">
+                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              </div>
+            ) : selectedCase ? (
+              /* Case detail view */
+              <div>
+                <button
+                  onClick={() => setSelectedCase(null)}
+                  className="text-sm text-stone hover:text-gold transition-colors mb-4 flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  {t("admin.caseBack")}
+                </button>
+                <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                  <h3 className="text-sm font-serif text-gold mb-1">{t("admin.caseDetail")}</h3>
+                  <p className="text-xs text-stone/50 mb-4">
+                    {new Date(selectedCase.createdAt).toLocaleDateString()}
+                  </p>
+                  <div className="mb-4 p-3 rounded border border-gold/10 bg-gold/5">
+                    <p className="text-sm text-cream font-medium">{selectedCase.summary}</p>
+                  </div>
+                  <pre className="text-sm text-cream/80 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+                    {selectedCase.fullContent}
+                  </pre>
+                </div>
+              </div>
+            ) : cases.length === 0 ? (
+              <p className="text-center text-stone/60 py-12">{t("admin.noCases")}</p>
+            ) : (
+              <div className="space-y-3">
+                {cases.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => fetchCaseDetail(c.id)}
+                    className="w-full text-left rounded-lg border border-gold/10 p-4 hover:border-gold/25 transition-colors"
+                    style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                  >
+                    <p className="text-sm text-cream line-clamp-2">{c.summary}</p>
+                    <p className="text-xs text-stone/50 mt-2">
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
       </section>
