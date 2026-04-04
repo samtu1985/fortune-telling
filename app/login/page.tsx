@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import SmokeParticles from "@/app/components/SmokeParticles";
@@ -15,6 +15,14 @@ function isInAppBrowser(): boolean {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const { t } = useLocale();
   const searchParams = useSearchParams();
   const [inApp, setInApp] = useState(false);

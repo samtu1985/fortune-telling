@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
@@ -10,6 +10,14 @@ import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const { t } = useLocale();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
