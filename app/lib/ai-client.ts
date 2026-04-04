@@ -1,4 +1,4 @@
-import { getAIConfig, type MasterAIConfig } from "./ai-settings";
+import { type MasterAIConfig } from "./ai-settings";
 
 interface AIRequestOptions {
   systemPrompt: string;
@@ -40,25 +40,4 @@ export function buildRequest(config: MasterAIConfig, options: AIRequestOptions) 
   }
 
   return { url: config.apiUrl, headers, body };
-}
-
-/**
- * Get AI config for a given key, with validation.
- * Returns config or an error response.
- */
-export async function getValidatedConfig(
-  key: string
-): Promise<{ config: MasterAIConfig } | { error: Response }> {
-  const config = await getAIConfig(key);
-
-  if (!config.apiKey) {
-    return {
-      error: new Response(
-        JSON.stringify({ error: `AI 引擎尚未設定 API Key (${key})` }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      ),
-    };
-  }
-
-  return { config };
 }

@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest) {
     apiUrl: string;
   };
 
-  const validKeys = ["bazi", "ziwei", "zodiac", "single-bazi", "single-ziwei", "single-zodiac"];
+  const validKeys = ["bazi", "ziwei", "zodiac"];
   if (!validKeys.includes(key)) {
     return Response.json({ error: "無效的設定項目" }, { status: 400 });
   }

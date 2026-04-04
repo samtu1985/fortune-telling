@@ -242,9 +242,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Load AI config for single-master mode (key: "single-bazi", "single-ziwei", "single-zodiac")
-  const configKey = `single-${type}`;
-  const config = await getAIConfig(configKey);
+  // Load AI config (shared key for both single and multi-master modes)
+  const config = await getAIConfig(type);
   if (!config.apiKey) {
     return new Response(
       JSON.stringify({ error: `AI 引擎尚未設定 API Key (${type})` }),

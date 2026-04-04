@@ -36,18 +36,21 @@ interface MasterAIConfig {
 }
 
 const MASTER_KEYS = [
-  { key: "bazi", label: "八字老師 (三師會談)" },
-  { key: "ziwei", label: "紫微老師 (三師會談)" },
-  { key: "zodiac", label: "星座老師 (三師會談)" },
-  { key: "single-bazi", label: "八字老師 (單獨問答)" },
-  { key: "single-ziwei", label: "紫微老師 (單獨問答)" },
-  { key: "single-zodiac", label: "星座老師 (單獨問答)" },
+  { key: "bazi", label: "八字老師" },
+  { key: "ziwei", label: "紫微老師" },
+  { key: "zodiac", label: "星座老師" },
 ];
 
 type Tab = "users" | "ai";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("users");
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("tab") === "ai" ? "ai" : "users";
+    }
+    return "users";
+  });
 
   // --- Users state ---
   const [users, setUsers] = useState<UserItem[]>([]);
