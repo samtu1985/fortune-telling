@@ -95,3 +95,13 @@ export const apiUsage = pgTable("api_usage", {
   outputTokens: integer("output_tokens").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── Case Studies ───────────────────────────────────────
+export const caseStudies = pgTable("case_studies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  summary: text("summary").notNull(),
+  fullContent: text("full_content").notNull(),
+  originalQuestion: text("original_question"),
+  masterTypes: varchar("master_types", { length: 30 }).notNull().default("bazi,ziwei,zodiac"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
