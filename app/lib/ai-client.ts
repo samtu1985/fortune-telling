@@ -91,7 +91,7 @@ function buildAnthropicRequest(config: MasterAIConfig, options: AIRequestOptions
     // New-style: adaptive thinking + effort level (Opus 4.6, Sonnet 4.6)
     body.thinking = { type: "adaptive" };
     if (config.effort) {
-      body.thinking = { type: "adaptive", effort: config.effort };
+      body.output_config = { effort: config.effort };
     }
   } else if (thinkingMode === "enabled") {
     // Legacy: fixed budget (older models: Sonnet 4, Opus 4, etc.)
