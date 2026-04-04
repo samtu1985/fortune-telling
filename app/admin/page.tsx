@@ -36,6 +36,7 @@ interface MasterAIConfig {
   thinkingMode?: "adaptive" | "enabled" | "disabled";
   effort?: "low" | "medium" | "high" | "max";
   thinkingBudget?: number;
+  reasoningDepth?: "high" | "medium" | "low" | "off";
 }
 
 const PROVIDERS: Record<string, ProviderInfo> = {
@@ -90,6 +91,13 @@ const EFFORT_OPTIONS = [
   { value: "high", label: "高 — 深度" },
 ];
 
+const BYTEPLUS_DEPTH_OPTIONS = [
+  { value: "high", label: "高" },
+  { value: "medium", label: "中" },
+  { value: "low", label: "低" },
+  { value: "off", label: "關" },
+];
+
 type Tab = "users" | "ai";
 
 export default function AdminPage() {
@@ -113,7 +121,7 @@ export default function AdminPage() {
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Omit<MasterAIConfig, "thinkingMode" | "thinkingBudget" | "effort"> & { thinkingMode: string; effort: string; thinkingBudget: number }>({
+  const [editForm, setEditForm] = useState<Omit<MasterAIConfig, "thinkingMode" | "thinkingBudget" | "effort" | "reasoningDepth"> & { thinkingMode: string; effort: string; thinkingBudget: number; reasoningDepth: string }>({
     provider: "byteplus",
     modelId: "",
     apiKey: "",
@@ -121,6 +129,7 @@ export default function AdminPage() {
     thinkingMode: "disabled",
     effort: "medium",
     thinkingBudget: 5000,
+    reasoningDepth: "high",
   });
 
   const fetchUsers = useCallback(async () => {
@@ -202,6 +211,7 @@ export default function AdminPage() {
       thinkingMode: existing?.thinkingMode || "disabled",
       effort: existing?.effort || "medium",
       thinkingBudget: existing?.thinkingBudget || 5000,
+      reasoningDepth: existing?.reasoningDepth || "high",
     });
     setEditingKey(key);
   };
@@ -538,6 +548,11 @@ export default function AdminPage() {
                                       : `${config.thinkingBudget || 5000}t`}
                                   </span>
                                 )}
+                                {config.reasoningDepth && (
+                                  <span className="ml-1.5 text-blue-400">
+                                    深度:{config.reasoningDepth}
+                                  </span>
+                                )}
                                 {config.hasKey && (
                                   <span className="ml-1.5 text-green-500">Key {config.apiKey}</span>
                                 )}
@@ -737,6 +752,31 @@ export default function AdminPage() {
                               </div>
                             );
                           })()}
+
+                          {/* BytePlus reasoning depth */}
+                          {editForm.provider === "byteplus" && (
+                            <div>
+                              <label className="block text-xs text-stone/70 mb-2">
+                                思考深度
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {BYTEPLUS_DEPTH_OPTIONS.map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setEditForm((f) => ({ ...f, reasoningDepth: opt.value }))}
+                                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                      editForm.reasoningDepth === opt.value
+                                        ? "border-gold/50 text-gold bg-gold/10"
+                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           {/* API URL */}
                           <div>

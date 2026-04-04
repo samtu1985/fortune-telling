@@ -7,42 +7,11 @@ import ProfileModal from "./ProfileModal";
 
 const ADMIN_EMAIL = "geektu@gmail.com";
 
-type ReasoningDepth = "high" | "medium" | "low" | "off";
-
-const DEPTH_OPTIONS: { value: ReasoningDepth; label: string }[] = [
-  { value: "high", label: "高" },
-  { value: "medium", label: "中" },
-  { value: "low", label: "低" },
-  { value: "off", label: "關" },
-];
-
 export default function UserMenu() {
   const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [reasoningDepth, setReasoningDepth] = useState<ReasoningDepth>("high");
-  const [depthLoaded, setDepthLoaded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Load saved reasoning depth on mount
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.reasoningDepth) setReasoningDepth(data.reasoningDepth);
-      })
-      .catch(() => {})
-      .finally(() => setDepthLoaded(true));
-  }, []);
-
-  // Broadcast reasoning depth changes so page.tsx can pick it up
-  useEffect(() => {
-    if (depthLoaded) {
-      window.dispatchEvent(
-        new CustomEvent("reasoning-depth-changed", { detail: reasoningDepth })
-      );
-    }
-  }, [reasoningDepth, depthLoaded]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -55,15 +24,6 @@ export default function UserMenu() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen]);
-
-  const handleDepthChange = async (depth: ReasoningDepth) => {
-    setReasoningDepth(depth);
-    await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reasoningDepth: depth }),
-    });
-  };
 
   if (!session?.user) return null;
 
@@ -119,32 +79,6 @@ export default function UserMenu() {
               </svg>
               管理出生資料檔案
             </button>
-
-            {/* Reasoning Depth */}
-            <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
-            <div className="px-4 py-3">
-              <div className="flex items-center gap-2.5 mb-2">
-                <svg className="w-4 h-4 text-gold-dim shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                <span className="text-sm text-cream">模型思考深度</span>
-              </div>
-              <div className="flex gap-1 ml-6.5">
-                {DEPTH_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleDepthChange(opt.value)}
-                    className={`px-2.5 py-1 rounded text-xs font-serif transition-colors ${
-                      reasoningDepth === opt.value
-                        ? "bg-gold/20 text-gold border border-gold/30"
-                        : "text-stone hover:text-cream border border-transparent hover:border-gold/10"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {session.user.email === ADMIN_EMAIL && (
               <>

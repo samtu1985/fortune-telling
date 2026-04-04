@@ -37,9 +37,11 @@ export function buildRequest(config: MasterAIConfig, options: AIRequestOptions) 
 
   // BytePlus Seed models support thinking/reasoning
   if (config.provider === "byteplus") {
-    body.thinking = { type: reasoningDepth === "off" ? "disabled" : "enabled" };
-    if (reasoningDepth && reasoningDepth !== "off") {
-      body.reasoning_effort = reasoningDepth;
+    // Use admin-configured reasoning depth, fall back to user preference, then "high"
+    const depth = config.reasoningDepth || reasoningDepth || "high";
+    body.thinking = { type: depth === "off" ? "disabled" : "enabled" };
+    if (depth !== "off") {
+      body.reasoning_effort = depth;
     }
   }
 

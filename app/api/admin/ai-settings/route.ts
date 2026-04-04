@@ -37,6 +37,7 @@ export async function GET() {
       thinkingMode: config.thinkingMode,
       effort: config.effort,
       thinkingBudget: config.thinkingBudget,
+      reasoningDepth: config.reasoningDepth,
       hasKey: !!config.apiKey,
     };
   }
@@ -51,7 +52,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { key, provider, modelId, apiKey, apiUrl, thinkingMode, effort, thinkingBudget } = body as {
+  const { key, provider, modelId, apiKey, apiUrl, thinkingMode, effort, thinkingBudget, reasoningDepth } = body as {
     key: string;
     provider: string;
     modelId: string;
@@ -60,6 +61,7 @@ export async function PUT(request: NextRequest) {
     thinkingMode?: string;
     effort?: string;
     thinkingBudget?: number;
+    reasoningDepth?: string;
   };
 
   const validKeys = ["bazi", "ziwei", "zodiac"];
@@ -95,6 +97,9 @@ export async function PUT(request: NextRequest) {
       if (thinkingMode === "enabled" && thinkingBudget) {
         entry.thinkingBudget = thinkingBudget;
       }
+    }
+    if (provider === "byteplus" && reasoningDepth) {
+      entry.reasoningDepth = reasoningDepth as MasterAIConfig["reasoningDepth"];
     }
     settings[key] = entry;
     await writeAISettings(settings);

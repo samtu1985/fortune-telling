@@ -6,9 +6,12 @@ export interface MasterAIConfig {
   modelId: string;     // e.g. "gpt-4o", "claude-sonnet-4-0"
   apiKey: string;      // provider API key
   apiUrl: string;      // endpoint URL
-  thinkingMode?: "adaptive" | "enabled" | "disabled";  // Anthropic thinking mode
-  effort?: "low" | "medium" | "high" | "max";  // effort level for adaptive thinking (4.6 models)
-  thinkingBudget?: number;  // budget_tokens for older models with thinkingMode "enabled"
+  // Anthropic thinking
+  thinkingMode?: "adaptive" | "enabled" | "disabled";
+  effort?: "low" | "medium" | "high" | "max";  // for adaptive thinking (4.6 models)
+  thinkingBudget?: number;  // budget_tokens for older models
+  // BytePlus reasoning
+  reasoningDepth?: "high" | "medium" | "low" | "off";
 }
 
 // Settings keyed by master type: "bazi", "ziwei", "zodiac", "single-bazi", "single-ziwei", "single-zodiac"
