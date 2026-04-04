@@ -4,7 +4,6 @@ import { ADMIN_EMAIL } from "@/app/lib/users";
 import {
   readAISettings,
   writeAISettings,
-  PROVIDERS,
   type MasterAIConfig,
 } from "@/app/lib/ai-settings";
 
@@ -19,30 +18,27 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 403 });
   }
 
+  let settings: Record<string, MasterAIConfig> = {};
   try {
-    const settings = await readAISettings();
-
-    // Mask API keys for display
-    const masked: Record<string, MasterAIConfig & { hasKey: boolean }> = {};
-    for (const key of Object.keys(settings)) {
-      const config = settings[key];
-      masked[key] = {
-        provider: config.provider,
-        modelId: config.modelId,
-        apiKey: config.apiKey ? "••••" + config.apiKey.slice(-4) : "",
-        apiUrl: config.apiUrl,
-        hasKey: !!config.apiKey,
-      };
-    }
-
-    return Response.json({ settings: masked, providers: PROVIDERS });
-  } catch (e) {
-    console.error("[admin/ai-settings] GET failed:", e);
-    return Response.json(
-      { error: "讀取 AI 設定失敗" },
-      { status: 500 }
-    );
+    settings = await readAISettings();
+  } catch {
+    // No settings file yet — return empty
   }
+
+  // Mask API keys for display
+  const masked: Record<string, MasterAIConfig & { hasKey: boolean }> = {};
+  for (const key of Object.keys(settings)) {
+    const config = settings[key];
+    masked[key] = {
+      provider: config.provider,
+      modelId: config.modelId,
+      apiKey: config.apiKey ? "••••" + config.apiKey.slice(-4) : "",
+      apiUrl: config.apiUrl,
+      hasKey: !!config.apiKey,
+    };
+  }
+
+  return Response.json({ settings: masked });
 }
 
 // PUT: update AI settings for a specific master key
@@ -70,7 +66,13 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const settings = await readAISettings();
+    // Read existing settings; if blob doesn't exist yet, start with empty
+    let settings: Record<string, { provider: string; modelId: string; apiKey: string; apiUrl: string }> = {};
+    try {
+      settings = await readAISettings();
+    } catch {
+      // First time — no existing settings file, start fresh
+    }
 
     // If apiKey is not provided or is the masked placeholder, keep existing key
     let finalApiKey = apiKey || "";
