@@ -35,6 +35,34 @@ interface MasterAIConfig {
   hasKey?: boolean;
 }
 
+const PROVIDERS: Record<string, ProviderInfo> = {
+  byteplus: {
+    label: "BytePlus (Seed)",
+    defaultUrl: "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
+    defaultModel: "seed-2-0-pro-260328",
+  },
+  openai: {
+    label: "OpenAI",
+    defaultUrl: "https://api.openai.com/v1/chat/completions",
+    defaultModel: "gpt-4o",
+  },
+  anthropic: {
+    label: "Anthropic (Claude)",
+    defaultUrl: "https://api.anthropic.com/v1/messages",
+    defaultModel: "claude-sonnet-4-20250514",
+  },
+  google: {
+    label: "Google (Gemini)",
+    defaultUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    defaultModel: "gemini-2.5-flash",
+  },
+  custom: {
+    label: "自訂 (OpenAI 相容)",
+    defaultUrl: "",
+    defaultModel: "",
+  },
+};
+
 const MASTER_KEYS = [
   { key: "bazi", label: "八字老師" },
   { key: "ziwei", label: "紫微老師" },
@@ -61,7 +89,6 @@ export default function AdminPage() {
 
   // --- AI Settings state ---
   const [aiSettings, setAiSettings] = useState<Record<string, MasterAIConfig>>({});
-  const [providers, setProviders] = useState<Record<string, ProviderInfo>>({});
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -91,7 +118,6 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/ai-settings");
       const data = await res.json();
       setAiSettings(data.settings || {});
-      setProviders(data.providers || {});
     } catch {
       // ignore
     } finally {
@@ -143,7 +169,7 @@ export default function AdminPage() {
   // --- AI settings handlers ---
   const startEditing = (key: string) => {
     const existing = aiSettings[key];
-    const defaultProvider = providers["byteplus"];
+    const defaultProvider = PROVIDERS["byteplus"];
     setEditForm({
       provider: existing?.provider || "byteplus",
       modelId: existing?.modelId || defaultProvider?.defaultModel || "",
@@ -154,7 +180,7 @@ export default function AdminPage() {
   };
 
   const handleProviderChange = (provider: string) => {
-    const info = providers[provider];
+    const info = PROVIDERS[provider];
     setEditForm((prev) => ({
       ...prev,
       provider,
@@ -442,7 +468,7 @@ export default function AdminPage() {
                   const isEditing = editingKey === key;
                   const isSaving = aiSaving === key;
                   const providerLabel = config
-                    ? providers[config.provider]?.label || config.provider
+                    ? PROVIDERS[config.provider]?.label || config.provider
                     : "預設 (環境變數)";
 
                   return (
@@ -489,7 +515,7 @@ export default function AdminPage() {
                               AI 供應商
                             </label>
                             <div className="flex flex-wrap gap-2">
-                              {Object.entries(providers).map(([id, info]) => (
+                              {Object.entries(PROVIDERS).map(([id, info]) => (
                                 <button
                                   key={id}
                                   type="button"
@@ -517,7 +543,7 @@ export default function AdminPage() {
                               onChange={(e) =>
                                 setEditForm((f) => ({ ...f, modelId: e.target.value }))
                               }
-                              placeholder={providers[editForm.provider]?.defaultModel || "模型名稱"}
+                              placeholder={PROVIDERS[editForm.provider]?.defaultModel || "模型名稱"}
                               className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
                               style={{ backgroundColor: "var(--parchment)" }}
                             />
@@ -534,7 +560,7 @@ export default function AdminPage() {
                               onChange={(e) =>
                                 setEditForm((f) => ({ ...f, apiUrl: e.target.value }))
                               }
-                              placeholder={providers[editForm.provider]?.defaultUrl || "https://..."}
+                              placeholder={PROVIDERS[editForm.provider]?.defaultUrl || "https://..."}
                               className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
                               style={{ backgroundColor: "var(--parchment)" }}
                             />
