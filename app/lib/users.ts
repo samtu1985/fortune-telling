@@ -1,5 +1,6 @@
-import fs from "fs/promises";
-import path from "path";
+import { eq, and } from "drizzle-orm";
+import { db } from "./db";
+import { users, profiles, conversations } from "./db/schema";
 
 export type UserStatus = "pending" | "approved" | "disabled";
 
@@ -46,7 +47,6 @@ export interface UserData {
   status: UserStatus;
   createdAt: string;
   approvedAt: string | null;
-  profile?: UserProfile;              // legacy, will be migrated
   profiles?: SavedProfile[];
   savedConversations?: SavedConversation[];
   reasoningDepth?: ReasoningDepth;
@@ -56,123 +56,41 @@ export type UsersStore = Record<string, UserData>;
 
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "geektu@gmail.com";
 
-const BLOB_PATH = "users.json";
-const LOCAL_FILE = path.join(process.cwd(), "data", "users.json");
+// ─── Internal helpers ────────────────────────────────────
 
-function useBlob(): boolean {
-  return !!process.env.BLOB_READ_WRITE_TOKEN;
+async function getUserId(email: string): Promise<number | null> {
+  const row = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+  return row[0]?.id ?? null;
 }
+
+// ─── Public API (same signatures as before) ──────────────
 
 export async function readUsers(): Promise<UsersStore> {
-  if (useBlob()) {
-    try {
-      const { head } = await import("@vercel/blob");
-      const meta = await head(BLOB_PATH);
-      const token = process.env.BLOB_READ_WRITE_TOKEN!;
-      // Add cache-busting param to bypass CDN cache after writes
-      const url = new URL(meta.url);
-      url.searchParams.set("t", Date.now().toString());
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (!res.ok) {
-        console.error("[users] Blob fetch failed:", res.status, res.statusText);
-        // Throw instead of returning {} to prevent downstream writes from wiping data
-        throw new Error(`Blob fetch failed: ${res.status}`);
-      }
-      return await res.json();
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === "BlobNotFoundError") {
-        // Blob doesn't exist yet — this is normal for first run
-        return {};
-      }
-      console.error("[users] Failed to read from Blob:", e instanceof Error ? e.message : e);
-      // Re-throw to prevent callers from writing empty data back
-      throw e;
-    }
+  const rows = await db.select().from(users);
+  const store: UsersStore = {};
+  for (const row of rows) {
+    store[row.email] = {
+      name: row.name,
+      image: row.image,
+      status: row.status as UserStatus,
+      createdAt: row.createdAt.toISOString(),
+      approvedAt: row.approvedAt?.toISOString() ?? null,
+    };
   }
-
-  // Local file fallback for development
-  try {
-    const data = await fs.readFile(LOCAL_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    // File doesn't exist yet, return empty
-    return {};
-  }
-}
-
-export async function writeUsers(users: UsersStore): Promise<void> {
-  const newCount = Object.keys(users).length;
-
-  // Safety check: prevent accidental data wipe
-  // If we're about to write significantly fewer users than what's stored, abort
-  if (useBlob() && newCount > 0) {
-    try {
-      const existing = await readUsers();
-      const existingCount = Object.keys(existing).length;
-      if (existingCount > 2 && newCount < existingCount * 0.5) {
-        console.error(
-          `[users] WRITE ABORTED: would reduce users from ${existingCount} to ${newCount}. This looks like a data wipe.`
-        );
-        return;
-      }
-    } catch {
-      // If we can't read existing data, proceed with write
-    }
-  }
-
-  if (useBlob()) {
-    const { put } = await import("@vercel/blob");
-    await put(BLOB_PATH, JSON.stringify(users, null, 2), {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: "application/json",
-    });
-    return;
-  }
-
-  // Local file fallback
-  const dir = path.dirname(LOCAL_FILE);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(LOCAL_FILE, JSON.stringify(users, null, 2), "utf-8");
-}
-
-function migrateUserData(user: UserData): UserData {
-  // Migrate legacy single profile to profiles array
-  if (user.profile && !user.profiles) {
-    const legacy = user.profile;
-    user.profiles = [
-      {
-        id: crypto.randomUUID(),
-        label: "本人",
-        birthDate: legacy.birthDate || "",
-        birthTime: legacy.birthTime || "",
-        gender: legacy.gender || "",
-        birthPlace: legacy.birthPlace || "",
-        calendarType: "solar",
-        isLeapMonth: false,
-        createdAt: user.createdAt,
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-    delete user.profile;
-  }
-  return user;
+  return store;
 }
 
 export async function getUser(email: string): Promise<UserData | null> {
-  const users = await readUsers();
-  const user = users[email];
-  if (!user) return null;
-  const hadLegacyProfile = !!user.profile && !user.profiles;
-  migrateUserData(user);
-  if (hadLegacyProfile) {
-    await writeUsers(users);
-  }
-  return user;
+  const row = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (!row[0]) return null;
+  const u = row[0];
+  return {
+    name: u.name,
+    image: u.image,
+    status: u.status as UserStatus,
+    createdAt: u.createdAt.toISOString(),
+    approvedAt: u.approvedAt?.toISOString() ?? null,
+  };
 }
 
 export async function registerUser(
@@ -180,117 +98,104 @@ export async function registerUser(
   name: string | null,
   image: string | null
 ): Promise<void> {
-  console.log("[users] registerUser called:", email, "useBlob:", useBlob());
-
-  let users: UsersStore;
-  try {
-    users = await readUsers();
-  } catch (e) {
-    // If we can't read users, do NOT write (would wipe data)
-    console.error("[users] registerUser: readUsers failed, skipping write to protect data:", e);
-    return;
-  }
-
   const isAdmin = email === ADMIN_EMAIL;
+  const now = new Date();
 
-  if (!users[email]) {
-    users[email] = {
+  await db
+    .insert(users)
+    .values({
+      email,
       name,
       image,
       status: isAdmin ? "approved" : "pending",
-      createdAt: new Date().toISOString(),
-      approvedAt: isAdmin ? new Date().toISOString() : null,
-    };
-  } else {
-    users[email].name = name;
-    users[email].image = image;
-    if (isAdmin && users[email].status !== "approved") {
-      users[email].status = "approved";
-      users[email].approvedAt = new Date().toISOString();
-    }
-  }
+      createdAt: now,
+      approvedAt: isAdmin ? now : null,
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: { name, image },
+    });
 
-  await writeUsers(users);
-  console.log("[users] registerUser success:", email);
+  // Auto-approve admin if not already
+  if (isAdmin) {
+    await db
+      .update(users)
+      .set({ status: "approved", approvedAt: now })
+      .where(and(eq(users.email, email), eq(users.status, "pending")));
+  }
 }
 
 export async function updateUserStatus(
   email: string,
   status: UserStatus
 ): Promise<boolean> {
-  const users = await readUsers();
-  if (!users[email]) return false;
-  users[email].status = status;
-  if (status === "approved" && !users[email].approvedAt) {
-    users[email].approvedAt = new Date().toISOString();
+  const set: Record<string, unknown> = { status };
+  if (status === "approved") {
+    set.approvedAt = new Date();
   }
-  await writeUsers(users);
-  return true;
+  const result = await db.update(users).set(set).where(eq(users.email, email));
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function deleteUser(email: string): Promise<boolean> {
-  const users = await readUsers();
-  if (!users[email]) return false;
-  delete users[email];
-  await writeUsers(users);
-  return true;
+  const result = await db.delete(users).where(eq(users.email, email));
+  return (result.rowCount ?? 0) > 0;
 }
 
-export async function getReasoningDepth(email: string): Promise<ReasoningDepth> {
-  try {
-    const users = await readUsers();
-    return users[email]?.reasoningDepth || "high";
-  } catch {
-    return "high";
-  }
+// ─── Reasoning Depth (now stored in ai-settings, keep stub for compatibility) ──
+
+export async function getReasoningDepth(_email: string): Promise<ReasoningDepth> {
+  return "high";
 }
 
 export async function setReasoningDepth(
-  email: string,
-  depth: ReasoningDepth
+  _email: string,
+  _depth: ReasoningDepth
 ): Promise<boolean> {
-  const users = await readUsers();
-  if (!users[email]) return false;
-  users[email].reasoningDepth = depth;
-  await writeUsers(users);
   return true;
 }
+
+// ─── Profiles ────────────────────────────────────────────
 
 const MAX_PROFILES = 10;
 
 export async function getProfiles(email: string): Promise<SavedProfile[]> {
-  const users = await readUsers();
-  const user = users[email];
-  if (!user) return [];
-  const hadLegacyProfile = !!user.profile && !user.profiles;
-  migrateUserData(user);
-  if (hadLegacyProfile) {
-    await writeUsers(users);
-  }
-  return user.profiles || [];
+  const userId = await getUserId(email);
+  if (!userId) return [];
+  const rows = await db.select().from(profiles).where(eq(profiles.userId, userId));
+  return rows.map(mapProfile);
 }
 
 export async function createProfile(
   email: string,
   profile: Omit<SavedProfile, "id" | "createdAt" | "updatedAt">
 ): Promise<SavedProfile | null> {
-  const users = await readUsers();
-  if (!users[email]) return null;
-  migrateUserData(users[email]);
-  const profiles = users[email].profiles || [];
-  if (profiles.length >= MAX_PROFILES) return null;
+  const userId = await getUserId(email);
+  if (!userId) return null;
 
-  const now = new Date().toISOString();
-  const newProfile: SavedProfile = {
-    ...profile,
-    id: crypto.randomUUID(),
-    createdAt: now,
-    updatedAt: now,
-  };
-  profiles.push(newProfile);
-  users[email].profiles = profiles;
-  await writeUsers(users);
-  return newProfile;
+  // Check max
+  const existing = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.userId, userId));
+  if (existing.length >= MAX_PROFILES) return null;
+
+  const now = new Date();
+  const result = await db
+    .insert(profiles)
+    .values({
+      userId,
+      label: profile.label,
+      birthDate: profile.birthDate,
+      birthTime: profile.birthTime,
+      gender: profile.gender,
+      birthPlace: profile.birthPlace,
+      calendarType: profile.calendarType,
+      isLeapMonth: profile.isLeapMonth,
+      savedCharts: profile.savedCharts ?? null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  return result[0] ? mapProfile(result[0]) : null;
 }
 
 export async function updateProfileById(
@@ -298,75 +203,111 @@ export async function updateProfileById(
   id: string,
   updates: Partial<Omit<SavedProfile, "id" | "createdAt">>
 ): Promise<boolean> {
-  const users = await readUsers();
-  if (!users[email]) return false;
-  migrateUserData(users[email]);
-  const profiles = users[email].profiles || [];
-  const idx = profiles.findIndex((p) => p.id === id);
-  if (idx === -1) return false;
-  profiles[idx] = { ...profiles[idx], ...updates, updatedAt: new Date().toISOString() };
-  users[email].profiles = profiles;
-  await writeUsers(users);
-  return true;
+  const userId = await getUserId(email);
+  if (!userId) return false;
+
+  const set: Record<string, unknown> = { updatedAt: new Date() };
+  if (updates.label !== undefined) set.label = updates.label;
+  if (updates.birthDate !== undefined) set.birthDate = updates.birthDate;
+  if (updates.birthTime !== undefined) set.birthTime = updates.birthTime;
+  if (updates.gender !== undefined) set.gender = updates.gender;
+  if (updates.birthPlace !== undefined) set.birthPlace = updates.birthPlace;
+  if (updates.calendarType !== undefined) set.calendarType = updates.calendarType;
+  if (updates.isLeapMonth !== undefined) set.isLeapMonth = updates.isLeapMonth;
+  if (updates.savedCharts !== undefined) set.savedCharts = updates.savedCharts;
+
+  const result = await db
+    .update(profiles)
+    .set(set)
+    .where(and(eq(profiles.id, id), eq(profiles.userId, userId)));
+
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function deleteProfileById(
   email: string,
   id: string
 ): Promise<boolean> {
-  const users = await readUsers();
-  if (!users[email]) return false;
-  migrateUserData(users[email]);
-  const profiles = users[email].profiles || [];
-  const idx = profiles.findIndex((p) => p.id === id);
-  if (idx === -1) return false;
-  profiles.splice(idx, 1);
-  users[email].profiles = profiles;
-  await writeUsers(users);
-  return true;
+  const userId = await getUserId(email);
+  if (!userId) return false;
+  const result = await db.delete(profiles).where(and(eq(profiles.id, id), eq(profiles.userId, userId)));
+  return (result.rowCount ?? 0) > 0;
 }
+
+function mapProfile(row: typeof profiles.$inferSelect): SavedProfile {
+  return {
+    id: row.id,
+    label: row.label,
+    birthDate: row.birthDate,
+    birthTime: row.birthTime,
+    gender: row.gender,
+    birthPlace: row.birthPlace,
+    calendarType: row.calendarType as "solar" | "lunar",
+    isLeapMonth: row.isLeapMonth,
+    savedCharts: row.savedCharts ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+// ─── Saved Conversations ─────────────────────────────────
 
 export async function getSavedConversations(
   email: string,
   type?: "bazi" | "ziwei" | "zodiac"
 ): Promise<SavedConversation[]> {
-  const users = await readUsers();
-  const user = users[email];
-  if (!user) return [];
-  const all = user.savedConversations || [];
-  if (type) return all.filter((c) => c.type === type);
-  return all;
+  const userId = await getUserId(email);
+  if (!userId) return [];
+
+  const where = type
+    ? and(eq(conversations.userId, userId), eq(conversations.type, type))
+    : eq(conversations.userId, userId);
+
+  const rows = await db.select().from(conversations).where(where);
+  return rows.map(mapConversation);
 }
 
 export async function createSavedConversation(
   email: string,
   conv: Omit<SavedConversation, "id" | "savedAt">
 ): Promise<SavedConversation | null> {
-  const users = await readUsers();
-  if (!users[email]) return null;
-  const conversations = users[email].savedConversations || [];
-  const newConv: SavedConversation = {
-    ...conv,
-    id: crypto.randomUUID(),
-    savedAt: new Date().toISOString(),
-  };
-  conversations.push(newConv);
-  users[email].savedConversations = conversations;
-  await writeUsers(users);
-  return newConv;
+  const userId = await getUserId(email);
+  if (!userId) return null;
+
+  const result = await db
+    .insert(conversations)
+    .values({
+      userId,
+      type: conv.type,
+      userQuestion: conv.userQuestion,
+      aiResponse: conv.aiResponse,
+      aiReasoning: conv.aiReasoning ?? null,
+      profileLabel: conv.profileLabel ?? null,
+      savedAt: new Date(),
+    })
+    .returning();
+
+  return result[0] ? mapConversation(result[0]) : null;
 }
 
 export async function deleteSavedConversation(
   email: string,
   id: string
 ): Promise<boolean> {
-  const users = await readUsers();
-  if (!users[email]) return false;
-  const conversations = users[email].savedConversations || [];
-  const idx = conversations.findIndex((c) => c.id === id);
-  if (idx === -1) return false;
-  conversations.splice(idx, 1);
-  users[email].savedConversations = conversations;
-  await writeUsers(users);
-  return true;
+  const userId = await getUserId(email);
+  if (!userId) return false;
+  const result = await db.delete(conversations).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+  return (result.rowCount ?? 0) > 0;
+}
+
+function mapConversation(row: typeof conversations.$inferSelect): SavedConversation {
+  return {
+    id: row.id,
+    type: row.type as "bazi" | "ziwei" | "zodiac",
+    userQuestion: row.userQuestion,
+    aiResponse: row.aiResponse,
+    aiReasoning: row.aiReasoning ?? undefined,
+    profileLabel: row.profileLabel ?? undefined,
+    savedAt: row.savedAt.toISOString(),
+  };
 }

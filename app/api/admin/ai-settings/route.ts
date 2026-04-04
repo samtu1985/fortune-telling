@@ -4,6 +4,7 @@ import { ADMIN_EMAIL } from "@/app/lib/users";
 import {
   readAISettings,
   writeAISettings,
+  deleteAISetting,
   type MasterAIConfig,
 } from "@/app/lib/ai-settings";
 
@@ -128,9 +129,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const settings = await readAISettings();
-    delete settings[key];
-    await writeAISettings(settings);
+    await deleteAISetting(key);
     return Response.json({ success: true });
   } catch (e) {
     console.error("[admin/ai-settings] DELETE failed:", e);

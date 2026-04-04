@@ -1,24 +1,22 @@
-import fs from "fs/promises";
-import path from "path";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { aiSettings } from "./db/schema";
+import { encrypt, decrypt } from "./db/encryption";
 
 export interface MasterAIConfig {
-  provider: string;    // e.g. "byteplus", "openai", "google", "anthropic", "custom"
-  modelId: string;     // e.g. "gpt-4o", "claude-sonnet-4-0"
-  apiKey: string;      // provider API key
-  apiUrl: string;      // endpoint URL
+  provider: string;
+  modelId: string;
+  apiKey: string;
+  apiUrl: string;
   // Anthropic thinking
   thinkingMode?: "adaptive" | "enabled" | "disabled";
-  effort?: "low" | "medium" | "high" | "max";  // for adaptive thinking (4.6 models)
-  thinkingBudget?: number;  // budget_tokens for older models
+  effort?: "low" | "medium" | "high" | "max";
+  thinkingBudget?: number;
   // BytePlus reasoning
   reasoningDepth?: "high" | "medium" | "low" | "off";
 }
 
-// Settings keyed by master type: "bazi", "ziwei", "zodiac", "single-bazi", "single-ziwei", "single-zodiac"
 export type AISettingsStore = Record<string, MasterAIConfig>;
-
-const BLOB_PATH = "ai-settings.json";
-const LOCAL_FILE = path.join(process.cwd(), "data", "ai-settings.json");
 
 // Well-known providers with default endpoints
 export const PROVIDERS: Record<string, { label: string; defaultUrl: string; defaultModel: string }> = {
@@ -49,58 +47,60 @@ export const PROVIDERS: Record<string, { label: string; defaultUrl: string; defa
   },
 };
 
-function useBlob(): boolean {
-  return !!process.env.BLOB_READ_WRITE_TOKEN;
-}
-
 export async function readAISettings(): Promise<AISettingsStore> {
-  if (useBlob()) {
-    try {
-      const { head } = await import("@vercel/blob");
-      const meta = await head(BLOB_PATH);
-      const token = process.env.BLOB_READ_WRITE_TOKEN!;
-      const url = new URL(meta.url);
-      url.searchParams.set("t", Date.now().toString());
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (!res.ok) {
-        throw new Error(`Blob fetch failed: ${res.status}`);
-      }
-      return await res.json();
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === "BlobNotFoundError") {
-        return {};
-      }
-      console.error("[ai-settings] Failed to read from Blob:", e instanceof Error ? e.message : e);
-      throw e;
-    }
+  const rows = await db.select().from(aiSettings);
+  const store: AISettingsStore = {};
+  for (const row of rows) {
+    store[row.masterKey] = {
+      provider: row.provider,
+      modelId: row.modelId,
+      apiKey: decrypt(row.apiKeyEncrypted),
+      apiUrl: row.apiUrl,
+      thinkingMode: row.thinkingMode as MasterAIConfig["thinkingMode"],
+      effort: row.effort as MasterAIConfig["effort"],
+      thinkingBudget: row.thinkingBudget ?? undefined,
+      reasoningDepth: row.reasoningDepth as MasterAIConfig["reasoningDepth"],
+    };
   }
-
-  try {
-    const data = await fs.readFile(LOCAL_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return {};
-  }
+  return store;
 }
 
 export async function writeAISettings(settings: AISettingsStore): Promise<void> {
-  if (useBlob()) {
-    const { put } = await import("@vercel/blob");
-    await put(BLOB_PATH, JSON.stringify(settings, null, 2), {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: "application/json",
-    });
-    return;
+  // Upsert each entry individually (atomic per key)
+  for (const [key, config] of Object.entries(settings)) {
+    await db
+      .insert(aiSettings)
+      .values({
+        masterKey: key,
+        provider: config.provider,
+        modelId: config.modelId,
+        apiKeyEncrypted: encrypt(config.apiKey),
+        apiUrl: config.apiUrl,
+        thinkingMode: config.thinkingMode ?? null,
+        effort: config.effort ?? null,
+        thinkingBudget: config.thinkingBudget ?? null,
+        reasoningDepth: config.reasoningDepth ?? null,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: aiSettings.masterKey,
+        set: {
+          provider: config.provider,
+          modelId: config.modelId,
+          apiKeyEncrypted: encrypt(config.apiKey),
+          apiUrl: config.apiUrl,
+          thinkingMode: config.thinkingMode ?? null,
+          effort: config.effort ?? null,
+          thinkingBudget: config.thinkingBudget ?? null,
+          reasoningDepth: config.reasoningDepth ?? null,
+          updatedAt: new Date(),
+        },
+      });
   }
+}
 
-  const dir = path.dirname(LOCAL_FILE);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(LOCAL_FILE, JSON.stringify(settings, null, 2), "utf-8");
+export async function deleteAISetting(key: string): Promise<void> {
+  await db.delete(aiSettings).where(eq(aiSettings.masterKey, key));
 }
 
 /**
@@ -109,15 +109,23 @@ export async function writeAISettings(settings: AISettingsStore): Promise<void> 
  */
 export async function getAIConfig(key: string): Promise<MasterAIConfig> {
   try {
-    const settings = await readAISettings();
-    if (settings[key]) {
-      return settings[key];
+    const row = await db.select().from(aiSettings).where(eq(aiSettings.masterKey, key)).limit(1);
+    if (row[0]) {
+      return {
+        provider: row[0].provider,
+        modelId: row[0].modelId,
+        apiKey: decrypt(row[0].apiKeyEncrypted),
+        apiUrl: row[0].apiUrl,
+        thinkingMode: row[0].thinkingMode as MasterAIConfig["thinkingMode"],
+        effort: row[0].effort as MasterAIConfig["effort"],
+        thinkingBudget: row[0].thinkingBudget ?? undefined,
+        reasoningDepth: row[0].reasoningDepth as MasterAIConfig["reasoningDepth"],
+      };
     }
   } catch {
     // Fall through to default
   }
 
-  // Default: use env-based BytePlus config
   return {
     provider: "byteplus",
     modelId: process.env.BYTEPLUS_MODEL_ID || "seed-2-0-pro-260328",
