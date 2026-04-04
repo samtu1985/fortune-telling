@@ -132,12 +132,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Inject current date so the model knows the actual year
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+  const promptWithDate = `${systemPrompt}\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
+
   // Inject this master's chart data into system prompt
   const chartKey = master as keyof typeof charts;
   const chartData = charts[chartKey] || "";
   const fullSystemPrompt = chartData
-    ? `${systemPrompt}\n\n【以下是由排盤程式精確計算的命盤數據】\n\n${chartData}`
-    : systemPrompt;
+    ? `${promptWithDate}\n\n【以下是由排盤程式精確計算的命盤數據】\n\n${chartData}`
+    : promptWithDate;
 
   // Convert multi-master messages to API format:
   // - This master's messages → "assistant"

@@ -252,6 +252,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Inject current date so the model knows the actual year
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+  systemPrompt += `\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
+
   // Add follow-up chart rule to system prompt
   systemPrompt += FOLLOWUP_CHART_RULE;
 
