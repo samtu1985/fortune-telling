@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { getAIConfig } from "@/app/lib/ai-settings";
 import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
+import { auth } from "@/app/lib/auth";
+import { logUsage } from "@/app/lib/usage";
 
 const MASTER_PROMPTS: Record<string, string> = {
   bazi: `你是「八字老師」，精通八字命理，正在跟紫微老師、星座老師一起聊天討論。
@@ -115,6 +117,9 @@ export async function POST(request: NextRequest) {
     reasoningDepth?: string;
     locale?: Locale;
   };
+
+  const session = await auth();
+  const userEmail = session?.user?.email || "unknown";
 
   const systemPrompt = MASTER_PROMPTS[master];
   if (!systemPrompt) {
@@ -261,6 +266,8 @@ export async function POST(request: NextRequest) {
       }, 10_000);
 
       let buffer = "";
+      let totalInput = 0;
+      let totalOutput = 0;
 
       try {
         while (true) {
@@ -282,6 +289,11 @@ export async function POST(request: NextRequest) {
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               continue;
             }
+            if (result.usage) {
+              totalInput += result.usage.input;
+              totalOutput += result.usage.output;
+              continue;
+            }
             if (result.content) {
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
@@ -291,6 +303,16 @@ export async function POST(request: NextRequest) {
         }
       } finally {
         clearInterval(keepalive);
+        // Log usage (fire-and-forget)
+        logUsage({
+          userEmail,
+          masterType: master,
+          mode: "multi",
+          provider: config.provider,
+          modelId: config.modelId,
+          inputTokens: totalInput,
+          outputTokens: totalOutput,
+        });
       }
 
       controller.close();
