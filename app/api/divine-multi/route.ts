@@ -235,39 +235,47 @@ export async function POST(request: NextRequest) {
         return;
       }
 
+      // Send keepalive pings every 10s to prevent Vercel proxy timeout
+      // SSE comments (lines starting with ":") are ignored by EventSource clients
+      const keepalive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(": keepalive\n\n"));
+        } catch {
+          clearInterval(keepalive);
+        }
+      }, 10_000);
+
       let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
 
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-          const data = trimmed.slice(6);
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+            const data = trimmed.slice(6);
 
-          const result = parseSSELine(data, req.isAnthropic);
-          if (!result) continue;
-          if (result.done) {
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            continue;
-          }
-          if (result.content) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
-            );
-          }
-          // Forward reasoning events to keep the connection alive during thinking
-          if (result.reasoning) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ reasoning: result.reasoning })}\n\n`)
-            );
+            const result = parseSSELine(data, req.isAnthropic);
+            if (!result) continue;
+            if (result.done) {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              continue;
+            }
+            if (result.content) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
+              );
+            }
           }
         }
+      } finally {
+        clearInterval(keepalive);
       }
 
       controller.close();
