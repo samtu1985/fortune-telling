@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { signOut } from "next-auth/react";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import { useLocale } from "@/app/components/LocaleProvider";
+import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
 interface UserItem {
   email: string;
@@ -13,12 +15,6 @@ interface UserItem {
   createdAt: string;
   approvedAt: string | null;
 }
-
-const STATUS_LABELS: Record<string, { text: string; color: string }> = {
-  pending: { text: "待審核", color: "text-yellow-500" },
-  approved: { text: "已核准", color: "text-green-500" },
-  disabled: { text: "已停用", color: "text-red-400" },
-};
 
 // --- AI Settings types ---
 interface ProviderInfo {
@@ -39,40 +35,6 @@ interface MasterAIConfig {
   reasoningDepth?: "high" | "medium" | "low" | "off";
 }
 
-const PROVIDERS: Record<string, ProviderInfo> = {
-  byteplus: {
-    label: "BytePlus (Seed)",
-    defaultUrl: "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
-    defaultModel: "seed-2-0-pro-260328",
-  },
-  openai: {
-    label: "OpenAI",
-    defaultUrl: "https://api.openai.com/v1/chat/completions",
-    defaultModel: "gpt-4o",
-  },
-  anthropic: {
-    label: "Anthropic (Claude)",
-    defaultUrl: "https://api.anthropic.com/v1/messages",
-    defaultModel: "claude-sonnet-4-0",
-  },
-  google: {
-    label: "Google (Gemini)",
-    defaultUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-    defaultModel: "gemini-2.5-flash",
-  },
-  custom: {
-    label: "自訂 (OpenAI 相容)",
-    defaultUrl: "",
-    defaultModel: "",
-  },
-};
-
-const MASTER_KEYS = [
-  { key: "bazi", label: "八字老師" },
-  { key: "ziwei", label: "紫微老師" },
-  { key: "zodiac", label: "星座老師" },
-];
-
 // Claude models: useEffort means use adaptive+effort (4.6), otherwise use enabled+budget (legacy)
 const CLAUDE_MODELS = [
   { id: "claude-opus-4-6", label: "Claude Opus 4.6", useEffort: true },
@@ -85,22 +47,64 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-const EFFORT_OPTIONS = [
-  { value: "low", label: "低 — 快速" },
-  { value: "medium", label: "中 — 平衡" },
-  { value: "high", label: "高 — 深度" },
-];
-
-const BYTEPLUS_DEPTH_OPTIONS = [
-  { value: "high", label: "高" },
-  { value: "medium", label: "中" },
-  { value: "low", label: "低" },
-  { value: "off", label: "關" },
-];
-
 type Tab = "users" | "ai";
 
 export default function AdminPage() {
+  const { t } = useLocale();
+
+  const STATUS_LABELS: Record<string, { text: string; color: string }> = useMemo(() => ({
+    pending: { text: t("admin.statusPending"), color: "text-yellow-500" },
+    approved: { text: t("admin.statusApproved"), color: "text-green-500" },
+    disabled: { text: t("admin.statusDisabled"), color: "text-red-400" },
+  }), [t]);
+
+  const PROVIDERS: Record<string, ProviderInfo> = useMemo(() => ({
+    byteplus: {
+      label: "BytePlus (Seed)",
+      defaultUrl: "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
+      defaultModel: "seed-2-0-pro-260328",
+    },
+    openai: {
+      label: "OpenAI",
+      defaultUrl: "https://api.openai.com/v1/chat/completions",
+      defaultModel: "gpt-4o",
+    },
+    anthropic: {
+      label: "Anthropic (Claude)",
+      defaultUrl: "https://api.anthropic.com/v1/messages",
+      defaultModel: "claude-sonnet-4-0",
+    },
+    google: {
+      label: "Google (Gemini)",
+      defaultUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      defaultModel: "gemini-2.5-flash",
+    },
+    custom: {
+      label: t("admin.customProvider"),
+      defaultUrl: "",
+      defaultModel: "",
+    },
+  }), [t]);
+
+  const MASTER_KEYS = useMemo(() => [
+    { key: "bazi", label: t("master.bazi") },
+    { key: "ziwei", label: t("master.ziwei") },
+    { key: "zodiac", label: t("master.zodiac") },
+  ], [t]);
+
+  const EFFORT_OPTIONS = useMemo(() => [
+    { value: "low", label: t("admin.effortLow") },
+    { value: "medium", label: t("admin.effortMedium") },
+    { value: "high", label: t("admin.effortHigh") },
+  ], [t]);
+
+  const BYTEPLUS_DEPTH_OPTIONS = useMemo(() => [
+    { value: "high", label: t("admin.depthHigh") },
+    { value: "medium", label: t("admin.depthMedium") },
+    { value: "low", label: t("admin.depthLow") },
+    { value: "off", label: t("admin.depthOff") },
+  ], [t]);
+
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -140,11 +144,11 @@ export default function AdminPage() {
       setStorageType(data.storageType || "");
       setStorageError(data.error || "");
     } catch {
-      setStorageError("無法連接 API");
+      setStorageError(t("admin.apiError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const fetchAISettings = useCallback(async () => {
     try {
@@ -176,7 +180,7 @@ export default function AdminPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(`操作失敗: ${data.error || res.statusText}`);
+        alert(`${t("admin.operationFailed")}: ${data.error || res.statusText}`);
       }
       await fetchUsers();
     } finally {
@@ -185,7 +189,7 @@ export default function AdminPage() {
   };
 
   const removeUser = async (email: string) => {
-    if (!confirm(`確定要刪除 ${email} 嗎？`)) return;
+    if (!confirm(t("admin.deleteConfirm", { email }))) return;
     setActionLoading(email);
     try {
       await fetch("/api/admin/users", {
@@ -253,7 +257,7 @@ export default function AdminPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(`儲存失敗: ${data.error || res.statusText}`);
+        alert(`${t("admin.saveFailed")}: ${data.error || res.statusText}`);
         return;
       }
       // Update local state immediately (don't rely on re-fetch which may read stale blob)
@@ -278,7 +282,7 @@ export default function AdminPage() {
   };
 
   const resetAISetting = async (key: string) => {
-    if (!confirm("確定要重置為預設值嗎？將使用環境變數中的 BytePlus 設定。")) return;
+    if (!confirm(t("admin.resetConfirm"))) return;
     setAiSaving(key);
     try {
       await fetch("/api/admin/ai-settings", {
@@ -318,16 +322,17 @@ export default function AdminPage() {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          返回首頁
+          {t("admin.backToHome")}
         </a>
 
         <div className="flex items-center gap-3">
+          <LocaleSwitcher />
           <ThemeToggle />
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="text-xs text-stone hover:text-gold transition-colors"
           >
-            登出
+            {t("admin.logout")}
           </button>
         </div>
       </div>
@@ -335,7 +340,7 @@ export default function AdminPage() {
       {/* Header */}
       <header className="text-center py-6">
         <h1 className="font-serif text-2xl font-bold tracking-[0.15em] text-gold">
-          後台管理
+          {t("admin.title")}
         </h1>
         <div className="mx-auto mt-4 w-24 gold-line" />
       </header>
@@ -351,7 +356,7 @@ export default function AdminPage() {
                 : "text-stone/60 hover:text-stone"
             }`}
           >
-            使用者管理
+            {t("admin.userTab")}
             {pendingCount > 0 && (
               <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-500 rounded-full">
                 {pendingCount}
@@ -369,7 +374,7 @@ export default function AdminPage() {
                 : "text-stone/60 hover:text-stone"
             }`}
           >
-            AI 引擎設定
+            {t("admin.aiTab")}
             {activeTab === "ai" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
             )}
@@ -384,7 +389,7 @@ export default function AdminPage() {
             {/* Storage status */}
             {storageType && (
               <p className="text-xs text-stone/50 mb-3 text-center">
-                儲存：{storageType === "postgres" ? "Neon Postgres" : "本機檔案"}
+                {t("admin.storage")}{storageType === "postgres" ? t("admin.storagePostgres") : t("admin.storageLocal")}
               </p>
             )}
             {storageError && (
@@ -392,7 +397,7 @@ export default function AdminPage() {
                 <p className="text-xs text-red-400">{storageError}</p>
                 {storageType === "local" && (
                   <p className="text-xs text-stone/50 mt-1">
-                    在 Vercel 上需設定 Neon Postgres 才能正常儲存使用者資料
+                    {t("admin.storageNote")}
                   </p>
                 )}
               </div>
@@ -404,7 +409,7 @@ export default function AdminPage() {
                 <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
               </div>
             ) : users.length === 0 ? (
-              <p className="text-center text-stone/60 py-12">尚無使用者</p>
+              <p className="text-center text-stone/60 py-12">{t("admin.noUsers")}</p>
             ) : (
               <div className="space-y-3">
                 {users.map((user) => {
@@ -448,7 +453,7 @@ export default function AdminPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm text-cream font-medium truncate">
-                              {user.name || "未命名"}
+                              {user.name || t("admin.unnamed")}
                             </span>
                             <span className={`text-xs ${status.color}`}>
                               {status.text}
@@ -458,7 +463,7 @@ export default function AdminPage() {
                             {user.email}
                           </p>
                           <p className="text-xs text-stone/40 mt-0.5">
-                            註冊於{" "}
+                            {t("admin.registeredOn")}{" "}
                             {new Date(user.createdAt).toLocaleDateString("zh-TW")}
                           </p>
                         </div>
@@ -466,7 +471,7 @@ export default function AdminPage() {
                         {/* Actions */}
                         <div className="flex gap-2 shrink-0">
                           {isAdmin ? (
-                            <span className="text-xs text-stone/40">管理員</span>
+                            <span className="text-xs text-stone/40">{t("admin.adminLabel")}</span>
                           ) : isLoading ? (
                             <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
                           ) : (
@@ -478,7 +483,7 @@ export default function AdminPage() {
                                   }
                                   className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
                                 >
-                                  核准
+                                  {t("admin.approve")}
                                 </button>
                               )}
                               {user.status === "approved" && (
@@ -488,7 +493,7 @@ export default function AdminPage() {
                                   }
                                   className="px-3 py-1.5 min-h-[36px] text-xs text-yellow-500 border border-yellow-500/30 rounded hover:bg-yellow-500/10 transition-colors"
                                 >
-                                  停用
+                                  {t("admin.disable")}
                                 </button>
                               )}
                               {user.status === "disabled" && (
@@ -498,14 +503,14 @@ export default function AdminPage() {
                                   }
                                   className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
                                 >
-                                  啟用
+                                  {t("admin.enable")}
                                 </button>
                               )}
                               <button
                                 onClick={() => removeUser(user.email)}
                                 className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
                               >
-                                刪除
+                                {t("admin.delete")}
                               </button>
                             </>
                           )}
@@ -522,7 +527,7 @@ export default function AdminPage() {
         {activeTab === "ai" && (
           <>
             <p className="text-xs text-stone/50 mb-4 text-center">
-              為每位命理老師設定使用的 AI 模型。未設定的老師將使用環境變數中的預設值 (BytePlus)。
+              {t("admin.aiConfigDesc")}
             </p>
 
             {aiLoading ? (
@@ -537,7 +542,7 @@ export default function AdminPage() {
                   const isSaving = aiSaving === key;
                   const providerLabel = config
                     ? PROVIDERS[config.provider]?.label || config.provider
-                    : "預設 (環境變數)";
+                    : t("admin.default");
 
                   return (
                     <div
@@ -557,14 +562,14 @@ export default function AdminPage() {
                                 {providerLabel} / {config.modelId}
                                 {config.thinkingMode && config.thinkingMode !== "disabled" && (
                                   <span className="ml-1.5 text-blue-400">
-                                    思考:{config.thinkingMode === "adaptive"
-                                      ? `自適應/${config.effort || "medium"}`
+                                    {t("admin.thinking")}:{config.thinkingMode === "adaptive"
+                                      ? `${t("admin.adaptive")}/${config.effort || "medium"}`
                                       : `${config.thinkingBudget || 5000}t`}
                                   </span>
                                 )}
                                 {config.reasoningDepth && (
                                   <span className="ml-1.5 text-blue-400">
-                                    深度:{config.reasoningDepth}
+                                    {t("admin.depth")}:{config.reasoningDepth}
                                   </span>
                                 )}
                                 {config.hasKey && (
@@ -572,7 +577,7 @@ export default function AdminPage() {
                                 )}
                               </>
                             ) : (
-                              <span className="text-stone/40">使用預設</span>
+                              <span className="text-stone/40">{t("admin.useDefault")}</span>
                             )}
                           </span>
                         </div>
@@ -581,7 +586,7 @@ export default function AdminPage() {
                             onClick={() => startEditing(key)}
                             className="px-3 py-1.5 min-h-[36px] text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors"
                           >
-                            設定
+                            {t("admin.settings")}
                           </button>
                         )}
                       </div>
@@ -592,7 +597,7 @@ export default function AdminPage() {
                           {/* Provider - radio buttons */}
                           <div>
                             <label className="block text-xs text-stone/70 mb-2">
-                              AI 供應商
+                              {t("admin.provider")}
                             </label>
                             <div className="flex flex-wrap gap-2">
                               {Object.entries(PROVIDERS).map(([id, info]) => (
@@ -616,7 +621,7 @@ export default function AdminPage() {
                           {editForm.provider === "anthropic" ? (
                             <div>
                               <label className="block text-xs text-stone/70 mb-2">
-                                模型
+                                {t("admin.model")}
                               </label>
                               <div className="flex flex-wrap gap-2">
                                 {CLAUDE_MODELS.map((m) => (
@@ -638,7 +643,7 @@ export default function AdminPage() {
                           ) : (
                             <div>
                               <label className="block text-xs text-stone/70 mb-1">
-                                模型 ID
+                                {t("admin.modelId")}
                               </label>
                               <input
                                 type="text"
@@ -646,7 +651,7 @@ export default function AdminPage() {
                                 onChange={(e) =>
                                   setEditForm((f) => ({ ...f, modelId: e.target.value }))
                                 }
-                                placeholder={PROVIDERS[editForm.provider]?.defaultModel || "模型名稱"}
+                                placeholder={PROVIDERS[editForm.provider]?.defaultModel || t("admin.modelName")}
                                 className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
                                 style={{ backgroundColor: "var(--parchment)" }}
                               />
@@ -660,7 +665,7 @@ export default function AdminPage() {
                             return (
                               <div>
                                 <label className="block text-xs text-stone/70 mb-2">
-                                  思考能力
+                                  {t("admin.thinkingCapability")}
                                 </label>
                                 {isEffortModel ? (
                                   <>
@@ -675,7 +680,7 @@ export default function AdminPage() {
                                             : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
                                         }`}
                                       >
-                                        關閉
+                                        {t("admin.off")}
                                       </button>
                                       <button
                                         type="button"
@@ -686,13 +691,13 @@ export default function AdminPage() {
                                             : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
                                         }`}
                                       >
-                                        自適應思考
+                                        {t("admin.adaptiveThinking")}
                                       </button>
                                     </div>
                                     {editForm.thinkingMode === "adaptive" && (
                                       <div className="mt-2">
                                         <label className="block text-xs text-stone/50 mb-2">
-                                          思考深度 (effort)
+                                          {t("admin.effortLabel")}
                                         </label>
                                         <div className="flex flex-wrap gap-2">
                                           {EFFORT_OPTIONS.map((opt) => (
@@ -711,7 +716,7 @@ export default function AdminPage() {
                                           ))}
                                         </div>
                                         <p className="text-xs text-stone/40 mt-1">
-                                          三師問道會自動使用「低」以加速回應
+                                          {t("admin.comprehensiveNote")}
                                         </p>
                                       </div>
                                     )}
@@ -729,7 +734,7 @@ export default function AdminPage() {
                                             : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
                                         }`}
                                       >
-                                        關閉
+                                        {t("admin.off")}
                                       </button>
                                       <button
                                         type="button"
@@ -740,13 +745,13 @@ export default function AdminPage() {
                                             : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
                                         }`}
                                       >
-                                        啟用思考
+                                        {t("admin.enableThinking")}
                                       </button>
                                     </div>
                                     {editForm.thinkingMode === "enabled" && (
                                       <div className="mt-2">
                                         <label className="block text-xs text-stone/50 mb-1">
-                                          思考預算 (tokens，最小 1024)
+                                          {t("admin.thinkingBudget")}
                                         </label>
                                         <input
                                           type="number"
@@ -771,7 +776,7 @@ export default function AdminPage() {
                           {editForm.provider === "byteplus" && (
                             <div>
                               <label className="block text-xs text-stone/70 mb-2">
-                                思考深度
+                                {t("admin.thinkingDepth")}
                               </label>
                               <div className="flex flex-wrap gap-2">
                                 {BYTEPLUS_DEPTH_OPTIONS.map((opt) => (
@@ -795,7 +800,7 @@ export default function AdminPage() {
                           {/* API URL */}
                           <div>
                             <label className="block text-xs text-stone/70 mb-1">
-                              API 端點
+                              {t("admin.apiEndpoint")}
                             </label>
                             <input
                               type="text"
@@ -812,10 +817,10 @@ export default function AdminPage() {
                           {/* API Key */}
                           <div>
                             <label className="block text-xs text-stone/70 mb-1">
-                              API Key
+                              {t("admin.apiKeyLabel")}
                               {config?.hasKey && (
                                 <span className="ml-1.5 text-stone/40">
-                                  (留空則保留原有 Key)
+                                  {t("admin.keepExistingKey")}
                                 </span>
                               )}
                             </label>
@@ -825,7 +830,7 @@ export default function AdminPage() {
                               onChange={(e) =>
                                 setEditForm((f) => ({ ...f, apiKey: e.target.value }))
                               }
-                              placeholder={config?.hasKey ? "保留原有 Key" : "輸入 API Key"}
+                              placeholder={config?.hasKey ? t("admin.keepExistingKeyPlaceholder") : t("admin.enterApiKey")}
                               className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
                               style={{ backgroundColor: "var(--parchment)" }}
                             />
@@ -839,7 +844,7 @@ export default function AdminPage() {
                                 disabled={isSaving}
                                 className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
                               >
-                                重置為預設
+                                {t("admin.resetToDefault")}
                               </button>
                             )}
                             <button
@@ -847,7 +852,7 @@ export default function AdminPage() {
                               disabled={isSaving}
                               className="px-3 py-1.5 min-h-[36px] text-xs text-stone border border-stone/30 rounded hover:bg-stone/10 transition-colors disabled:opacity-50"
                             >
-                              取消
+                              {t("admin.cancel")}
                             </button>
                             <button
                               onClick={() => saveAISetting(key)}
@@ -857,7 +862,7 @@ export default function AdminPage() {
                               {isSaving ? (
                                 <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
                               ) : (
-                                "儲存"
+                                t("admin.save")
                               )}
                             </button>
                           </div>

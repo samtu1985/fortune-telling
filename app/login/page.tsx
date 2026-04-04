@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import { useLocale } from "@/app/components/LocaleProvider";
+import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
 function isInAppBrowser(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -13,6 +15,7 @@ function isInAppBrowser(): boolean {
 }
 
 export default function LoginPage() {
+  const { t } = useLocale();
   const [inApp, setInApp] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
 
@@ -39,17 +42,18 @@ export default function LoginPage() {
       <SmokeParticles />
 
       {/* Theme toggle */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <LocaleSwitcher />
         <ThemeToggle />
       </div>
 
       <div className="text-center space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
         {/* Logo */}
         <h1 className="text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
-          天機
+          {t("app.title")}
         </h1>
         <p className="font-display text-lg text-stone italic tracking-wide">
-          Divination by AI
+          {t("app.subtitle")}
         </p>
 
         <div className="mx-auto w-32 gold-line" />
@@ -58,13 +62,13 @@ export default function LoginPage() {
           <>
             <div className="mx-auto max-w-xs space-y-4 text-sm text-mist/80">
               <p className="text-gold font-semibold">
-                請使用外部瀏覽器開啟
+                {t("login.openExternal")}
               </p>
               <p>
-                目前使用的是應用程式內建瀏覽器，Google 登入無法在此環境中使用。
+                {t("login.inAppWarning")}
               </p>
               <p className="text-mist/60 text-xs leading-relaxed">
-                請點擊下方按鈕，或手動複製網址到 Safari / Chrome 開啟：
+                {t("login.openExternalHint")}
               </p>
               <button
                 onClick={handleOpenExternal}
@@ -76,12 +80,12 @@ export default function LoginPage() {
                   font-serif tracking-widest
                 "
               >
-                用外部瀏覽器開啟
+                {t("login.openExternalBtn")}
               </button>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(currentUrl);
-                  alert("已複製網址！請貼到 Safari 或 Chrome 開啟");
+                  alert(t("login.urlCopied"));
                 }}
                 className="
                   mx-auto px-6 py-2.5 min-h-[44px]
@@ -91,14 +95,14 @@ export default function LoginPage() {
                   flex items-center gap-2
                 "
               >
-                📋 複製網址
+                📋 {t("login.copyUrl")}
               </button>
             </div>
           </>
         ) : (
           <>
             <p className="text-sm text-mist/60 tracking-wide">
-              登入以開始命理推算
+              {t("login.hint")}
             </p>
 
             {/* Google Sign In */}
@@ -132,7 +136,7 @@ export default function LoginPage() {
                   fill="#EA4335"
                 />
               </svg>
-              以 Google 帳號登入
+              {t("login.google")}
             </button>
           </>
         )}
@@ -141,9 +145,6 @@ export default function LoginPage() {
       {/* Footer */}
       <div className="absolute bottom-8 text-center">
         <div className="mx-auto w-16 gold-line mb-4" />
-        <p className="text-xs text-stone/40 tracking-widest font-display">
-          Powered by Seed 2.0 Pro
-        </p>
       </div>
     </main>
   );

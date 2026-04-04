@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "./LocaleProvider";
 
 interface Profile {
   id: string;
@@ -38,49 +39,86 @@ interface InputFormProps {
   onProfilesChange: () => void;
 }
 
-const ZODIAC_SIGNS = [
-  "牡羊座 (Aries)",
-  "金牛座 (Taurus)",
-  "雙子座 (Gemini)",
-  "巨蟹座 (Cancer)",
-  "獅子座 (Leo)",
-  "處女座 (Virgo)",
-  "天秤座 (Libra)",
-  "天蠍座 (Scorpio)",
-  "射手座 (Sagittarius)",
-  "摩羯座 (Capricorn)",
-  "水瓶座 (Aquarius)",
-  "雙魚座 (Pisces)",
-];
+const ZODIAC_SIGN_KEYS = [
+  "zodiac.aries",
+  "zodiac.taurus",
+  "zodiac.gemini",
+  "zodiac.cancer",
+  "zodiac.leo",
+  "zodiac.virgo",
+  "zodiac.libra",
+  "zodiac.scorpio",
+  "zodiac.sagittarius",
+  "zodiac.capricorn",
+  "zodiac.aquarius",
+  "zodiac.pisces",
+] as const;
 
-export function timeToShichen(time: string): string {
+const SHICHEN_KEYS = [
+  "shichen.zi",
+  "shichen.chou",
+  "shichen.yin",
+  "shichen.mao",
+  "shichen.chen",
+  "shichen.si",
+  "shichen.wu",
+  "shichen.wei",
+  "shichen.shen",
+  "shichen.you",
+  "shichen.xu",
+  "shichen.hai",
+] as const;
+
+export function timeToShichenKey(time: string): string {
   if (!time) return "";
   const [h] = time.split(":").map(Number);
   const shichen = [
-    [23, 1, "子時"],
-    [1, 3, "丑時"],
-    [3, 5, "寅時"],
-    [5, 7, "卯時"],
-    [7, 9, "辰時"],
-    [9, 11, "巳時"],
-    [11, 13, "午時"],
-    [13, 15, "未時"],
-    [15, 17, "申時"],
-    [17, 19, "酉時"],
-    [19, 21, "戌時"],
-    [21, 23, "亥時"],
+    [23, 1, "shichen.zi"],
+    [1, 3, "shichen.chou"],
+    [3, 5, "shichen.yin"],
+    [5, 7, "shichen.mao"],
+    [7, 9, "shichen.chen"],
+    [9, 11, "shichen.si"],
+    [11, 13, "shichen.wu"],
+    [13, 15, "shichen.wei"],
+    [15, 17, "shichen.shen"],
+    [17, 19, "shichen.you"],
+    [19, 21, "shichen.xu"],
+    [21, 23, "shichen.hai"],
   ] as const;
-  for (const [start, end, name] of shichen) {
+  for (const [start, end, key] of shichen) {
     if (start > end) {
-      if (h >= start || h < end) return name;
+      if (h >= start || h < end) return key;
     } else {
-      if (h >= start && h < end) return name;
+      if (h >= start && h < end) return key;
     }
   }
   return "";
 }
 
+const SHICHEN_KEY_TO_CHINESE: Record<string, string> = {
+  "shichen.zi": "子時",
+  "shichen.chou": "丑時",
+  "shichen.yin": "寅時",
+  "shichen.mao": "卯時",
+  "shichen.chen": "辰時",
+  "shichen.si": "巳時",
+  "shichen.wu": "午時",
+  "shichen.wei": "未時",
+  "shichen.shen": "申時",
+  "shichen.you": "酉時",
+  "shichen.xu": "戌時",
+  "shichen.hai": "亥時",
+};
+
+/** @deprecated Use timeToShichenKey with t() for i18n support */
+export function timeToShichen(time: string): string {
+  const key = timeToShichenKey(time);
+  return key ? (SHICHEN_KEY_TO_CHINESE[key] || key) : "";
+}
+
 export default function InputForm({ type, onSubmit, loading, profiles, onProfilesChange }: InputFormProps) {
+  const { t } = useLocale();
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
@@ -191,9 +229,9 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
 
       {/* Profile Selector */}
       <div className="space-y-1.5">
-        <label>選擇檔案</label>
+        <label>{t("form.selectProfile")}</label>
         <select value={selectedProfileId} onChange={(e) => handleProfileSelect(e.target.value)}>
-          <option value="">手動輸入</option>
+          <option value="">{t("form.manualInput")}</option>
           {profiles.map((p) => (
             <option key={p.id} value={p.id}>{p.label}</option>
           ))}
@@ -216,7 +254,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
               <svg className={`w-3.5 h-3.5 transition-transform ${showSavedChart ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              查看已保存的命盤
+              {t("form.viewSavedChart")}
             </button>
             {showSavedChart && (
               <div className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap pl-4 border-l-2 border-gold/15 max-h-48 overflow-y-auto">
@@ -230,7 +268,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Birth Date */}
         <div className="space-y-1.5">
-          <label>出生日期 *</label>
+          <label>{t("form.birthDate")} {t("form.required")}</label>
           <input
             type="date"
             value={birthDate}
@@ -241,7 +279,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
 
         {/* Birth Time — all types use precise time input */}
         <div className="space-y-1.5">
-          <label>出生時間（精確到分鐘）*</label>
+          <label>{t("form.birthTime")} {t("form.required")}</label>
           <input
             type="time"
             value={birthTime}
@@ -250,17 +288,17 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
           />
           {isChineseType && birthTime && (
             <p className="text-xs text-gold-dim mt-1">
-              對應時辰：{timeToShichen(birthTime)}
+              {t("form.shichen")}{timeToShichenKey(birthTime) ? t(timeToShichenKey(birthTime)) : ""}
             </p>
           )}
           {type === "zodiac" && (
             <p className="text-xs text-stone/60 mt-1">
-              上升星座約每 2 小時更換，時間越精確結果越準確
+              {t("form.ascendantNote")}
             </p>
           )}
           {isChineseType && (
             <p className="text-xs text-stone/60 mt-1">
-              若出生時間在時辰交界附近，結果可能因時辰不同而有差異
+              {t("form.shichenBoundary")}
             </p>
           )}
         </div>
@@ -268,10 +306,10 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         {/* Calendar Type (Chinese only) */}
         {isChineseType && (
           <div className="space-y-1.5">
-            <label>曆法</label>
+            <label>{t("form.calendarType")}</label>
             <select value={calendarType} onChange={(e) => { setCalendarType(e.target.value); setIsLeapMonth(false); }}>
-              <option value="solar">國曆（陽曆）</option>
-              <option value="lunar">農曆（陰曆）</option>
+              <option value="solar">{t("form.solar")}</option>
+              <option value="lunar">{t("form.lunar")}</option>
             </select>
             {calendarType === "lunar" && (
               <label className="flex items-center gap-2 mt-1.5 text-xs text-stone/70 cursor-pointer">
@@ -281,7 +319,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
                   onChange={(e) => setIsLeapMonth(e.target.checked)}
                   className="accent-gold"
                 />
-                該月為閏月
+                {t("form.leapMonth")}
               </label>
             )}
           </div>
@@ -290,7 +328,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         {/* Gender (Chinese only) */}
         {isChineseType && (
           <div className="space-y-1.5">
-            <label>性別{type === "ziwei" ? " *" : ""}</label>
+            <label>{type === "ziwei" ? t("form.genderRequired") : t("form.gender")}</label>
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
@@ -298,21 +336,21 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             >
               {type === "ziwei" ? (
                 <>
-                  <option value="">請選擇</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
+                  <option value="">{t("form.selectGender")}</option>
+                  <option value="男">{t("form.male")}</option>
+                  <option value="女">{t("form.female")}</option>
                 </>
               ) : (
                 <>
-                  <option value="">不提供</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
+                  <option value="">{t("form.noGender")}</option>
+                  <option value="男">{t("form.male")}</option>
+                  <option value="女">{t("form.female")}</option>
                 </>
               )}
             </select>
             {type === "ziwei" && (
               <p className="text-xs text-stone/60 mt-1">
-                紫微斗數需依性別決定大限順逆走向，為必填欄位
+                {t("form.ziweiGenderNote")}
               </p>
             )}
           </div>
@@ -320,22 +358,22 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
 
         {/* Birth Place */}
         <div className="space-y-1.5">
-          <label>出生地點（城市）*</label>
+          <label>{t("form.birthPlace")} {t("form.required")}</label>
           <input
             type="text"
-            placeholder="例：台北、高雄、東京、紐約"
+            placeholder={t("form.birthPlacePlaceholder")}
             value={birthPlace}
             onChange={(e) => setBirthPlace(e.target.value)}
             required
           />
           {isChineseType && (
             <p className="text-xs text-stone/60 mt-1">
-              出生地資訊將提供給 AI 參考，系統未自動校正真太陽時
+              {t("form.birthPlaceNote")}
             </p>
           )}
           {type === "zodiac" && (
             <p className="text-xs text-stone/60 mt-1">
-              需精確出生時間以計算上升星座；僅支援常見城市座標查詢
+              {t("form.zodiacPlaceNote")}
             </p>
           )}
         </div>
@@ -343,12 +381,12 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         {/* Zodiac Sign (Zodiac only) */}
         {type === "zodiac" && (
           <div className="space-y-1.5">
-            <label>星座（可自動判斷）</label>
+            <label>{t("form.zodiacSign")}</label>
             <select value={zodiacSign} onChange={(e) => setZodiacSign(e.target.value)}>
-              <option value="">依出生日期判斷</option>
-              {ZODIAC_SIGNS.map((sign) => (
-                <option key={sign} value={sign}>
-                  {sign}
+              <option value="">{t("form.autoDetect")}</option>
+              {ZODIAC_SIGN_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {t(key)}
                 </option>
               ))}
             </select>
@@ -360,7 +398,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
       <div className="flex items-center gap-2">
         <input
           type="text"
-          placeholder="輸入名稱以保存此檔案"
+          placeholder={t("form.saveProfileLabel")}
           value={saveLabel}
           onChange={(e) => setSaveLabel(e.target.value)}
           className="flex-1"
@@ -371,14 +409,14 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
           disabled={savingProfile || !saveLabel.trim() || (!selectedProfileId && profiles.length >= 10)}
           className="shrink-0 px-4 py-2.5 min-h-[44px] rounded-sm text-sm text-gold-dim border border-gold/15 hover:bg-gold/10 transition-colors font-serif tracking-widest disabled:opacity-40"
         >
-          {savingProfile ? "..." : selectedProfileId ? "更新" : "保存"}
+          {savingProfile ? "..." : selectedProfileId ? t("form.update") : t("form.save")}
         </button>
       </div>
       {!selectedProfileId && profiles.length >= 10 && (
-        <p className="text-xs text-stone/50">已達上限 10 筆，請先刪除舊檔案</p>
+        <p className="text-xs text-stone/50">{t("form.profileLimitReached")}</p>
       )}
       <p className="text-xs text-stone/40">
-        已保存 {profiles.length}/10 筆
+        {t("form.profileCount", { count: String(profiles.length) })}
       </p>
 
       {/* Submit */}
@@ -398,10 +436,10 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         {loading ? (
           <span className="flex items-center justify-center gap-3">
             <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-            生成中...
+            {t("form.generating")}
           </span>
         ) : (
-          "顯示命盤"
+          t("form.showChart")
         )}
       </button>
     </form>

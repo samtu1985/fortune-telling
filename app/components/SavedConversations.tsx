@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import ResultDisplay from "./ResultDisplay";
+import { useLocale } from "./LocaleProvider";
 
 interface SavedConv {
   id: string;
@@ -18,6 +19,7 @@ interface SavedConversationsProps {
 }
 
 export default function SavedConversations({ type }: SavedConversationsProps) {
+  const { t } = useLocale();
   const [conversations, setConversations] = useState<SavedConv[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,8 +46,8 @@ export default function SavedConversations({ type }: SavedConversationsProps) {
   };
 
   const typeLabel = useMemo(
-    () => ({ bazi: "八字", ziwei: "紫微", zodiac: "星座" })[type],
-    [type]
+    () => ({ bazi: t("saved.bazi"), ziwei: t("saved.ziwei"), zodiac: t("saved.zodiac") })[type],
+    [type, t]
   );
 
   if (loading) {
@@ -60,10 +62,10 @@ export default function SavedConversations({ type }: SavedConversationsProps) {
     return (
       <div className="text-center py-12">
         <p className="text-sm text-stone/50">
-          尚未保存任何{typeLabel}的對話
+          {t("saved.noConversations", { type: typeLabel })}
         </p>
         <p className="text-xs text-stone/30 mt-2">
-          在對話中點擊 AI 回覆下方的「保存」按鈕即可收藏
+          {t("saved.howToSave")}
         </p>
       </div>
     );
@@ -91,7 +93,7 @@ export default function SavedConversations({ type }: SavedConversationsProps) {
               onClick={() => handleDelete(conv.id)}
               className="text-xs text-stone/40 hover:text-red-seal transition-colors min-h-[32px] px-2"
             >
-              刪除
+              {t("saved.delete")}
             </button>
           </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useLocale } from "./LocaleProvider";
 
 interface ResultDisplayProps {
   content: string;
@@ -162,6 +163,7 @@ export default function ResultDisplay({
   onSave,
   isSaved,
 }: ResultDisplayProps) {
+  const { t } = useLocale();
   const [showReasoning, setShowReasoning] = useState(false);
 
   const renderedContent = useMemo(() => renderMarkdown(content), [content]);
@@ -190,7 +192,7 @@ export default function ResultDisplay({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            深度思考過程
+            {t("result.thinkingProcess")}
             {streaming && !content && (
               <span className="inline-block w-2 h-2 rounded-full bg-gold/60 animate-pulse" />
             )}
@@ -244,14 +246,14 @@ export default function ResultDisplay({
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                已保存
+                {t("result.saved")}
               </>
             ) : (
               <>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
-                保存
+                {t("result.save")}
               </>
             )}
           </button>
@@ -261,7 +263,7 @@ export default function ResultDisplay({
       {/* Disclaimer */}
       {content && !streaming && !hideDisclaimer && (
         <p className="mt-6 text-center text-xs text-stone/50 tracking-wide">
-          以上分析由 AI 生成，僅供參考，不構成任何決策建議
+          {t("result.aiDisclaimer")}
         </p>
       )}
     </div>

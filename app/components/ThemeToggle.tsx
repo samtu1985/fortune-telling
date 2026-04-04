@@ -1,14 +1,16 @@
 "use client";
 
 import { useTheme } from "./ThemeProvider";
+import { useLocale } from "./LocaleProvider";
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLocale();
 
   return (
     <button
       onClick={toggleTheme}
-      aria-label={theme === "dark" ? "切換至淺色模式" : "切換至深色模式"}
+      aria-label={theme === "dark" ? t("theme.light") : t("theme.dark")}
       className="p-2 rounded-sm text-stone hover:text-gold transition-colors duration-300"
     >
       {theme === "dark" ? (

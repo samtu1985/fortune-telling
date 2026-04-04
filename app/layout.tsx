@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import ThemeProvider from "./components/ThemeProvider";
+import LocaleProvider from "./components/LocaleProvider";
 import SessionProvider from "./components/SessionProvider";
 
 export const viewport: Viewport = {
@@ -47,6 +48,8 @@ try {
   } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
     document.documentElement.dataset.theme = 'light';
   }
+  var l = localStorage.getItem('locale');
+  if (l) document.documentElement.lang = l;
 } catch(e) {}
 `;
 
@@ -62,7 +65,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <SessionProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider><LocaleProvider>{children}</LocaleProvider></ThemeProvider>
         </SessionProvider>
         <Analytics />
         <SpeedInsights />

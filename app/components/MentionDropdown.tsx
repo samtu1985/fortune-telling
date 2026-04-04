@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useLocale } from "./LocaleProvider";
 
 interface MentionProfile {
   id: string;
@@ -21,6 +22,7 @@ export default function MentionDropdown({
   onSelect,
   onClose,
 }: MentionDropdownProps) {
+  const { t } = useLocale();
   const ref = useRef<HTMLDivElement>(null);
 
   // Filter profiles by query
@@ -49,7 +51,7 @@ export default function MentionDropdown({
     >
       <div className="py-1">
         <div className="px-3 py-1.5 text-[10px] text-stone/40 tracking-wide">
-          選擇檔案以引用命盤
+          {t("mention.selectProfile")}
         </div>
         {filtered.map((p) => (
           <button
@@ -62,9 +64,9 @@ export default function MentionDropdown({
               @{p.label}
             </span>
             {p.hasChart ? (
-              <span className="text-[10px] text-gold-dim/60">(已有命盤)</span>
+              <span className="text-[10px] text-gold-dim/60">({t("mention.hasChart")})</span>
             ) : (
-              <span className="text-[10px] text-stone/30">(尚未保存命盤)</span>
+              <span className="text-[10px] text-stone/30">({t("mention.noChart")})</span>
             )}
           </button>
         ))}

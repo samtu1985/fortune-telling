@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "./LocaleProvider";
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -14,11 +16,12 @@ export default function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = "確定",
-  cancelLabel = "取消",
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useLocale();
   if (!open) return null;
 
   return (
@@ -37,13 +40,13 @@ export default function ConfirmDialog({
             onClick={onCancel}
             className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
           >
-            {cancelLabel}
+            {cancelLabel ?? t("dialog.cancel")}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest"
           >
-            {confirmLabel}
+            {confirmLabel ?? t("dialog.confirm")}
           </button>
         </div>
       </div>

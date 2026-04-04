@@ -13,6 +13,8 @@ import ZiweiChart from "@/app/components/ZiweiChart";
 import MentionDropdown from "@/app/components/MentionDropdown";
 import SavedCharts from "@/app/components/SavedCharts";
 import ComprehensiveMode from "@/app/components/ComprehensiveMode";
+import { useLocale } from "@/app/components/LocaleProvider";
+import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
 type DivinationType = "bazi" | "ziwei" | "zodiac" | "comprehensive";
 
@@ -92,42 +94,22 @@ function compressImage(dataUrl: string, maxWidth = 1024): Promise<string> {
   });
 }
 
-const DIVINATION_TYPES = [
-  {
-    id: "bazi" as DivinationType,
-    title: "八字命理",
-    subtitle: "Four Pillars of Destiny",
-    symbol: "乾",
-    description:
-      "以出生年月日時的天干地支，推算五行生剋、十神關係，洞察命運格局與人生走向。",
-  },
-  {
-    id: "ziwei" as DivinationType,
-    title: "紫微斗數",
-    subtitle: "Purple Star Astrology",
-    symbol: "紫",
-    description:
-      "依十四主星排列命盤十二宮位，解析先天命格、後天運勢，揭示人生各面向的起伏。",
-  },
-  {
-    id: "zodiac" as DivinationType,
-    title: "西洋星座",
-    subtitle: "Western Astrology",
-    symbol: "☿",
-    description:
-      "透過太陽、月亮、上升星座與行星相位，解讀性格本質、情感模式與生命課題。",
-  },
-  {
-    id: "comprehensive" as DivinationType,
-    title: "三師論道",
-    subtitle: "Comprehensive Analysis",
-    symbol: "道",
-    description:
-      "八字、紫微、星座三位大師同場論道，從不同命理觀點交叉分析，激盪出更全面的洞察。",
-  },
+const DIVINATION_TYPE_IDS: { id: DivinationType; symbol: string }[] = [
+  { id: "bazi", symbol: "乾" },
+  { id: "ziwei", symbol: "紫" },
+  { id: "zodiac", symbol: "☿" },
+  { id: "comprehensive", symbol: "道" },
 ];
 
 export default function Home() {
+  const { locale, t } = useLocale();
+  const DIVINATION_TYPES = DIVINATION_TYPE_IDS.map(({ id, symbol }) => ({
+    id,
+    symbol,
+    title: t(`type.${id}`),
+    subtitle: t(`type.${id}.subtitle`),
+    description: t(`type.${id}.desc`),
+  }));
   const [selectedType, setSelectedType] = useState<DivinationType | null>(null);
   const [followUp, setFollowUp] = useState("");
   const [followUpImages, setFollowUpImages] = useState<string[]>([]);
@@ -159,7 +141,7 @@ export default function Home() {
   const [chartSaved, setChartSaved] = useState(false);
   const [chartPreview, setChartPreview] = useState<ChartPreview | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
-  const [aiQuestion, setAiQuestion] = useState("我的命運");
+  const [aiQuestion, setAiQuestion] = useState(t("main.defaultQuestion"));
   const [reasoningDepth, setReasoningDepth] = useState("high");
   const reasoningDepthRef = useRef(reasoningDepth);
   reasoningDepthRef.current = reasoningDepth;
@@ -183,7 +165,7 @@ export default function Home() {
       setSavedMessageIds(new Set());
       setChartSaved(false);
       setChartPreview(null);
-      setAiQuestion("我的命運");
+      setAiQuestion(t("main.defaultQuestion"));
       setActiveTab("input");
     }
   }, [selectedType]);
@@ -260,14 +242,14 @@ export default function Home() {
         const response = await fetch("/api/divine", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current }),
+          body: JSON.stringify({ type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current, locale }),
         });
 
         if (!response.ok) {
           const error = await response.json();
           const errorMsg: Message = {
             role: "assistant",
-            content: `錯誤：${error.error || "請求失敗"}`,
+            content: `${t("error.prefix")}：${error.error || "Request failed"}`,
           };
           conversationsRef.current[type] = {
             ...conversationsRef.current[type],
@@ -370,12 +352,12 @@ export default function Home() {
         const assistantMsg: Message = partialContent
           ? {
               role: "assistant",
-              content: partialContent + "\n\n---\n*（連線中斷，以上為已接收的部分回應。可透過追問繼續。）*",
+              content: partialContent + `\n\n---\n*${t("main.connectionInterrupted")}*`,
               reasoning: partialReasoning,
             }
           : {
               role: "assistant",
-              content: `連線錯誤：${err instanceof Error ? err.message : "未知錯誤"}`,
+              content: `${t("main.connectionError")}：${err instanceof Error ? err.message : "Unknown error"}`,
             };
 
         conversationsRef.current[type] = {
@@ -417,7 +399,7 @@ export default function Home() {
         });
         if (!res.ok) {
           const err = await res.json();
-          alert(err.error || "命盤生成失敗");
+          alert(err.error || t("main.chartGenFailed"));
           return;
         }
         const { chart } = await res.json();
@@ -448,7 +430,7 @@ export default function Home() {
         }
 
         setChartPreview({ chart, request, ziweiBirthInfo });
-        setAiQuestion("我的命運");
+        setAiQuestion(t("main.defaultQuestion"));
       } finally {
         setChartLoading(false);
       }
@@ -467,21 +449,21 @@ export default function Home() {
       const isChineseType = type === "bazi" || type === "ziwei";
       const shichen = isChineseType ? timeToShichen(request.birthTime) : "";
       const calendarLabel = request.calendarType === "lunar"
-        ? `農曆${request.isLeapMonth ? "（閏月）" : ""}`
-        : "國曆";
+        ? `${t("comprehensive.lunar")}${request.isLeapMonth ? `（${t("form.leapMonth")}）` : ""}`
+        : t("comprehensive.solar");
 
       let userMessage: string;
       if (type === "bazi" || type === "ziwei") {
-        userMessage = `出生日期：${request.birthDate}（${calendarLabel}）
-出生時間：${request.birthTime}${shichen ? `（${shichen}）` : ""}
-出生地點：${request.birthPlace}
-性別：${request.gender || "未提供"}
-特別想了解的方向：${aiQuestion}`;
+        userMessage = `${t("birth.date")}：${request.birthDate}（${calendarLabel}）
+${t("birth.time")}：${request.birthTime}${shichen ? `（${shichen}）` : ""}
+${t("birth.place")}：${request.birthPlace}
+${t("birth.gender")}：${request.gender || t("form.noGender")}
+${t("birth.topic")}：${aiQuestion}`;
       } else {
-        userMessage = `出生日期：${request.birthDate}
-出生時間：${request.birthTime}
-出生地點：${request.birthPlace}
-特別想了解的方向：${aiQuestion}`;
+        userMessage = `${t("birth.date")}：${request.birthDate}
+${t("birth.time")}：${request.birthTime}
+${t("birth.place")}：${request.birthPlace}
+${t("birth.topic")}：${aiQuestion}`;
       }
 
       const userMsg: Message = { role: "user", content: userMessage };
@@ -555,7 +537,7 @@ export default function Home() {
 
       setChartPreview({ chart, request, ziweiBirthInfo });
       setChartSaved(true); // Already saved
-      setAiQuestion("我的命運");
+      setAiQuestion(t("main.defaultQuestion"));
       setActiveTab("input");
     },
     [selectedType]
@@ -657,11 +639,11 @@ export default function Home() {
         const chart = profile.savedCharts?.[chartKey];
         if (chart) {
           injections.push(
-            `\n\n【以下是「${label}」由排盤程式精確計算的命盤數據，你必須完全依照這些數據進行解讀，不得自行排盤或編造任何數據】\n\n${chart}`
+            `\n\n${t("main.chartInjection", { label })}\n\n${chart}`
           );
         } else {
           injections.push(
-            `\n\n【系統提示】使用者提到了「${label}」，但此人尚未在本場景生成並保存命盤。請提醒使用者先為「${label}」生成命盤後再進行分析。`
+            `\n\n${t("main.chartNotSaved", { label })}`
           );
         }
       }
@@ -680,7 +662,7 @@ export default function Home() {
       setMentionOpen(false);
 
       const type = selectedType;
-      const userMsg = followUp.trim() || "請分析這張圖片";
+      const userMsg = followUp.trim() || t("main.analyzeImage");
       const msgWithCharts = injectMentionCharts(userMsg);
       const imgs = followUpImages.length > 0 ? [...followUpImages] : undefined;
       setFollowUp("");
@@ -766,7 +748,7 @@ export default function Home() {
     setSavedMessageIds(new Set());
     setChartSaved(false);
     setChartPreview(null);
-    setAiQuestion("我的命運");
+    setAiQuestion(t("main.defaultQuestion"));
     setNewDiscussionConfirm(false);
     setActiveTab("input");
   }, [selectedType]);
@@ -852,14 +834,15 @@ export default function Home() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            返回選擇
+            {t("main.backToSelect")}
           </button>
 
           <h1 className="absolute left-1/2 -translate-x-1/2 text-xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
-            天機
+            {t("app.title")}
           </h1>
 
           <div className="flex items-center gap-2">
+            <LocaleSwitcher />
             <ThemeToggle />
             <UserMenu />
           </div>
@@ -970,7 +953,7 @@ export default function Home() {
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    命盤已保存至「{conv.profileLabel}」
+                    {t("main.chartSavedTo")}「{conv.profileLabel}」
                   </span>
                 ) : (
                   <button
@@ -980,7 +963,7 @@ export default function Home() {
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                     </svg>
-                    保存命盤至「{conv.profileLabel}」
+                    {t("main.saveChartTo")}「{conv.profileLabel}」
                   </button>
                 )}
               </div>
@@ -1034,7 +1017,7 @@ export default function Home() {
                 onClick={() => followUpFileRef.current?.click()}
                 disabled={conv.loading}
                 className="shrink-0 w-[44px] h-[44px] flex items-center justify-center rounded-sm border border-gold/15 text-gold-dim/60 hover:text-gold-dim hover:border-gold/30 transition-colors disabled:opacity-40"
-                title="上傳圖片"
+                title={t("main.uploadImage")}
               >
                 <svg
                   className="w-5 h-5"
@@ -1074,7 +1057,7 @@ export default function Home() {
                       }
                     }
                   }}
-                  placeholder="繼續追問... 輸入 @ 可引用已保存的命盤"
+                  placeholder={t("main.followUpPlaceholder")}
                   disabled={conv.loading}
                   rows={5}
                   className="flex-1 w-full resize-none"
@@ -1100,27 +1083,27 @@ export default function Home() {
                 {conv.loading ? (
                   <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
                 ) : (
-                  "送出"
+                  t("main.send")
                 )}
               </button>
             </form>
             <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
-              以上分析由 AI 生成，僅供參考
+              {t("main.aiDisclaimer")}
             </p>
             <button
               onClick={() => setNewDiscussionConfirm(true)}
               className="w-full mt-3 py-2 text-xs text-stone/40 hover:text-stone/60 transition-colors tracking-wide"
             >
-              開始新討論
+              {t("main.newDiscussion")}
             </button>
           </div>
         </div>
 
         <ConfirmDialog
           open={newDiscussionConfirm}
-          title="開始新討論"
-          message="目前的對話將會清除，確定要開始新討論嗎？"
-          confirmLabel="確定"
+          title={t("main.newDiscussion")}
+          message={t("main.newDiscussionConfirm")}
+          confirmLabel={t("main.confirm")}
           onConfirm={handleNewDiscussion}
           onCancel={() => setNewDiscussionConfirm(false)}
         />
@@ -1135,6 +1118,7 @@ export default function Home() {
 
       {/* Top bar */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <LocaleSwitcher />
         <ThemeToggle />
         <UserMenu />
       </div>
@@ -1145,13 +1129,13 @@ export default function Home() {
           className="animate-fade-in-up text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold"
           style={{ fontFamily: "var(--font-calligraphy)", opacity: 0 }}
         >
-          天機
+          {t("app.title")}
         </h1>
         <p
           className="animate-fade-in-up mt-3 font-display text-lg sm:text-xl text-stone italic tracking-wide"
           style={{ animationDelay: "200ms", opacity: 0 }}
         >
-          Divination by AI
+          {t("app.subtitle")}
         </p>
         <div
           className="animate-fade-in-up mx-auto mt-6 w-32 gold-line"
@@ -1163,7 +1147,7 @@ export default function Home() {
       {typesWithConversation.length > 0 && (
         <section className="max-w-2xl mx-auto px-6 pb-6">
           <p className="text-center text-sm text-mist/60 mb-3 tracking-wide">
-            進行中的對話
+            {t("main.currentConversation")}
           </p>
           <div className="flex justify-center gap-3">
             {typesWithConversation.map((dt) => {
@@ -1194,7 +1178,7 @@ export default function Home() {
           className="animate-fade-in-up text-center text-sm text-mist/60 mb-6 sm:mb-8 tracking-wide"
           style={{ animationDelay: "500ms", opacity: 0 }}
         >
-          選擇命理方式
+          {t("main.selectType")}
         </p>
 
         {/* Mobile: Compact horizontal tabs */}
@@ -1277,7 +1261,7 @@ export default function Home() {
                   : "border-transparent text-stone/50 hover:text-stone"
               }`}
             >
-              輸入資料
+              {t("main.inputTab")}
             </button>
             <button
               onClick={() => setActiveTab("saved")}
@@ -1287,7 +1271,7 @@ export default function Home() {
                   : "border-transparent text-stone/50 hover:text-stone"
               }`}
             >
-              已保存對話
+              {t("main.savedConversations")}
             </button>
             <button
               onClick={() => setActiveTab("charts")}
@@ -1297,7 +1281,7 @@ export default function Home() {
                   : "border-transparent text-stone/50 hover:text-stone"
               }`}
             >
-              已保存命盤
+              {t("main.savedCharts")}
             </button>
           </div>
 
@@ -1319,7 +1303,7 @@ export default function Home() {
 
                 {/* Chart data display */}
                 <div className="border border-gold/10 rounded-lg p-4" style={{ background: "rgba(var(--glass-rgb), 0.02)" }}>
-                  <h3 className="text-sm font-serif text-gold mb-3">命盤數據</h3>
+                  <h3 className="text-sm font-serif text-gold mb-3">{t("main.chartData")}</h3>
                   <pre className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
                     {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
                   </pre>
@@ -1333,7 +1317,7 @@ export default function Home() {
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        命盤已保存至「{chartPreview.request.profileLabel}」
+                        {t("main.chartSavedTo")}「{chartPreview.request.profileLabel}」
                       </span>
                     ) : (
                       <button
@@ -1363,7 +1347,7 @@ export default function Home() {
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                         </svg>
-                        保存命盤至「{chartPreview.request.profileLabel}」
+                        {t("main.saveChartTo")}「{chartPreview.request.profileLabel}」
                       </button>
                     )}
                   </div>
@@ -1371,26 +1355,26 @@ export default function Home() {
 
                 {/* AI question input */}
                 <div className="border-t border-gold/10 pt-5 space-y-3">
-                  <label className="text-sm font-serif text-gold">想了解的方向</label>
+                  <label className="text-sm font-serif text-gold">{t("main.questionDirection")}</label>
                   <input
                     type="text"
                     value={aiQuestion}
                     onChange={(e) => setAiQuestion(e.target.value)}
-                    placeholder="例：近期事業運、感情發展、健康狀況..."
+                    placeholder={t("main.questionPlaceholder")}
                   />
                   <div className="flex gap-3">
                     <button
                       onClick={() => { setChartPreview(null); setChartSaved(false); }}
                       className="flex-1 py-3 rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
                     >
-                      返回修改
+                      {t("main.backToEdit")}
                     </button>
                     <button
                       onClick={handleStartAiConversation}
                       disabled={!aiQuestion.trim()}
                       className="flex-1 py-3 rounded-sm text-sm text-gold border border-gold/20 bg-gold/15 hover:bg-gold/25 transition-colors font-serif tracking-widest disabled:opacity-40"
                     >
-                      開始 AI 分析
+                      {t("main.startAnalysis")}
                     </button>
                   </div>
                 </div>
@@ -1415,9 +1399,6 @@ export default function Home() {
       {/* Footer */}
       <footer className="pb-8 text-center">
         <div className="mx-auto w-16 gold-line mb-4" />
-        <p className="text-xs text-stone/40 tracking-widest font-display">
-          Powered by Seed 2.0 Pro
-        </p>
       </footer>
     </main>
   );

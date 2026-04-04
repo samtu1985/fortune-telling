@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getAIConfig } from "@/app/lib/ai-settings";
 import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
+import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
 
 const MASTER_PROMPTS: Record<string, string> = {
   bazi: `你是「八字老師」，精通八字命理，正在跟紫微老師、星座老師一起聊天討論。
@@ -107,11 +108,12 @@ const MASTER_LABELS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { master, charts, messages, reasoningDepth } = body as {
+  const { master, charts, messages, reasoningDepth, locale } = body as {
     master: string;
     charts: { bazi?: string; ziwei?: string; zodiac?: string };
     messages: { role: string; content: string; master?: string }[];
     reasoningDepth?: string;
+    locale?: Locale;
   };
 
   const systemPrompt = MASTER_PROMPTS[master];
@@ -143,7 +145,12 @@ export async function POST(request: NextRequest) {
   // Inject current date so the model knows the actual year
   const today = new Date();
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
-  const promptWithDate = `${systemPrompt}\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
+  let promptWithDate = `${systemPrompt}\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
+
+  // Inject language directive if locale is not default
+  if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {
+    promptWithDate += AI_LANGUAGE_DIRECTIVES[locale];
+  }
 
   // Inject this master's chart data into system prompt
   const chartKey = master as keyof typeof charts;

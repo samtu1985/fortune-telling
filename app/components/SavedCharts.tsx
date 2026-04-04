@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "./LocaleProvider";
+
 interface Profile {
   id: string;
   label: string;
@@ -22,25 +24,26 @@ interface SavedChartsProps {
   onStartChat?: (profile: Profile, chart: string) => void;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  bazi: "八字命盤",
-  ziwei: "紫微命盤",
-  zodiac: "星盤",
-};
-
 export default function SavedCharts({ type, profiles, onStartChat }: SavedChartsProps) {
+  const { t } = useLocale();
   const chartKey = type as keyof NonNullable<Profile["savedCharts"]>;
   const withCharts = profiles.filter((p) => p.savedCharts?.[chartKey]);
-  const label = TYPE_LABELS[type] || "命盤";
+
+  const TYPE_LABELS: Record<string, string> = {
+    bazi: t("charts.bazi"),
+    ziwei: t("charts.ziwei"),
+    zodiac: t("charts.zodiac"),
+  };
+  const label = TYPE_LABELS[type] || t("charts.chart");
 
   if (withCharts.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-sm text-stone/50">
-          尚未保存任何{label}
+          {t("charts.noCharts", { label })}
         </p>
         <p className="text-xs text-stone/30 mt-2">
-          選擇檔案並生成命盤後，可點擊「保存命盤」來收藏
+          {t("charts.howToSave")}
         </p>
       </div>
     );
@@ -82,7 +85,7 @@ export default function SavedCharts({ type, profiles, onStartChat }: SavedCharts
                 }}
                 className="mt-3 w-full py-2.5 rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest"
               >
-                以此命盤開始 AI 分析
+                {t("charts.startAnalysis")}
               </button>
             )}
           </div>

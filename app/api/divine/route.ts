@@ -4,6 +4,7 @@ import { generateZiweiChart } from "@/app/lib/ziwei";
 import { generateNatalChart } from "@/app/lib/astrology";
 import { getAIConfig } from "@/app/lib/ai-settings";
 import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
+import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -228,10 +229,11 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { type, messages: chatMessages, reasoningDepth } = body as {
+  const { type, messages: chatMessages, reasoningDepth, locale } = body as {
     type: string;
     messages: { role: string; content: string; images?: string[] }[];
     reasoningDepth?: string;
+    locale?: Locale;
   };
 
   let systemPrompt = SYSTEM_PROMPTS[type];
@@ -256,6 +258,11 @@ export async function POST(request: NextRequest) {
   const today = new Date();
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
   systemPrompt += `\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
+
+  // Inject language directive if locale is not default
+  if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {
+    systemPrompt += AI_LANGUAGE_DIRECTIVES[locale];
+  }
 
   // Add follow-up chart rule to system prompt
   systemPrompt += FOLLOWUP_CHART_RULE;

@@ -9,6 +9,7 @@ import MentionDropdown from "./MentionDropdown";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import SmokeParticles from "./SmokeParticles";
+import { useLocale } from "./LocaleProvider";
 
 type Profile = {
   id: string;
@@ -30,10 +31,10 @@ type MasterMessage = {
   master?: MasterType;
 };
 
-const MASTERS: { id: MasterType; label: string; symbol: string; color: string; bgClass: string }[] = [
-  { id: "bazi", label: "八字老師", symbol: "乾", color: "text-amber-400", bgClass: "border-amber-400/30 bg-amber-400/5" },
-  { id: "ziwei", label: "紫微老師", symbol: "紫", color: "text-violet-400", bgClass: "border-violet-400/30 bg-violet-400/5" },
-  { id: "zodiac", label: "星座老師", symbol: "☿", color: "text-cyan-400", bgClass: "border-cyan-400/30 bg-cyan-400/5" },
+const MASTERS_BASE: { id: MasterType; labelKey: string; symbol: string; color: string; bgClass: string }[] = [
+  { id: "bazi", labelKey: "master.bazi", symbol: "乾", color: "text-amber-400", bgClass: "border-amber-400/30 bg-amber-400/5" },
+  { id: "ziwei", labelKey: "master.ziwei", symbol: "紫", color: "text-violet-400", bgClass: "border-violet-400/30 bg-violet-400/5" },
+  { id: "zodiac", labelKey: "master.zodiac", symbol: "☿", color: "text-cyan-400", bgClass: "border-cyan-400/30 bg-cyan-400/5" },
 ];
 
 const MASTER_ORDER: MasterType[] = ["bazi", "ziwei", "zodiac"];
@@ -51,12 +52,16 @@ export default function ComprehensiveMode({
   onBack,
   reasoningDepth,
 }: ComprehensiveModeProps) {
+  const { locale, t } = useLocale();
+
+  const MASTERS = MASTERS_BASE.map((m) => ({ ...m, label: t(m.labelKey) }));
+
   // Phase: "input" → "charts" → "discussion"
   const [phase, setPhase] = useState<"input" | "charts" | "discussion">("input");
   const [chartLoading, setChartLoading] = useState(false);
   const [charts, setCharts] = useState<{ bazi?: string; ziwei?: string; zodiac?: string }>({});
   const [chartRequest, setChartRequest] = useState<ChartRequest | null>(null);
-  const [aiQuestion, setAiQuestion] = useState("我的命運");
+  const [aiQuestion, setAiQuestion] = useState(t("main.defaultQuestion"));
 
   // Discussion state
   const [messages, setMessages] = useState<MasterMessage[]>([]);
@@ -106,11 +111,12 @@ export default function ComprehensiveMode({
           charts,
           messages: conversationMessages,
           reasoningDepth: reasoningDepthRef.current,
+          locale,
         }),
       });
 
       if (!response.ok) {
-        let errMsg = `API 錯誤: ${response.status}`;
+        let errMsg = `${t("comprehensive.apiError")} ${response.status}`;
         try {
           const err = await response.json();
           if (err.error) errMsg = err.error;
@@ -157,7 +163,7 @@ export default function ComprehensiveMode({
       setStreamingContent("");
       return fullContent;
     },
-    [charts]
+    [charts, locale, t]
   );
 
   // Run one full round: all three masters respond in order
@@ -198,7 +204,7 @@ export default function ComprehensiveMode({
         } catch (err) {
           const errorMsg: MasterMessage = {
             role: "assistant",
-            content: `連線錯誤：${err instanceof Error ? err.message : "未知錯誤"}`,
+            content: `${t("comprehensive.connectionError")}${err instanceof Error ? err.message : "未知錯誤"}`,
             master,
           };
           msgs = [...msgs, errorMsg];
@@ -259,7 +265,7 @@ export default function ComprehensiveMode({
         });
         setPhase("charts");
       } catch {
-        alert("命盤生成失敗");
+        alert(t("comprehensive.chartGenFailed"));
       } finally {
         setChartLoading(false);
       }
@@ -275,16 +281,16 @@ export default function ComprehensiveMode({
 
     const isChineseType = true;
     const shichen = isChineseType ? timeToShichen(chartRequest?.birthTime || "") : "";
-    const calendarLabel = chartRequest?.calendarType === "lunar" ? "農曆" : "國曆";
+    const calendarLabel = chartRequest?.calendarType === "lunar" ? t("comprehensive.lunar") : t("comprehensive.solar");
 
-    const birthInfo = `出生日期：${chartRequest?.birthDate}（${calendarLabel}）
-出生時間：${chartRequest?.birthTime}${shichen ? `（${shichen}）` : ""}
-出生地點：${chartRequest?.birthPlace}
-性別：${chartRequest?.gender || "未提供"}`;
+    const birthInfo = `${t("birth.date")}：${chartRequest?.birthDate}（${calendarLabel}）
+${t("birth.time")}：${chartRequest?.birthTime}${shichen ? `（${shichen}）` : ""}
+${t("birth.place")}：${chartRequest?.birthPlace}
+${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
     const userMsg: MasterMessage = {
       role: "user",
-      content: `${birthInfo}\n\n想深入探討的議題：${aiQuestion}`,
+      content: `${birthInfo}\n\n${t("birth.topic")}：${aiQuestion}`,
     };
 
     const initialMessages = [userMsg];
@@ -463,8 +469,8 @@ export default function ComprehensiveMode({
     autoDiscussRef.current = false;
     setSavedMessageIds(new Set());
     setNewDiscussionConfirm(false);
-    setAiQuestion("我的命運");
-  }, []);
+    setAiQuestion(t("main.defaultQuestion"));
+  }, [t]);
 
   const getMasterInfo = (id?: MasterType) => MASTERS.find((m) => m.id === id);
 
@@ -590,7 +596,7 @@ export default function ComprehensiveMode({
                       {chart.replace(/<[^>]+>/g, "").trim()}
                     </pre>
                   ) : (
-                    <p className="text-xs text-stone/50">命盤生成失敗</p>
+                    <p className="text-xs text-stone/50">{t("comprehensive.chartGenFailed")}</p>
                   )}
                 </div>
               );
@@ -601,7 +607,7 @@ export default function ComprehensiveMode({
         {/* Start discussion */}
         <section className="max-w-2xl mx-auto px-6 pb-12">
           <div className="border-t border-gold/10 pt-5 space-y-3">
-            <label className="text-sm font-serif text-gold">想深入探討的議題</label>
+            <label className="text-sm font-serif text-gold">{t("birth.topic")}</label>
             <input
               type="text"
               value={aiQuestion}
