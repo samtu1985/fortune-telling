@@ -73,13 +73,30 @@ function buildAnthropicRequest(config: MasterAIConfig, options: AIRequestOptions
     anthropicMessages.unshift({ role: "user", content: "請開始分析。" });
   }
 
+  let finalMaxTokens = maxCompletionTokens;
+
   const body: Record<string, unknown> = {
     model: config.modelId,
     system: systemPrompt,
     messages: anthropicMessages,
-    max_tokens: maxCompletionTokens,
     stream: true,
   };
+
+  // Apply thinking config from admin settings
+  const thinkingMode = config.thinkingMode || "disabled";
+
+  if (thinkingMode === "adaptive") {
+    body.thinking = { type: "adaptive" };
+  } else if (thinkingMode === "enabled") {
+    const budget = config.thinkingBudget || 5000;
+    body.thinking = { type: "enabled", budget_tokens: budget };
+    // max_tokens must be > budget_tokens
+    if (finalMaxTokens <= budget) {
+      finalMaxTokens = budget + maxCompletionTokens;
+    }
+  }
+
+  body.max_tokens = finalMaxTokens;
 
   return { url: config.apiUrl, headers, body, isAnthropic: true };
 }

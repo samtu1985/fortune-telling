@@ -3,9 +3,11 @@ import path from "path";
 
 export interface MasterAIConfig {
   provider: string;    // e.g. "byteplus", "openai", "google", "anthropic", "custom"
-  modelId: string;     // e.g. "gpt-4o", "claude-sonnet-4-20250514"
+  modelId: string;     // e.g. "gpt-4o", "claude-sonnet-4-0"
   apiKey: string;      // provider API key
   apiUrl: string;      // endpoint URL
+  thinkingMode?: "adaptive" | "enabled" | "disabled";  // Anthropic thinking mode
+  thinkingBudget?: number;  // budget_tokens when thinkingMode is "enabled"
 }
 
 // Settings keyed by master type: "bazi", "ziwei", "zodiac", "single-bazi", "single-ziwei", "single-zodiac"

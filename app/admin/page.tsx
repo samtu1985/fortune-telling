@@ -33,6 +33,8 @@ interface MasterAIConfig {
   apiKey: string;
   apiUrl: string;
   hasKey?: boolean;
+  thinkingMode?: "adaptive" | "enabled" | "disabled";
+  thinkingBudget?: number;
 }
 
 const PROVIDERS: Record<string, ProviderInfo> = {
@@ -69,6 +71,24 @@ const MASTER_KEYS = [
   { key: "zodiac", label: "星座老師" },
 ];
 
+// Claude models with thinking support info
+const CLAUDE_MODELS = [
+  { id: "claude-opus-4-6", label: "Claude Opus 4.6", thinking: ["adaptive", "enabled"] },
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", thinking: ["adaptive", "enabled"] },
+  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", thinking: ["enabled"] },
+  { id: "claude-opus-4-5", label: "Claude Opus 4.5", thinking: ["enabled"] },
+  { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", thinking: ["enabled"] },
+  { id: "claude-opus-4-1", label: "Claude Opus 4.1", thinking: ["enabled"] },
+  { id: "claude-sonnet-4-0", label: "Claude Sonnet 4", thinking: ["enabled"] },
+  { id: "claude-opus-4-0", label: "Claude Opus 4", thinking: ["enabled"] },
+];
+
+const THINKING_LABELS: Record<string, string> = {
+  adaptive: "自適應 (推薦)",
+  enabled: "啟用 (手動預算)",
+  disabled: "關閉",
+};
+
 type Tab = "users" | "ai";
 
 export default function AdminPage() {
@@ -92,11 +112,13 @@ export default function AdminPage() {
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<MasterAIConfig>({
+  const [editForm, setEditForm] = useState<Omit<MasterAIConfig, "thinkingMode" | "thinkingBudget"> & { thinkingMode: string; thinkingBudget: number }>({
     provider: "byteplus",
     modelId: "",
     apiKey: "",
     apiUrl: "",
+    thinkingMode: "disabled",
+    thinkingBudget: 5000,
   });
 
   const fetchUsers = useCallback(async () => {
@@ -175,6 +197,8 @@ export default function AdminPage() {
       modelId: existing?.modelId || defaultProvider?.defaultModel || "",
       apiKey: "",
       apiUrl: existing?.apiUrl || defaultProvider?.defaultUrl || "",
+      thinkingMode: existing?.thinkingMode || "disabled",
+      thinkingBudget: existing?.thinkingBudget || 5000,
     });
     setEditingKey(key);
   };
@@ -186,7 +210,22 @@ export default function AdminPage() {
       provider,
       apiUrl: info?.defaultUrl || prev.apiUrl,
       modelId: info?.defaultModel || prev.modelId,
+      thinkingMode: provider === "anthropic" ? "disabled" : prev.thinkingMode,
     }));
+  };
+
+  const handleClaudeModelChange = (modelId: string) => {
+    const model = CLAUDE_MODELS.find((m) => m.id === modelId);
+    setEditForm((prev) => {
+      let thinkingMode = prev.thinkingMode;
+      if (model && thinkingMode !== "disabled") {
+        const supported: readonly string[] = model.thinking;
+        if (!supported.includes(thinkingMode)) {
+          thinkingMode = model.thinking[0] || "disabled";
+        }
+      }
+      return { ...prev, modelId, thinkingMode };
+    });
   };
 
   const saveAISetting = async (key: string) => {
@@ -487,6 +526,11 @@ export default function AdminPage() {
                             {config ? (
                               <>
                                 {providerLabel} / {config.modelId}
+                                {config.thinkingMode && config.thinkingMode !== "disabled" && (
+                                  <span className="ml-1.5 text-blue-400">
+                                    思考:{config.thinkingMode === "adaptive" ? "自適應" : `${config.thinkingBudget || 5000}t`}
+                                  </span>
+                                )}
                                 {config.hasKey && (
                                   <span className="ml-1.5 text-green-500">Key {config.apiKey}</span>
                                 )}
@@ -532,22 +576,121 @@ export default function AdminPage() {
                             </div>
                           </div>
 
-                          {/* Model ID */}
-                          <div>
-                            <label className="block text-xs text-stone/70 mb-1">
-                              模型 ID
-                            </label>
-                            <input
-                              type="text"
-                              value={editForm.modelId}
-                              onChange={(e) =>
-                                setEditForm((f) => ({ ...f, modelId: e.target.value }))
-                              }
-                              placeholder={PROVIDERS[editForm.provider]?.defaultModel || "模型名稱"}
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
-                              style={{ backgroundColor: "var(--parchment)" }}
-                            />
-                          </div>
+                          {/* Model — Claude gets a picker, others get text input */}
+                          {editForm.provider === "anthropic" ? (
+                            <div>
+                              <label className="block text-xs text-stone/70 mb-2">
+                                模型
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {CLAUDE_MODELS.map((m) => (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => handleClaudeModelChange(m.id)}
+                                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                      editForm.modelId === m.id
+                                        ? "border-gold/50 text-gold bg-gold/10"
+                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                    }`}
+                                  >
+                                    {m.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="block text-xs text-stone/70 mb-1">
+                                模型 ID
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.modelId}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, modelId: e.target.value }))
+                                }
+                                placeholder={PROVIDERS[editForm.provider]?.defaultModel || "模型名稱"}
+                                className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                                style={{ backgroundColor: "var(--parchment)" }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Thinking mode — Anthropic only */}
+                          {editForm.provider === "anthropic" && (() => {
+                            const selectedModel = CLAUDE_MODELS.find((m) => m.id === editForm.modelId);
+                            const supportedModes = selectedModel?.thinking || [];
+                            return (
+                              <div>
+                                <label className="block text-xs text-stone/70 mb-2">
+                                  思考模式
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "disabled" }))}
+                                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                      editForm.thinkingMode === "disabled"
+                                        ? "border-gold/50 text-gold bg-gold/10"
+                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                    }`}
+                                  >
+                                    {THINKING_LABELS.disabled}
+                                  </button>
+                                  {supportedModes.includes("adaptive") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "adaptive" }))}
+                                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                        editForm.thinkingMode === "adaptive"
+                                          ? "border-gold/50 text-gold bg-gold/10"
+                                          : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                      }`}
+                                    >
+                                      {THINKING_LABELS.adaptive}
+                                    </button>
+                                  )}
+                                  {supportedModes.includes("enabled") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "enabled" }))}
+                                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                        editForm.thinkingMode === "enabled"
+                                          ? "border-gold/50 text-gold bg-gold/10"
+                                          : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                      }`}
+                                    >
+                                      {THINKING_LABELS.enabled}
+                                    </button>
+                                  )}
+                                </div>
+                                {editForm.thinkingMode === "enabled" && (
+                                  <div className="mt-2">
+                                    <label className="block text-xs text-stone/50 mb-1">
+                                      思考預算 (tokens，最小 1024)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min={1024}
+                                      step={1000}
+                                      value={editForm.thinkingBudget}
+                                      onChange={(e) =>
+                                        setEditForm((f) => ({ ...f, thinkingBudget: Math.max(1024, parseInt(e.target.value) || 1024) }))
+                                      }
+                                      className="w-40 px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
+                                      style={{ backgroundColor: "var(--parchment)" }}
+                                    />
+                                  </div>
+                                )}
+                                {editForm.thinkingMode === "adaptive" && (
+                                  <p className="text-xs text-stone/40 mt-1">
+                                    Claude 會自動決定思考的深度和時機 (Opus 4.6 / Sonnet 4.6 推薦)
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* API URL */}
                           <div>
@@ -564,11 +707,6 @@ export default function AdminPage() {
                               className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
                               style={{ backgroundColor: "var(--parchment)" }}
                             />
-                            {editForm.provider === "anthropic" && (
-                              <p className="text-xs text-stone/40 mt-1">
-                                Claude 使用 Messages API，系統會自動處理請求格式
-                              </p>
-                            )}
                           </div>
 
                           {/* API Key */}

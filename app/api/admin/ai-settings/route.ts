@@ -34,6 +34,8 @@ export async function GET() {
       modelId: config.modelId,
       apiKey: config.apiKey ? "••••" + config.apiKey.slice(-4) : "",
       apiUrl: config.apiUrl,
+      thinkingMode: config.thinkingMode,
+      thinkingBudget: config.thinkingBudget,
       hasKey: !!config.apiKey,
     };
   }
@@ -48,12 +50,14 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { key, provider, modelId, apiKey, apiUrl } = body as {
+  const { key, provider, modelId, apiKey, apiUrl, thinkingMode, thinkingBudget } = body as {
     key: string;
     provider: string;
     modelId: string;
     apiKey?: string;
     apiUrl: string;
+    thinkingMode?: string;
+    thinkingBudget?: number;
   };
 
   const validKeys = ["bazi", "ziwei", "zodiac"];
@@ -80,7 +84,14 @@ export async function PUT(request: NextRequest) {
       finalApiKey = settings[key]?.apiKey || "";
     }
 
-    settings[key] = { provider, modelId, apiKey: finalApiKey, apiUrl };
+    const entry: MasterAIConfig = { provider, modelId, apiKey: finalApiKey, apiUrl };
+    if (provider === "anthropic" && thinkingMode) {
+      entry.thinkingMode = thinkingMode as MasterAIConfig["thinkingMode"];
+      if (thinkingMode === "enabled" && thinkingBudget) {
+        entry.thinkingBudget = thinkingBudget;
+      }
+    }
+    settings[key] = entry;
     await writeAISettings(settings);
 
     return Response.json({ success: true });
