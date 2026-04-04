@@ -26,11 +26,11 @@
   --ink: #f6f1e7;
   --parchment: #f5efe4;
   --parchment-light: #e8e0d2;
-  --gold: #8a6d1e;
-  --gold-dim: #a58530;
-  --gold-bright: #6b5010;
-  --stone: #7a716a;
-  --mist: #5e5650;
+  --gold: #7a5c10;
+  --gold-dim: #8a6d1e;
+  --gold-bright: #5a4008;
+  --stone: #5c544d;
+  --mist: #4a433d;
   --cream: #1e1a14;
   --red-seal: #a82c2c;
   --glass-rgb: 0, 0, 0;
@@ -83,6 +83,14 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
+
+/* Large font mode — scales up text while keeping layout intact */
+[data-fontsize="large"] {
+  font-size: 18px;
+}
+[data-fontsize="large"] .text-xs { font-size: 0.8125rem; line-height: 1.25rem; }
+[data-fontsize="large"] .text-sm { font-size: 0.9375rem; line-height: 1.375rem; }
+[data-fontsize="large"] .text-2xl { font-size: 1.625rem; }
 
 /* Gold divider line */
 .gold-line {

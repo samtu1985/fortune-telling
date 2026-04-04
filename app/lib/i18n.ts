@@ -146,6 +146,8 @@ const translations: Record<Locale, TranslationSet> = {
     "menu.userManagement": "使用者管理",
     "menu.aiSettings": "AI 引擎設定",
     "menu.logout": "登出",
+    "menu.fontLarge": "放大字體",
+    "menu.fontNormal": "標準字體",
 
     // Result display
     "result.thinkingProcess": "深度思考過程",
@@ -409,6 +411,8 @@ const translations: Record<Locale, TranslationSet> = {
     "menu.userManagement": "用户管理",
     "menu.aiSettings": "AI 引擎设定",
     "menu.logout": "登出",
+    "menu.fontLarge": "放大字体",
+    "menu.fontNormal": "标准字体",
 
     "result.thinkingProcess": "深度思考过程",
     "result.saved": "已保存",
@@ -658,6 +662,8 @@ const translations: Record<Locale, TranslationSet> = {
     "menu.userManagement": "User management",
     "menu.aiSettings": "AI engine settings",
     "menu.logout": "Sign out",
+    "menu.fontLarge": "Larger text",
+    "menu.fontNormal": "Normal text",
 
     "result.thinkingProcess": "Reasoning process",
     "result.saved": "Saved",
@@ -907,6 +913,8 @@ const translations: Record<Locale, TranslationSet> = {
     "menu.userManagement": "ユーザー管理",
     "menu.aiSettings": "AIエンジン設定",
     "menu.logout": "ログアウト",
+    "menu.fontLarge": "文字を大きく",
+    "menu.fontNormal": "標準サイズ",
 
     "result.thinkingProcess": "思考プロセス",
     "result.saved": "保存済み",

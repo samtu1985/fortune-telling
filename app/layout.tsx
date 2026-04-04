@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import ThemeProvider from "./components/ThemeProvider";
 import LocaleProvider from "./components/LocaleProvider";
+import FontSizeProvider from "./components/FontSizeProvider";
 import SessionProvider from "./components/SessionProvider";
 
 export const viewport: Viewport = {
@@ -50,6 +51,8 @@ try {
   }
   var l = localStorage.getItem('locale');
   if (l) document.documentElement.lang = l;
+  var f = localStorage.getItem('fontSize');
+  if (f === 'large') document.documentElement.dataset.fontsize = 'large';
 } catch(e) {}
 `;
 
@@ -65,7 +68,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <SessionProvider>
-          <ThemeProvider><LocaleProvider>{children}</LocaleProvider></ThemeProvider>
+          <ThemeProvider><LocaleProvider><FontSizeProvider>{children}</FontSizeProvider></LocaleProvider></ThemeProvider>
         </SessionProvider>
         <Analytics />
         <SpeedInsights />

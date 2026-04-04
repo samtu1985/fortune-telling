@@ -5,12 +5,14 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import ProfileModal from "./ProfileModal";
 import { useLocale } from "./LocaleProvider";
+import { useFontSize } from "./FontSizeProvider";
 
 const ADMIN_EMAIL = "geektu@gmail.com";
 
 export default function UserMenu() {
   const { data: session } = useSession();
   const { t } = useLocale();
+  const { fontSize, toggleFontSize } = useFontSize();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -80,6 +82,19 @@ export default function UserMenu() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               {t("menu.manageProfiles")}
+            </button>
+            <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
+            <button
+              onClick={() => {
+                toggleFontSize();
+                setDropdownOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 min-h-[44px] text-sm text-cream hover:bg-gold/10 transition-colors flex items-center gap-2.5"
+            >
+              <svg className="w-4 h-4 text-gold-dim shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7V5a2 2 0 012-2h4m4 0h4a2 2 0 012 2v2M7 21h10M12 3v18" />
+              </svg>
+              {fontSize === "normal" ? t("menu.fontLarge") : t("menu.fontNormal")}
             </button>
 
             {session.user.email === ADMIN_EMAIL && (
