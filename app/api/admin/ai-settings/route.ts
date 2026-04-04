@@ -102,7 +102,9 @@ export async function PUT(request: NextRequest) {
       entry.reasoningDepth = reasoningDepth as MasterAIConfig["reasoningDepth"];
     }
     settings[key] = entry;
+    console.log(`[ai-settings] Saving ${key}:`, { provider, modelId, hasKey: !!finalApiKey, thinkingMode, effort, reasoningDepth });
     await writeAISettings(settings);
+    console.log(`[ai-settings] Saved successfully. Keys in store:`, Object.keys(settings));
 
     return Response.json({ success: true });
   } catch (e) {

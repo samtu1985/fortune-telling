@@ -256,8 +256,22 @@ export default function AdminPage() {
         alert(`儲存失敗: ${data.error || res.statusText}`);
         return;
       }
+      // Update local state immediately (don't rely on re-fetch which may read stale blob)
+      const updated: MasterAIConfig = {
+        provider: editForm.provider,
+        modelId: editForm.modelId,
+        apiKey: editForm.apiKey ? "••••" + editForm.apiKey.slice(-4) : (aiSettings[key]?.apiKey || ""),
+        apiUrl: editForm.apiUrl,
+        hasKey: !!(editForm.apiKey || aiSettings[key]?.hasKey),
+        thinkingMode: editForm.thinkingMode as MasterAIConfig["thinkingMode"],
+        effort: editForm.effort as MasterAIConfig["effort"],
+        thinkingBudget: editForm.thinkingBudget,
+        reasoningDepth: editForm.reasoningDepth as MasterAIConfig["reasoningDepth"],
+      };
+      setAiSettings((prev) => ({ ...prev, [key]: updated }));
       setEditingKey(null);
-      await fetchAISettings();
+      // Also re-fetch in background to sync
+      fetchAISettings();
     } finally {
       setAiSaving(null);
     }
