@@ -124,6 +124,15 @@ export async function POST(request: NextRequest) {
 
   // Load AI config for this master (key: "bazi", "ziwei", "zodiac")
   const config = await getAIConfig(master);
+
+  // Multi-master mode: each response is 500 chars max.
+  // Override adaptive thinking to a small fixed budget to avoid long
+  // silent periods that cause Vercel proxy timeouts.
+  if (config.provider === "anthropic" && config.thinkingMode === "adaptive") {
+    config.thinkingMode = "enabled";
+    config.thinkingBudget = 2000; // minimal thinking for short responses
+  }
+
   console.log(`[divine-multi] ${master} → ${config.provider} / ${config.modelId}`);
   if (!config.apiKey) {
     return new Response(
