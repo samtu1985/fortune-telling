@@ -525,10 +525,10 @@ const translations: Record<Locale, TranslationSet> = {
     "login.hint": "Sign in to start divination",
     "login.google": "Sign in with Google",
 
-    "type.bazi": "Four Pillars (八字)",
+    "type.bazi": "Four Pillars",
     "type.bazi.subtitle": "Four Pillars of Destiny",
     "type.bazi.desc": "Analyze destiny through the Heavenly Stems and Earthly Branches of birth date and time, examining Five Elements interactions and Ten Gods relationships.",
-    "type.ziwei": "Purple Star (紫微)",
+    "type.ziwei": "Purple Star",
     "type.ziwei.subtitle": "Purple Star Astrology",
     "type.ziwei.desc": "Map fourteen major stars across twelve palaces to reveal innate destiny patterns and life trajectory through traditional Chinese astrology.",
     "type.zodiac": "Western Astrology",
@@ -760,7 +760,7 @@ const translations: Record<Locale, TranslationSet> = {
     "login.hint": "ログインして占いを始める",
     "login.google": "Googleアカウントでログイン",
 
-    "type.bazi": "四柱推命（八字）",
+    "type.bazi": "四柱推命",
     "type.bazi.subtitle": "Four Pillars of Destiny",
     "type.bazi.desc": "生年月日時の天干地支から五行の相生相剋、十神の関係を分析し、運命の全体像を読み解きます。",
     "type.ziwei": "紫微斗数",
@@ -900,7 +900,7 @@ const translations: Record<Locale, TranslationSet> = {
 
     "master.bazi": "四柱推命師",
     "master.ziwei": "紫微斗数師",
-    "master.zodiac": "西洋占星術師",
+    "master.zodiac": "占星術師",
     "comprehensive.apiError": "APIエラー",
     "comprehensive.connectionError": "接続エラー",
     "comprehensive.chartGenFailed": "命盤生成に失敗しました",
