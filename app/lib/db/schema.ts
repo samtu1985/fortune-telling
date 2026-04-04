@@ -77,3 +77,16 @@ export const aiSettings = pgTable("ai_settings", {
   reasoningDepth: varchar("reasoning_depth", { length: 10 }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── API Usage ──────────────────────────────────────────
+export const apiUsage = pgTable("api_usage", {
+  id: serial("id").primaryKey(),
+  userEmail: varchar("user_email", { length: 255 }).notNull(),
+  masterType: varchar("master_type", { length: 20 }).notNull(),
+  mode: varchar("mode", { length: 10 }).notNull(), // "single" | "multi"
+  provider: varchar("provider", { length: 50 }).notNull(),
+  modelId: varchar("model_id", { length: 100 }).notNull(),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
