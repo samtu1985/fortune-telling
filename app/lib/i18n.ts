@@ -23,7 +23,7 @@ const translations: Record<Locale, TranslationSet> = {
   "zh-Hant": {
     // App
     "app.title": "天機",
-    "app.subtitle": "Divination by AI",
+    "app.subtitle": "Destiny Reading by AI",
 
     // Login
     "login.openExternal": "請使用外部瀏覽器開啟",
@@ -279,7 +279,7 @@ const translations: Record<Locale, TranslationSet> = {
 
   "zh-Hans": {
     "app.title": "天机",
-    "app.subtitle": "Divination by AI",
+    "app.subtitle": "Destiny Reading by AI",
 
     "login.openExternal": "请使用外部浏览器打开",
     "login.inAppWarning": "目前使用的是应用程序内建浏览器，Google 登录无法在此环境中使用。",
@@ -514,7 +514,7 @@ const translations: Record<Locale, TranslationSet> = {
 
   en: {
     "app.title": "天機",
-    "app.subtitle": "Divination by AI",
+    "app.subtitle": "Destiny Reading by AI",
 
     "login.openExternal": "Please use an external browser",
     "login.inAppWarning": "You are using an in-app browser. Google sign-in is not available in this environment.",
@@ -749,7 +749,7 @@ const translations: Record<Locale, TranslationSet> = {
 
   ja: {
     "app.title": "天機",
-    "app.subtitle": "Divination by AI",
+    "app.subtitle": "Destiny Reading by AI",
 
     "login.openExternal": "外部ブラウザで開いてください",
     "login.inAppWarning": "アプリ内ブラウザを使用中です。Google ログインはこの環境では利用できません。",
