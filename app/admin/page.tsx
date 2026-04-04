@@ -14,6 +14,7 @@ interface UserItem {
   status: "pending" | "approved" | "disabled";
   createdAt: string;
   approvedAt: string | null;
+  authProvider?: string;
 }
 
 // --- AI Settings types ---
@@ -506,6 +507,11 @@ export default function AdminPage() {
                             <span className={`text-xs ${status.color}`}>
                               {status.text}
                             </span>
+                            {user.authProvider === "credentials" && (
+                              <span className="text-[10px] px-1.5 py-0.5 border border-stone/20 rounded text-stone/50">
+                                ID
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-stone/60 truncate">
                             {user.email}

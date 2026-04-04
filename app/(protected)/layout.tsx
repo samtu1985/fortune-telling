@@ -37,7 +37,7 @@ export default async function ProtectedLayout({
     return <>{children}</>;
   }
 
-  if (!userData || userData.status === "pending") {
+  if (!userData || userData.status === "pending" || userData.status === "unverified") {
     return <PendingScreen type="pending" />;
   }
 
