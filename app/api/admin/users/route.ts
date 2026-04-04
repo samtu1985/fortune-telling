@@ -26,9 +26,10 @@ export async function GET() {
     const users = await readUsers();
 
     const statusOrder: Record<UserStatus, number> = {
-      pending: 0,
-      approved: 1,
-      disabled: 2,
+      unverified: 0,
+      pending: 1,
+      approved: 2,
+      disabled: 3,
     };
 
     const list = Object.entries(users)

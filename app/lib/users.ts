@@ -1,8 +1,9 @@
+import bcrypt from "bcryptjs";
 import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import { users, profiles, conversations } from "./db/schema";
 
-export type UserStatus = "pending" | "approved" | "disabled";
+export type UserStatus = "unverified" | "pending" | "approved" | "disabled";
 
 export interface UserProfile {
   birthDate: string;
@@ -50,6 +51,7 @@ export interface UserData {
   profiles?: SavedProfile[];
   savedConversations?: SavedConversation[];
   reasoningDepth?: ReasoningDepth;
+  authProvider?: string;
 }
 
 export type UsersStore = Record<string, UserData>;
@@ -75,6 +77,7 @@ export async function readUsers(): Promise<UsersStore> {
       status: row.status as UserStatus,
       createdAt: row.createdAt.toISOString(),
       approvedAt: row.approvedAt?.toISOString() ?? null,
+      authProvider: row.authProvider,
     };
   }
   return store;
@@ -152,6 +155,95 @@ export async function setReasoningDepth(
   _email: string,
   _depth: ReasoningDepth
 ): Promise<boolean> {
+  return true;
+}
+
+// ─── Credentials Auth ───────────────────────────────────
+
+export async function checkUsernameAvailable(username: string): Promise<boolean> {
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.username, username))
+    .limit(1);
+  return row.length === 0;
+}
+
+export async function checkEmailAvailable(email: string): Promise<boolean> {
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return row.length === 0;
+}
+
+export async function registerCredentialsUser(params: {
+  username: string;
+  email: string;
+  password: string;
+  name?: string;
+}): Promise<void> {
+  const passwordHash = await bcrypt.hash(params.password, 10);
+  await db.insert(users).values({
+    email: params.email,
+    name: params.name || params.username,
+    username: params.username,
+    passwordHash,
+    authProvider: "credentials",
+    status: "pending",
+    createdAt: new Date(),
+  });
+}
+
+export async function verifyCredentials(
+  username: string,
+  password: string
+): Promise<{ id: number; email: string; name: string | null; image: string | null; status: string } | null> {
+  const row = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.username, username), eq(users.authProvider, "credentials")))
+    .limit(1);
+  if (!row[0]) return null;
+
+  const valid = await bcrypt.compare(password, row[0].passwordHash || "");
+  if (!valid) return null;
+
+  return {
+    id: row[0].id,
+    email: row[0].email,
+    name: row[0].name,
+    image: row[0].image,
+    status: row[0].status,
+  };
+}
+
+export async function setResetToken(email: string, token: string): Promise<boolean> {
+  const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const result = await db
+    .update(users)
+    .set({ resetToken: token, resetTokenExpiry: expiry })
+    .where(and(eq(users.email, email), eq(users.authProvider, "credentials")));
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<boolean> {
+  const row = await db
+    .select()
+    .from(users)
+    .where(eq(users.resetToken, token))
+    .limit(1);
+
+  if (!row[0]) return false;
+  if (!row[0].resetTokenExpiry || row[0].resetTokenExpiry < new Date()) return false;
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await db
+    .update(users)
+    .set({ passwordHash, resetToken: null, resetTokenExpiry: null })
+    .where(eq(users.id, row[0].id));
+
   return true;
 }
 
