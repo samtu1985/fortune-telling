@@ -176,11 +176,27 @@ export async function POST(request: NextRequest) {
     if (bodyObj.thinking) console.log(`[divine-multi] ${master} thinking:`, bodyObj.thinking);
   }
 
-  const response = await fetch(req.url, {
-    method: "POST",
-    headers: req.headers,
-    body: JSON.stringify(req.body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(req.url, {
+      method: "POST",
+      headers: req.headers,
+      body: JSON.stringify(req.body),
+    });
+  } catch (fetchErr) {
+    console.error(`[divine-multi] ${master} fetch failed:`, fetchErr);
+    const enc = new TextEncoder();
+    const errStream = new ReadableStream({
+      start(ctrl) {
+        ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ content: `[錯誤] 無法連接 AI API: ${fetchErr instanceof Error ? fetchErr.message : "網路錯誤"}` })}\n\n`));
+        ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
+        ctrl.close();
+      },
+    });
+    return new Response(errStream, {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
+    });
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

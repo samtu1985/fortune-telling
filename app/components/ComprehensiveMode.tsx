@@ -110,8 +110,14 @@ export default function ComprehensiveMode({
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "API 錯誤");
+        let errMsg = `API 錯誤: ${response.status}`;
+        try {
+          const err = await response.json();
+          if (err.error) errMsg = err.error;
+        } catch {
+          // Response might not be JSON (e.g. Vercel error page)
+        }
+        throw new Error(errMsg);
       }
 
       const reader = response.body?.getReader();
