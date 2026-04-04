@@ -22,12 +22,12 @@ export default function DivinationCard({
   return (
     <button
       onClick={onClick}
-      className="animate-fade-in-up group relative text-left w-full"
+      className="animate-fade-in-up group relative text-left w-full h-full"
       style={{ animationDelay: `${delay}ms`, opacity: 0 }}
     >
       <div
         className={`
-          relative overflow-hidden rounded-sm border transition-all duration-500
+          relative overflow-hidden rounded-sm border transition-all duration-500 h-full
           ${
             active
               ? "border-gold/60 bg-gold/[0.06]"
