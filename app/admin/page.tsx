@@ -20,12 +20,54 @@ const STATUS_LABELS: Record<string, { text: string; color: string }> = {
   disabled: { text: "已停用", color: "text-red-400" },
 };
 
+// --- AI Settings types ---
+interface ProviderInfo {
+  label: string;
+  defaultUrl: string;
+  defaultModel: string;
+}
+
+interface MasterAIConfig {
+  provider: string;
+  modelId: string;
+  apiKey: string;
+  apiUrl: string;
+  hasKey?: boolean;
+}
+
+const MASTER_KEYS = [
+  { key: "bazi", label: "八字老師 (三師會談)" },
+  { key: "ziwei", label: "紫微老師 (三師會談)" },
+  { key: "zodiac", label: "星座老師 (三師會談)" },
+  { key: "single-bazi", label: "八字老師 (單獨問答)" },
+  { key: "single-ziwei", label: "紫微老師 (單獨問答)" },
+  { key: "single-zodiac", label: "星座老師 (單獨問答)" },
+];
+
+type Tab = "users" | "ai";
+
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<Tab>("users");
+
+  // --- Users state ---
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [storageType, setStorageType] = useState<string>("");
   const [storageError, setStorageError] = useState<string>("");
+
+  // --- AI Settings state ---
+  const [aiSettings, setAiSettings] = useState<Record<string, MasterAIConfig>>({});
+  const [providers, setProviders] = useState<Record<string, ProviderInfo>>({});
+  const [aiLoading, setAiLoading] = useState(true);
+  const [aiSaving, setAiSaving] = useState<string | null>(null);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<MasterAIConfig>({
+    provider: "byteplus",
+    modelId: "",
+    apiKey: "",
+    apiUrl: "",
+  });
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -41,9 +83,23 @@ export default function AdminPage() {
     }
   }, []);
 
+  const fetchAISettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/ai-settings");
+      const data = await res.json();
+      setAiSettings(data.settings || {});
+      setProviders(data.providers || {});
+    } catch {
+      // ignore
+    } finally {
+      setAiLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchAISettings();
+  }, [fetchUsers, fetchAISettings]);
 
   const updateStatus = async (
     email: string,
@@ -78,6 +134,65 @@ export default function AdminPage() {
       await fetchUsers();
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // --- AI settings handlers ---
+  const startEditing = (key: string) => {
+    const existing = aiSettings[key];
+    const defaultProvider = providers["byteplus"];
+    setEditForm({
+      provider: existing?.provider || "byteplus",
+      modelId: existing?.modelId || defaultProvider?.defaultModel || "",
+      apiKey: "",
+      apiUrl: existing?.apiUrl || defaultProvider?.defaultUrl || "",
+    });
+    setEditingKey(key);
+  };
+
+  const handleProviderChange = (provider: string) => {
+    const info = providers[provider];
+    setEditForm((prev) => ({
+      ...prev,
+      provider,
+      apiUrl: info?.defaultUrl || prev.apiUrl,
+      modelId: info?.defaultModel || prev.modelId,
+    }));
+  };
+
+  const saveAISetting = async (key: string) => {
+    setAiSaving(key);
+    try {
+      const res = await fetch("/api/admin/ai-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, ...editForm }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`儲存失敗: ${data.error || res.statusText}`);
+        return;
+      }
+      setEditingKey(null);
+      await fetchAISettings();
+    } finally {
+      setAiSaving(null);
+    }
+  };
+
+  const resetAISetting = async (key: string) => {
+    if (!confirm("確定要重置為預設值嗎？將使用環境變數中的 BytePlus 設定。")) return;
+    setAiSaving(key);
+    try {
+      await fetch("/api/admin/ai-settings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      setEditingKey(null);
+      await fetchAISettings();
+    } finally {
+      setAiSaving(null);
     }
   };
 
@@ -123,151 +238,357 @@ export default function AdminPage() {
       {/* Header */}
       <header className="text-center py-6">
         <h1 className="font-serif text-2xl font-bold tracking-[0.15em] text-gold">
-          使用者管理
+          後台管理
         </h1>
-        {pendingCount > 0 && (
-          <p className="text-sm text-yellow-500 mt-2">
-            {pendingCount} 位使用者等待審核
-          </p>
-        )}
         <div className="mx-auto mt-4 w-24 gold-line" />
-
-        {/* Storage status */}
-        {storageType && (
-          <p className="text-xs text-stone/50 mt-3">
-            儲存：{storageType === "blob" ? "Vercel Blob" : "本機檔案"}
-          </p>
-        )}
-        {storageError && (
-          <div className="mt-3 mx-auto max-w-md px-4 py-2 rounded border border-red-400/30 bg-red-400/5">
-            <p className="text-xs text-red-400">{storageError}</p>
-            {storageType === "local" && (
-              <p className="text-xs text-stone/50 mt-1">
-                在 Vercel 上需設定 Blob Storage 才能正常儲存使用者資料
-              </p>
-            )}
-          </div>
-        )}
       </header>
 
-      {/* User list */}
+      {/* Tabs */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-6">
+        <div className="flex gap-1 border-b border-gold/10">
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "users"
+                ? "text-gold"
+                : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            使用者管理
+            {pendingCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-500 rounded-full">
+                {pendingCount}
+              </span>
+            )}
+            {activeTab === "users" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("ai")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "ai"
+                ? "text-gold"
+                : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            AI 引擎設定
+            {activeTab === "ai" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Tab content */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-12">
-        {loading ? (
-          <div className="text-center py-12">
-            <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-          </div>
-        ) : users.length === 0 ? (
-          <p className="text-center text-stone/60 py-12">尚無使用者</p>
-        ) : (
-          <div className="space-y-3">
-            {users.map((user) => {
-              const status = STATUS_LABELS[user.status];
-              const isLoading = actionLoading === user.email;
-              const isAdmin = user.email === "geektu@gmail.com";
+        {activeTab === "users" && (
+          <>
+            {/* Storage status */}
+            {storageType && (
+              <p className="text-xs text-stone/50 mb-3 text-center">
+                儲存：{storageType === "blob" ? "Vercel Blob" : "本機檔案"}
+              </p>
+            )}
+            {storageError && (
+              <div className="mb-4 mx-auto max-w-md px-4 py-2 rounded border border-red-400/30 bg-red-400/5">
+                <p className="text-xs text-red-400">{storageError}</p>
+                {storageType === "local" && (
+                  <p className="text-xs text-stone/50 mt-1">
+                    在 Vercel 上需設定 Blob Storage 才能正常儲存使用者資料
+                  </p>
+                )}
+              </div>
+            )}
 
-              return (
-                <div
-                  key={user.email}
-                  className={`
-                    rounded-lg border p-4 transition-colors
-                    ${
-                      user.status === "pending"
-                        ? "border-yellow-500/30 bg-yellow-500/[0.03]"
-                        : "border-gold/10"
-                    }
-                  `}
-                  style={{
-                    backgroundColor:
-                      user.status !== "pending"
-                        ? "rgba(var(--glass-rgb), 0.02)"
-                        : undefined,
-                  }}
-                >
-                  <div className="flex items-start gap-3 sm:items-center">
-                    {/* Avatar */}
-                    {user.image ? (
-                      <img
-                        src={user.image}
-                        alt=""
-                        className="w-10 h-10 rounded-full border border-gold/20 shrink-0"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-sm text-gold shrink-0">
-                        {user.name?.[0] || "?"}
-                      </div>
-                    )}
+            {/* User list */}
+            {loading ? (
+              <div className="text-center py-12">
+                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              </div>
+            ) : users.length === 0 ? (
+              <p className="text-center text-stone/60 py-12">尚無使用者</p>
+            ) : (
+              <div className="space-y-3">
+                {users.map((user) => {
+                  const status = STATUS_LABELS[user.status];
+                  const isLoading = actionLoading === user.email;
+                  const isAdmin = user.email === "geektu@gmail.com";
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm text-cream font-medium truncate">
-                          {user.name || "未命名"}
-                        </span>
-                        <span className={`text-xs ${status.color}`}>
-                          {status.text}
-                        </span>
+                  return (
+                    <div
+                      key={user.email}
+                      className={`
+                        rounded-lg border p-4 transition-colors
+                        ${
+                          user.status === "pending"
+                            ? "border-yellow-500/30 bg-yellow-500/[0.03]"
+                            : "border-gold/10"
+                        }
+                      `}
+                      style={{
+                        backgroundColor:
+                          user.status !== "pending"
+                            ? "rgba(var(--glass-rgb), 0.02)"
+                            : undefined,
+                      }}
+                    >
+                      <div className="flex items-start gap-3 sm:items-center">
+                        {/* Avatar */}
+                        {user.image ? (
+                          <img
+                            src={user.image}
+                            alt=""
+                            className="w-10 h-10 rounded-full border border-gold/20 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-sm text-gold shrink-0">
+                            {user.name?.[0] || "?"}
+                          </div>
+                        )}
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-cream font-medium truncate">
+                              {user.name || "未命名"}
+                            </span>
+                            <span className={`text-xs ${status.color}`}>
+                              {status.text}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone/60 truncate">
+                            {user.email}
+                          </p>
+                          <p className="text-xs text-stone/40 mt-0.5">
+                            註冊於{" "}
+                            {new Date(user.createdAt).toLocaleDateString("zh-TW")}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 shrink-0">
+                          {isAdmin ? (
+                            <span className="text-xs text-stone/40">管理員</span>
+                          ) : isLoading ? (
+                            <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              {user.status === "pending" && (
+                                <button
+                                  onClick={() =>
+                                    updateStatus(user.email, "approved")
+                                  }
+                                  className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
+                                >
+                                  核准
+                                </button>
+                              )}
+                              {user.status === "approved" && (
+                                <button
+                                  onClick={() =>
+                                    updateStatus(user.email, "disabled")
+                                  }
+                                  className="px-3 py-1.5 min-h-[36px] text-xs text-yellow-500 border border-yellow-500/30 rounded hover:bg-yellow-500/10 transition-colors"
+                                >
+                                  停用
+                                </button>
+                              )}
+                              {user.status === "disabled" && (
+                                <button
+                                  onClick={() =>
+                                    updateStatus(user.email, "approved")
+                                  }
+                                  className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
+                                >
+                                  啟用
+                                </button>
+                              )}
+                              <button
+                                onClick={() => removeUser(user.email)}
+                                className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
+                              >
+                                刪除
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs text-stone/60 truncate">
-                        {user.email}
-                      </p>
-                      <p className="text-xs text-stone/40 mt-0.5">
-                        註冊於{" "}
-                        {new Date(user.createdAt).toLocaleDateString("zh-TW")}
-                      </p>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
 
-                    {/* Actions */}
-                    <div className="flex gap-2 shrink-0">
-                      {isAdmin ? (
-                        <span className="text-xs text-stone/40">管理員</span>
-                      ) : isLoading ? (
-                        <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          {user.status === "pending" && (
-                            <button
-                              onClick={() =>
-                                updateStatus(user.email, "approved")
-                              }
-                              className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
-                            >
-                              核准
-                            </button>
-                          )}
-                          {user.status === "approved" && (
-                            <button
-                              onClick={() =>
-                                updateStatus(user.email, "disabled")
-                              }
-                              className="px-3 py-1.5 min-h-[36px] text-xs text-yellow-500 border border-yellow-500/30 rounded hover:bg-yellow-500/10 transition-colors"
-                            >
-                              停用
-                            </button>
-                          )}
-                          {user.status === "disabled" && (
-                            <button
-                              onClick={() =>
-                                updateStatus(user.email, "approved")
-                              }
-                              className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
-                            >
-                              啟用
-                            </button>
-                          )}
+        {activeTab === "ai" && (
+          <>
+            <p className="text-xs text-stone/50 mb-4 text-center">
+              為每位命理老師設定使用的 AI 模型。未設定的老師將使用環境變數中的預設值 (BytePlus)。
+            </p>
+
+            {aiLoading ? (
+              <div className="text-center py-12">
+                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {MASTER_KEYS.map(({ key, label }) => {
+                  const config = aiSettings[key];
+                  const isEditing = editingKey === key;
+                  const isSaving = aiSaving === key;
+                  const providerLabel = config
+                    ? providers[config.provider]?.label || config.provider
+                    : "預設 (環境變數)";
+
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-lg border border-gold/10 p-4"
+                      style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                    >
+                      {/* Header row */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="text-sm text-cream font-medium">
+                            {label}
+                          </span>
+                          <span className="ml-2 text-xs text-stone/50">
+                            {config ? (
+                              <>
+                                {providerLabel} / {config.modelId}
+                                {config.hasKey && (
+                                  <span className="ml-1.5 text-green-500">Key {config.apiKey}</span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-stone/40">使用預設</span>
+                            )}
+                          </span>
+                        </div>
+                        {!isEditing && (
                           <button
-                            onClick={() => removeUser(user.email)}
-                            className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
+                            onClick={() => startEditing(key)}
+                            className="px-3 py-1.5 min-h-[36px] text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors"
                           >
-                            刪除
+                            設定
                           </button>
-                        </>
+                        )}
+                      </div>
+
+                      {/* Edit form */}
+                      {isEditing && (
+                        <div className="mt-3 space-y-3 border-t border-gold/10 pt-3">
+                          {/* Provider */}
+                          <div>
+                            <label className="block text-xs text-stone/70 mb-1">
+                              AI 供應商
+                            </label>
+                            <select
+                              value={editForm.provider}
+                              onChange={(e) => handleProviderChange(e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-transparent border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
+                            >
+                              {Object.entries(providers).map(([id, info]) => (
+                                <option key={id} value={id} className="bg-neutral-900">
+                                  {info.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Model ID */}
+                          <div>
+                            <label className="block text-xs text-stone/70 mb-1">
+                              模型 ID
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.modelId}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, modelId: e.target.value }))
+                              }
+                              placeholder="e.g. gpt-4o, claude-sonnet-4-20250514"
+                              className="w-full px-3 py-2 text-sm bg-transparent border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* API URL */}
+                          <div>
+                            <label className="block text-xs text-stone/70 mb-1">
+                              API 端點
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.apiUrl}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, apiUrl: e.target.value }))
+                              }
+                              placeholder="https://api.openai.com/v1/chat/completions"
+                              className="w-full px-3 py-2 text-sm bg-transparent border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* API Key */}
+                          <div>
+                            <label className="block text-xs text-stone/70 mb-1">
+                              API Key
+                              {config?.hasKey && (
+                                <span className="ml-1.5 text-stone/40">
+                                  (留空則保留原有 Key)
+                                </span>
+                              )}
+                            </label>
+                            <input
+                              type="password"
+                              value={editForm.apiKey}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, apiKey: e.target.value }))
+                              }
+                              placeholder={config?.hasKey ? "保留原有 Key" : "輸入 API Key"}
+                              className="w-full px-3 py-2 text-sm bg-transparent border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 justify-end pt-1">
+                            {config && (
+                              <button
+                                onClick={() => resetAISetting(key)}
+                                disabled={isSaving}
+                                className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                              >
+                                重置為預設
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setEditingKey(null)}
+                              disabled={isSaving}
+                              className="px-3 py-1.5 min-h-[36px] text-xs text-stone border border-stone/30 rounded hover:bg-stone/10 transition-colors disabled:opacity-50"
+                            >
+                              取消
+                            </button>
+                            <button
+                              onClick={() => saveAISetting(key)}
+                              disabled={isSaving}
+                              className="px-3 py-1.5 min-h-[36px] text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-50"
+                            >
+                              {isSaving ? (
+                                <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                              ) : (
+                                "儲存"
+                              )}
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

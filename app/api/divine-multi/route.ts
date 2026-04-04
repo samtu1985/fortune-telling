@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
-
-const BYTEPLUS_API_URL =
-  "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions";
+import { getAIConfig } from "@/app/lib/ai-settings";
+import { buildRequest } from "@/app/lib/ai-client";
 
 const MASTER_PROMPTS: Record<string, string> = {
   bazi: `你是「八字老師」，精通八字命理，正在跟紫微老師、星座老師一起聊天討論。
@@ -107,16 +106,6 @@ const MASTER_LABELS: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.BYTEPLUS_API_KEY;
-  const modelId = process.env.BYTEPLUS_MODEL_ID || "seed-2-0-pro-260328";
-
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "API Key 尚未設定" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
   const body = await request.json();
   const { master, charts, messages, reasoningDepth } = body as {
     master: string;
@@ -130,6 +119,15 @@ export async function POST(request: NextRequest) {
     return new Response(
       JSON.stringify({ error: "無效的老師類型" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Load AI config for this master (key: "bazi", "ziwei", "zodiac")
+  const config = await getAIConfig(master);
+  if (!config.apiKey) {
+    return new Response(
+      JSON.stringify({ error: `AI 引擎尚未設定 API Key (${master})` }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -157,24 +155,17 @@ export async function POST(request: NextRequest) {
     return { role: "user" as const, content: `【${label}的發言】${msg.content}` };
   });
 
-  const response = await fetch(BYTEPLUS_API_URL, {
+  const req = buildRequest(config, {
+    systemPrompt: fullSystemPrompt,
+    messages: apiMessages,
+    reasoningDepth,
+    maxCompletionTokens: 4096,
+  });
+
+  const response = await fetch(req.url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: [
-        { role: "system", content: fullSystemPrompt },
-        ...apiMessages,
-      ],
-      thinking: { type: reasoningDepth === "off" ? "disabled" : "enabled" },
-      ...(reasoningDepth && reasoningDepth !== "off" && { reasoning_effort: reasoningDepth }),
-      max_completion_tokens: 4096,
-      stream: true,
-      stream_options: { include_usage: true },
-    }),
+    headers: req.headers,
+    body: JSON.stringify(req.body),
   });
 
   if (!response.ok) {

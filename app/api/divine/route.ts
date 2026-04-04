@@ -2,9 +2,8 @@ import { NextRequest } from "next/server";
 import { generateBaziChart } from "@/app/lib/bazi";
 import { generateZiweiChart } from "@/app/lib/ziwei";
 import { generateNatalChart } from "@/app/lib/astrology";
-
-const BYTEPLUS_API_URL =
-  "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions";
+import { getAIConfig } from "@/app/lib/ai-settings";
+import { buildRequest } from "@/app/lib/ai-client";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -228,16 +227,6 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.BYTEPLUS_API_KEY;
-  const modelId = process.env.BYTEPLUS_MODEL_ID || "seed-2-0-pro-260328";
-
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "API Key 尚未設定，請在 .env.local 中配置 BYTEPLUS_API_KEY" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
   const body = await request.json();
   const { type, messages: chatMessages, reasoningDepth } = body as {
     type: string;
@@ -250,6 +239,16 @@ export async function POST(request: NextRequest) {
     return new Response(
       JSON.stringify({ error: "無效的命理類型" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Load AI config for single-master mode (key: "single-bazi", "single-ziwei", "single-zodiac")
+  const configKey = `single-${type}`;
+  const config = await getAIConfig(configKey);
+  if (!config.apiKey) {
+    return new Response(
+      JSON.stringify({ error: `AI 引擎尚未設定 API Key (${type})` }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -317,30 +316,23 @@ export async function POST(request: NextRequest) {
     return { role: msg.role, content: msg.content };
   });
 
-  const response = await fetch(BYTEPLUS_API_URL, {
+  const req = buildRequest(config, {
+    systemPrompt,
+    messages: apiMessages,
+    reasoningDepth,
+    maxCompletionTokens: 16384,
+  });
+
+  const response = await fetch(req.url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...apiMessages,
-      ],
-      thinking: { type: reasoningDepth === "off" ? "disabled" : "enabled" },
-      ...(reasoningDepth && reasoningDepth !== "off" && { reasoning_effort: reasoningDepth }),
-      max_completion_tokens: 16384,
-      stream: true,
-      stream_options: { include_usage: true },
-    }),
+    headers: req.headers,
+    body: JSON.stringify(req.body),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
     return new Response(
-      JSON.stringify({ error: `BytePlus API 錯誤: ${response.status}`, details: errorText }),
+      JSON.stringify({ error: `AI API 錯誤: ${response.status}`, details: errorText }),
       { status: response.status, headers: { "Content-Type": "application/json" } }
     );
   }
