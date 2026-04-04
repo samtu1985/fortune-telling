@@ -18,8 +18,8 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const storageType = process.env.BLOB_READ_WRITE_TOKEN
-    ? "blob"
+  const storageType = process.env.POSTGRES_URL
+    ? "postgres"
     : "local";
 
   try {

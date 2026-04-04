@@ -384,7 +384,7 @@ export default function AdminPage() {
             {/* Storage status */}
             {storageType && (
               <p className="text-xs text-stone/50 mb-3 text-center">
-                儲存：{storageType === "blob" ? "Vercel Blob" : "本機檔案"}
+                儲存：{storageType === "postgres" ? "Neon Postgres" : "本機檔案"}
               </p>
             )}
             {storageError && (
@@ -392,7 +392,7 @@ export default function AdminPage() {
                 <p className="text-xs text-red-400">{storageError}</p>
                 {storageType === "local" && (
                   <p className="text-xs text-stone/50 mt-1">
-                    在 Vercel 上需設定 Blob Storage 才能正常儲存使用者資料
+                    在 Vercel 上需設定 Neon Postgres 才能正常儲存使用者資料
                   </p>
                 )}
               </div>
