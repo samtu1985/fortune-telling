@@ -35,6 +35,7 @@ export async function GET() {
       apiKey: config.apiKey ? "••••" + config.apiKey.slice(-4) : "",
       apiUrl: config.apiUrl,
       thinkingMode: config.thinkingMode,
+      effort: config.effort,
       thinkingBudget: config.thinkingBudget,
       hasKey: !!config.apiKey,
     };
@@ -50,13 +51,14 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { key, provider, modelId, apiKey, apiUrl, thinkingMode, thinkingBudget } = body as {
+  const { key, provider, modelId, apiKey, apiUrl, thinkingMode, effort, thinkingBudget } = body as {
     key: string;
     provider: string;
     modelId: string;
     apiKey?: string;
     apiUrl: string;
     thinkingMode?: string;
+    effort?: string;
     thinkingBudget?: number;
   };
 
@@ -87,6 +89,9 @@ export async function PUT(request: NextRequest) {
     const entry: MasterAIConfig = { provider, modelId, apiKey: finalApiKey, apiUrl };
     if (provider === "anthropic" && thinkingMode) {
       entry.thinkingMode = thinkingMode as MasterAIConfig["thinkingMode"];
+      if (thinkingMode === "adaptive" && effort) {
+        entry.effort = effort as MasterAIConfig["effort"];
+      }
       if (thinkingMode === "enabled" && thinkingBudget) {
         entry.thinkingBudget = thinkingBudget;
       }

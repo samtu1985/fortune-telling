@@ -126,11 +126,10 @@ export async function POST(request: NextRequest) {
   const config = await getAIConfig(master);
 
   // Multi-master mode: each response is 500 chars max.
-  // Override adaptive thinking to a small fixed budget to avoid long
-  // silent periods that cause Vercel proxy timeouts.
+  // Cap thinking effort to "low" to avoid long silent periods
+  // that cause Vercel proxy timeouts and waste API credits.
   if (config.provider === "anthropic" && config.thinkingMode === "adaptive") {
-    config.thinkingMode = "enabled";
-    config.thinkingBudget = 2000; // minimal thinking for short responses
+    config.effort = "low";
   }
 
   console.log(`[divine-multi] ${master} → ${config.provider} / ${config.modelId}`);

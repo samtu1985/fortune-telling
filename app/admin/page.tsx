@@ -34,6 +34,7 @@ interface MasterAIConfig {
   apiUrl: string;
   hasKey?: boolean;
   thinkingMode?: "adaptive" | "enabled" | "disabled";
+  effort?: "low" | "medium" | "high" | "max";
   thinkingBudget?: number;
 }
 
@@ -71,23 +72,23 @@ const MASTER_KEYS = [
   { key: "zodiac", label: "星座老師" },
 ];
 
-// Claude models with thinking support info
+// Claude models: useEffort means use adaptive+effort (4.6), otherwise use enabled+budget (legacy)
 const CLAUDE_MODELS = [
-  { id: "claude-opus-4-6", label: "Claude Opus 4.6", thinking: ["adaptive", "enabled"] },
-  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", thinking: ["adaptive", "enabled"] },
-  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", thinking: ["enabled"] },
-  { id: "claude-opus-4-5", label: "Claude Opus 4.5", thinking: ["enabled"] },
-  { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", thinking: ["enabled"] },
-  { id: "claude-opus-4-1", label: "Claude Opus 4.1", thinking: ["enabled"] },
-  { id: "claude-sonnet-4-0", label: "Claude Sonnet 4", thinking: ["enabled"] },
-  { id: "claude-opus-4-0", label: "Claude Opus 4", thinking: ["enabled"] },
+  { id: "claude-opus-4-6", label: "Claude Opus 4.6", useEffort: true },
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", useEffort: true },
+  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", useEffort: false },
+  { id: "claude-opus-4-5", label: "Claude Opus 4.5", useEffort: false },
+  { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", useEffort: false },
+  { id: "claude-opus-4-1", label: "Claude Opus 4.1", useEffort: false },
+  { id: "claude-sonnet-4-0", label: "Claude Sonnet 4", useEffort: false },
+  { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-const THINKING_LABELS: Record<string, string> = {
-  adaptive: "自適應 (推薦)",
-  enabled: "啟用 (手動預算)",
-  disabled: "關閉",
-};
+const EFFORT_OPTIONS = [
+  { value: "low", label: "低 — 快速" },
+  { value: "medium", label: "中 — 平衡" },
+  { value: "high", label: "高 — 深度" },
+];
 
 type Tab = "users" | "ai";
 
@@ -112,12 +113,13 @@ export default function AdminPage() {
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Omit<MasterAIConfig, "thinkingMode" | "thinkingBudget"> & { thinkingMode: string; thinkingBudget: number }>({
+  const [editForm, setEditForm] = useState<Omit<MasterAIConfig, "thinkingMode" | "thinkingBudget" | "effort"> & { thinkingMode: string; effort: string; thinkingBudget: number }>({
     provider: "byteplus",
     modelId: "",
     apiKey: "",
     apiUrl: "",
     thinkingMode: "disabled",
+    effort: "medium",
     thinkingBudget: 5000,
   });
 
@@ -198,6 +200,7 @@ export default function AdminPage() {
       apiKey: "",
       apiUrl: existing?.apiUrl || defaultProvider?.defaultUrl || "",
       thinkingMode: existing?.thinkingMode || "disabled",
+      effort: existing?.effort || "medium",
       thinkingBudget: existing?.thinkingBudget || 5000,
     });
     setEditingKey(key);
@@ -218,10 +221,12 @@ export default function AdminPage() {
     const model = CLAUDE_MODELS.find((m) => m.id === modelId);
     setEditForm((prev) => {
       let thinkingMode = prev.thinkingMode;
-      if (model && thinkingMode !== "disabled") {
-        const supported: readonly string[] = model.thinking;
-        if (!supported.includes(thinkingMode)) {
-          thinkingMode = model.thinking[0] || "disabled";
+      // Auto-adjust thinking mode when switching model families
+      if (model) {
+        if (model.useEffort && thinkingMode === "enabled") {
+          thinkingMode = "adaptive"; // upgrade to adaptive for 4.6
+        } else if (!model.useEffort && thinkingMode === "adaptive") {
+          thinkingMode = "enabled"; // downgrade to enabled for legacy
         }
       }
       return { ...prev, modelId, thinkingMode };
@@ -528,7 +533,9 @@ export default function AdminPage() {
                                 {providerLabel} / {config.modelId}
                                 {config.thinkingMode && config.thinkingMode !== "disabled" && (
                                   <span className="ml-1.5 text-blue-400">
-                                    思考:{config.thinkingMode === "adaptive" ? "自適應" : `${config.thinkingBudget || 5000}t`}
+                                    思考:{config.thinkingMode === "adaptive"
+                                      ? `自適應/${config.effort || "medium"}`
+                                      : `${config.thinkingBudget || 5000}t`}
                                   </span>
                                 )}
                                 {config.hasKey && (
@@ -617,76 +624,115 @@ export default function AdminPage() {
                             </div>
                           )}
 
-                          {/* Thinking mode — Anthropic only */}
+                          {/* Thinking — Anthropic only */}
                           {editForm.provider === "anthropic" && (() => {
                             const selectedModel = CLAUDE_MODELS.find((m) => m.id === editForm.modelId);
-                            const supportedModes = selectedModel?.thinking || [];
+                            const isEffortModel = selectedModel?.useEffort ?? false;
                             return (
                               <div>
                                 <label className="block text-xs text-stone/70 mb-2">
-                                  思考模式
+                                  思考能力
                                 </label>
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "disabled" }))}
-                                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                                      editForm.thinkingMode === "disabled"
-                                        ? "border-gold/50 text-gold bg-gold/10"
-                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
-                                    }`}
-                                  >
-                                    {THINKING_LABELS.disabled}
-                                  </button>
-                                  {supportedModes.includes("adaptive") && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "adaptive" }))}
-                                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                                        editForm.thinkingMode === "adaptive"
-                                          ? "border-gold/50 text-gold bg-gold/10"
-                                          : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
-                                      }`}
-                                    >
-                                      {THINKING_LABELS.adaptive}
-                                    </button>
-                                  )}
-                                  {supportedModes.includes("enabled") && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "enabled" }))}
-                                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                                        editForm.thinkingMode === "enabled"
-                                          ? "border-gold/50 text-gold bg-gold/10"
-                                          : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
-                                      }`}
-                                    >
-                                      {THINKING_LABELS.enabled}
-                                    </button>
-                                  )}
-                                </div>
-                                {editForm.thinkingMode === "enabled" && (
-                                  <div className="mt-2">
-                                    <label className="block text-xs text-stone/50 mb-1">
-                                      思考預算 (tokens，最小 1024)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      min={1024}
-                                      step={1000}
-                                      value={editForm.thinkingBudget}
-                                      onChange={(e) =>
-                                        setEditForm((f) => ({ ...f, thinkingBudget: Math.max(1024, parseInt(e.target.value) || 1024) }))
-                                      }
-                                      className="w-40 px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
-                                      style={{ backgroundColor: "var(--parchment)" }}
-                                    />
-                                  </div>
-                                )}
-                                {editForm.thinkingMode === "adaptive" && (
-                                  <p className="text-xs text-stone/40 mt-1">
-                                    Claude 會自動決定思考的深度和時機 (Opus 4.6 / Sonnet 4.6 推薦)
-                                  </p>
+                                {isEffortModel ? (
+                                  <>
+                                    {/* 4.6 models: adaptive + effort */}
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "disabled" }))}
+                                        className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                          editForm.thinkingMode === "disabled"
+                                            ? "border-gold/50 text-gold bg-gold/10"
+                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        }`}
+                                      >
+                                        關閉
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "adaptive" }))}
+                                        className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                          editForm.thinkingMode === "adaptive"
+                                            ? "border-gold/50 text-gold bg-gold/10"
+                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        }`}
+                                      >
+                                        自適應思考
+                                      </button>
+                                    </div>
+                                    {editForm.thinkingMode === "adaptive" && (
+                                      <div className="mt-2">
+                                        <label className="block text-xs text-stone/50 mb-2">
+                                          思考深度 (effort)
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                          {EFFORT_OPTIONS.map((opt) => (
+                                            <button
+                                              key={opt.value}
+                                              type="button"
+                                              onClick={() => setEditForm((f) => ({ ...f, effort: opt.value }))}
+                                              className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                                editForm.effort === opt.value
+                                                  ? "border-blue-400/50 text-blue-400 bg-blue-400/10"
+                                                  : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                              }`}
+                                            >
+                                              {opt.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                        <p className="text-xs text-stone/40 mt-1">
+                                          三師問道會自動使用「低」以加速回應
+                                        </p>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    {/* Legacy models: enabled + budget_tokens */}
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "disabled" }))}
+                                        className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                          editForm.thinkingMode === "disabled"
+                                            ? "border-gold/50 text-gold bg-gold/10"
+                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        }`}
+                                      >
+                                        關閉
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "enabled" }))}
+                                        className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                          editForm.thinkingMode === "enabled"
+                                            ? "border-gold/50 text-gold bg-gold/10"
+                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        }`}
+                                      >
+                                        啟用思考
+                                      </button>
+                                    </div>
+                                    {editForm.thinkingMode === "enabled" && (
+                                      <div className="mt-2">
+                                        <label className="block text-xs text-stone/50 mb-1">
+                                          思考預算 (tokens，最小 1024)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min={1024}
+                                          step={1000}
+                                          value={editForm.thinkingBudget}
+                                          onChange={(e) =>
+                                            setEditForm((f) => ({ ...f, thinkingBudget: Math.max(1024, parseInt(e.target.value) || 1024) }))
+                                          }
+                                          className="w-40 px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
+                                          style={{ backgroundColor: "var(--parchment)" }}
+                                        />
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             );

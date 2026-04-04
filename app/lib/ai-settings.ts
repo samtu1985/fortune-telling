@@ -7,7 +7,8 @@ export interface MasterAIConfig {
   apiKey: string;      // provider API key
   apiUrl: string;      // endpoint URL
   thinkingMode?: "adaptive" | "enabled" | "disabled";  // Anthropic thinking mode
-  thinkingBudget?: number;  // budget_tokens when thinkingMode is "enabled"
+  effort?: "low" | "medium" | "high" | "max";  // effort level for adaptive thinking (4.6 models)
+  thinkingBudget?: number;  // budget_tokens for older models with thinkingMode "enabled"
 }
 
 // Settings keyed by master type: "bazi", "ziwei", "zodiac", "single-bazi", "single-ziwei", "single-zodiac"
