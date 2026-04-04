@@ -491,10 +491,11 @@ export default function AdminPage() {
                             <select
                               value={editForm.provider}
                               onChange={(e) => handleProviderChange(e.target.value)}
-                              className="w-full px-3 py-2 text-sm bg-transparent border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
+                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
+                              style={{ backgroundColor: "#1a1a1a" }}
                             >
                               {Object.entries(providers).map(([id, info]) => (
-                                <option key={id} value={id} className="bg-neutral-900">
+                                <option key={id} value={id} style={{ backgroundColor: "#1a1a1a", color: "#e8e0d0" }}>
                                   {info.label}
                                 </option>
                               ))}
