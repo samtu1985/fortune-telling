@@ -261,6 +261,12 @@ export async function POST(request: NextRequest) {
               encoder.encode(`data: ${JSON.stringify({ content: result.content })}\n\n`)
             );
           }
+          // Forward reasoning events to keep the connection alive during thinking
+          if (result.reasoning) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ reasoning: result.reasoning })}\n\n`)
+            );
+          }
         }
       }
 
