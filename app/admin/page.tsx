@@ -53,7 +53,7 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai" | "usage" | "cases";
+type Tab = "users" | "ai" | "tts" | "usage" | "cases";
 
 export default function AdminPage() {
   const { t } = useLocale();
@@ -158,6 +158,17 @@ export default function AdminPage() {
     reasoningDepth: "high",
   });
 
+  // --- TTS Settings state ---
+  const [ttsConfig, setTtsConfig] = useState<{
+    hasKey: boolean; modelId: string; stability: number; similarityBoost: number; style: number; speed: number;
+  } | null>(null);
+  const [ttsVoices, setTtsVoices] = useState<Record<string, Record<string, string>>>({});
+  const [ttsApiKey, setTtsApiKey] = useState("");
+  const [ttsEditConfig, setTtsEditConfig] = useState({
+    modelId: "eleven_flash_v2_5", stability: 0.7, similarityBoost: 0.75, style: 0.0, speed: 1.0,
+  });
+  const [ttsSaving, setTtsSaving] = useState(false);
+
   const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/users");
@@ -253,6 +264,32 @@ export default function AdminPage() {
       fetchCases();
     }
   }, [activeTab, fetchCases]);
+
+  const fetchTTSSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/tts-settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) {
+          setTtsConfig(data.settings);
+          setTtsEditConfig({
+            modelId: data.settings.modelId,
+            stability: data.settings.stability,
+            similarityBoost: data.settings.similarityBoost,
+            style: data.settings.style,
+            speed: data.settings.speed,
+          });
+        }
+        if (data.voices) setTtsVoices(data.voices);
+      }
+    } catch (e) {
+      console.error("[admin] Failed to fetch TTS settings:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "tts") fetchTTSSettings();
+  }, [activeTab, fetchTTSSettings]);
 
   const updateStatus = async (
     email: string,
@@ -486,6 +523,17 @@ export default function AdminPage() {
           >
             {t("admin.aiTab")}
             {activeTab === "ai" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("tts")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "tts" ? "text-gold" : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            {t("admin.ttsTab")}
+            {activeTab === "tts" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
             )}
           </button>
@@ -1109,6 +1157,137 @@ export default function AdminPage() {
                   t("admin.creditsSave")
                 )}
               </button>
+            </div>
+          </>
+        )}
+
+        {activeTab === "tts" && (
+          <>
+            {/* Global TTS Settings */}
+            <div className="rounded-lg border border-gold/10 p-6 mb-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+              <h3 className="text-sm font-serif text-gold mb-4">ElevenLabs {t("admin.ttsTab")}</h3>
+
+              <div className="space-y-4">
+                {/* API Key */}
+                <div>
+                  <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsApiKey")}</label>
+                  <input
+                    type="password"
+                    value={ttsApiKey}
+                    onChange={(e) => setTtsApiKey(e.target.value)}
+                    placeholder={ttsConfig?.hasKey ? "••••••••（已設定）" : "sk-..."}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Model */}
+                <div>
+                  <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsModel")}</label>
+                  <select
+                    value={ttsEditConfig.modelId}
+                    onChange={(e) => setTtsEditConfig((p) => ({ ...p, modelId: e.target.value }))}
+                    className="w-full"
+                  >
+                    <option value="eleven_flash_v2_5">Flash v2.5 (fast, low cost)</option>
+                    <option value="eleven_multilingual_v2">Multilingual v2 (29 languages)</option>
+                    <option value="eleven_turbo_v2_5">Turbo v2.5 (balanced)</option>
+                    <option value="eleven_v3">v3 (latest)</option>
+                  </select>
+                </div>
+
+                {/* Voice Settings */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsStability")}: {ttsEditConfig.stability.toFixed(2)}</label>
+                    <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.stability}
+                      onChange={(e) => setTtsEditConfig((p) => ({ ...p, stability: parseFloat(e.target.value) }))}
+                      className="w-full" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsSimilarity")}: {ttsEditConfig.similarityBoost.toFixed(2)}</label>
+                    <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.similarityBoost}
+                      onChange={(e) => setTtsEditConfig((p) => ({ ...p, similarityBoost: parseFloat(e.target.value) }))}
+                      className="w-full" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsSpeed")}: {ttsEditConfig.speed.toFixed(2)}</label>
+                    <input type="range" min="0.5" max="2" step="0.05" value={ttsEditConfig.speed}
+                      onChange={(e) => setTtsEditConfig((p) => ({ ...p, speed: parseFloat(e.target.value) }))}
+                      className="w-full" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsStyle")}: {ttsEditConfig.style.toFixed(2)}</label>
+                    <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.style}
+                      onChange={(e) => setTtsEditConfig((p) => ({ ...p, style: parseFloat(e.target.value) }))}
+                      className="w-full" />
+                  </div>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    setTtsSaving(true);
+                    try {
+                      await fetch("/api/admin/tts-settings", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ...ttsEditConfig, apiKey: ttsApiKey || undefined }),
+                      });
+                      await fetchTTSSettings();
+                      setTtsApiKey("");
+                    } finally {
+                      setTtsSaving(false);
+                    }
+                  }}
+                  disabled={ttsSaving}
+                  className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors disabled:opacity-40"
+                >
+                  {ttsSaving ? (
+                    <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  ) : t("admin.ttsSave")}
+                </button>
+              </div>
+            </div>
+
+            {/* Per-Master Voice Mapping */}
+            <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+              <h3 className="text-sm font-serif text-gold mb-4">{t("admin.ttsVoices")}</h3>
+
+              <div className="space-y-6">
+                {["bazi", "ziwei", "zodiac"].map((master) => (
+                  <div key={master}>
+                    <p className="text-xs text-cream font-medium mb-2">{t(`master.${master}` as string)}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["zh-Hant", "zh-Hans", "en", "ja"].map((loc) => (
+                        <div key={loc} className="flex items-center gap-2">
+                          <span className="text-[10px] text-stone/50 w-14 shrink-0">{loc}</span>
+                          <input
+                            type="text"
+                            value={ttsVoices[master]?.[loc] || ""}
+                            onChange={(e) => {
+                              setTtsVoices((prev) => ({
+                                ...prev,
+                                [master]: { ...prev[master], [loc]: e.target.value },
+                              }));
+                            }}
+                            onBlur={async (e) => {
+                              const val = e.target.value.trim();
+                              if (val) {
+                                await fetch("/api/admin/tts-voices", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ masterKey: master, locale: loc, voiceId: val }),
+                                });
+                              }
+                            }}
+                            placeholder={t("admin.ttsVoiceId")}
+                            className="flex-1 text-xs"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         )}
