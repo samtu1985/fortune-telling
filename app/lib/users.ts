@@ -376,7 +376,7 @@ export async function createProfile(
       birthPlace: encryptField(profile.birthPlace),
       calendarType: profile.calendarType,
       isLeapMonth: profile.isLeapMonth,
-      savedCharts: encryptCharts(profile.savedCharts) as typeof profile.savedCharts ?? null,
+      savedCharts: (encryptCharts(profile.savedCharts) as string) ?? null,
       createdAt: now,
       updatedAt: now,
     })
