@@ -30,10 +30,16 @@ export function buildRequest(config: MasterAIConfig, options: AIRequestOptions) 
       { role: "system", content: systemPrompt },
       ...messages,
     ],
-    max_completion_tokens: maxCompletionTokens,
     stream: true,
     stream_options: { include_usage: true },
   };
+
+  // Google Gemini uses max_tokens; others use max_completion_tokens
+  if (config.provider === "google") {
+    body.max_tokens = maxCompletionTokens;
+  } else {
+    body.max_completion_tokens = maxCompletionTokens;
+  }
 
   // BytePlus Seed models support thinking/reasoning
   if (config.provider === "byteplus") {

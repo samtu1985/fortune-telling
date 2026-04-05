@@ -343,6 +343,8 @@ export async function POST(request: NextRequest) {
     maxCompletionTokens: 16384,
   });
 
+  console.log(`[divine] Request to ${req.url}`, { model: (req.body as Record<string,unknown>).model, provider: config.provider });
+
   const response = await fetch(req.url, {
     method: "POST",
     headers: req.headers,
