@@ -94,15 +94,14 @@ export default function ComprehensiveMode({
   const MAX_ROUNDS = 5;
 
   // Auto-scroll + collapse mobile controls on scroll
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 80;
-    // On mobile, collapse controls when user scrolls
-    if (window.innerWidth < 640) {
+    const threshold = window.innerWidth < 640 ? 200 : 80;
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < threshold;
+    // On mobile, collapse controls when user scrolls up
+    if (window.innerWidth < 640 && !isNearBottomRef.current) {
       setMobileControlsOpen(false);
-      clearTimeout(scrollTimeoutRef.current);
     }
   }, []);
 
