@@ -4,6 +4,7 @@ import {
   checkUsernameAvailable,
   checkEmailAvailable,
   registerCredentialsUser,
+  ADMIN_EMAIL,
 } from "@/app/lib/users";
 import { sendVerificationEmail } from "@/app/lib/email";
 
@@ -35,6 +36,14 @@ export async function POST(request: NextRequest) {
     return Response.json(
       { error: "password_weak", message: "Password must be at least 8 characters with uppercase, lowercase, and digit" },
       { status: 400 }
+    );
+  }
+
+  // Block registration with admin email
+  if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+    return Response.json(
+      { error: "email_taken", message: "Email is already registered" },
+      { status: 409 }
     );
   }
 

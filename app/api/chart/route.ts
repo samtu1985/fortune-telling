@@ -2,8 +2,13 @@ import { NextRequest } from "next/server";
 import { generateBaziChart } from "@/app/lib/bazi";
 import { generateZiweiChart } from "@/app/lib/ziwei";
 import { generateNatalChart } from "@/app/lib/astrology";
+import { auth } from "@/app/lib/auth";
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const body = await request.json();
   const { type, birthDate, birthTime, gender, birthPlace, isLunar, isLeapMonth } = body as {
     type: string;

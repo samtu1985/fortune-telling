@@ -2,12 +2,19 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 
+let keyWarningLogged = false;
+
 function getKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
-    // Fallback: use a deterministic key derived from another secret
-    // This is less secure but avoids breaking when ENCRYPTION_KEY is not set
-    const fallback = process.env.AUTH_SECRET || "default-encryption-key-change-me";
+    if (!keyWarningLogged) {
+      console.warn("[security] ENCRYPTION_KEY not set! Using AUTH_SECRET as fallback. Set a dedicated ENCRYPTION_KEY in production.");
+      keyWarningLogged = true;
+    }
+    const fallback = process.env.AUTH_SECRET;
+    if (!fallback) {
+      throw new Error("Neither ENCRYPTION_KEY nor AUTH_SECRET is set. Cannot encrypt data.");
+    }
     return Buffer.from(fallback.padEnd(32, "0").slice(0, 32), "utf-8");
   }
   // Key should be 32 bytes (256 bits), hex-encoded (64 chars) or base64
