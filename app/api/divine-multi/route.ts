@@ -41,7 +41,7 @@ const MASTER_PROMPTS: Record<string, string> = {
 
 【命盤數據】
 八字命盤由排盤程式算好了，在 <bazi-chart> 裡面。只能用這些數據，不能自己亂排。
-用繁體中文。`,
+`,
 
   ziwei: `你是「紫微老師」，精通紫微斗數，正在跟八字老師、星座老師一起聊天討論。
 
@@ -78,7 +78,7 @@ const MASTER_PROMPTS: Record<string, string> = {
 
 【命盤數據】
 紫微命盤由排盤程式算好了，在 <ziwei-chart> 裡面。只能用這些數據，不能自己亂排。
-用繁體中文。`,
+`,
 
   zodiac: `你是「星座老師」，精通西洋占星，正在跟八字老師、紫微老師一起聊天討論。
 
@@ -118,7 +118,7 @@ const MASTER_PROMPTS: Record<string, string> = {
 
 【命盤數據】
 星盤由天文程式算好了，在 <natal-chart> 裡面。只能用這些數據，不能自己亂排。
-用繁體中文。`,
+`,
 };
 
 const MASTER_LABELS: Record<string, string> = {

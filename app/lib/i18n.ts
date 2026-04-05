@@ -11,7 +11,7 @@ export const DEFAULT_LOCALE: Locale = "zh-Hant";
 
 /** AI language directives appended to system prompts */
 export const AI_LANGUAGE_DIRECTIVES: Record<Locale, string> = {
-  "zh-Hant": "", // default, no directive needed
+  "zh-Hant": "\n\n【語言要求】請全程使用繁體中文回覆。",
   "zh-Hans": "\n\n【語言要求】請全程使用簡體中文回覆，所有分析、解說與建議都必須使用簡體中文。",
   en: "\n\n【Language Requirement】You MUST respond entirely in English. All analysis, explanations, and advice must be in English. Keep Chinese technical terms (e.g. 天干地支) in parentheses for reference where appropriate.",
   ja: "\n\n【言語要件】すべての回答を日本語で行ってください。分析、解説、アドバイスはすべて日本語で記述してください。中国語の専門用語（例：天干地支）は必要に応じて括弧内に参考として残してください。",
