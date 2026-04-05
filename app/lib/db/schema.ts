@@ -25,6 +25,10 @@ export const users = pgTable("users", {
   authProvider: varchar("auth_provider", { length: 20 }).notNull().default("google"),
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry", { withTimezone: true }),
+  singleCredits: integer("single_credits").notNull().default(0),
+  multiCredits: integer("multi_credits").notNull().default(0),
+  singleUsed: integer("single_used").notNull().default(0),
+  multiUsed: integer("multi_used").notNull().default(0),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -104,4 +108,12 @@ export const caseStudies = pgTable("case_studies", {
   originalQuestion: text("original_question"),
   masterTypes: varchar("master_types", { length: 30 }).notNull().default("bazi,ziwei,zodiac"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── Credit Settings ────────────────────────────────────
+export const creditSettings = pgTable("credit_settings", {
+  id: serial("id").primaryKey(),
+  defaultSingleRounds: integer("default_single_rounds").notNull().default(10),
+  defaultMultiSessions: integer("default_multi_sessions").notNull().default(1),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
