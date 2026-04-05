@@ -1239,12 +1239,22 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           {discussionEnded && !loading && !isAutoDiscussing && podcastMode && audioQueue.hasSegments && (
             <button
               onClick={audioQueue.downloadPodcast}
-              className="w-full mt-2 py-3 text-sm border border-violet-400/30 rounded-sm text-violet-400 hover:bg-violet-400/10 transition-all duration-500 font-serif tracking-widest flex items-center justify-center gap-2"
+              disabled={audioQueue.podcastDownloading}
+              className="w-full mt-2 py-3 text-sm border border-violet-400/30 rounded-sm text-violet-400 hover:bg-violet-400/10 transition-all duration-500 font-serif tracking-widest flex items-center justify-center gap-2 disabled:opacity-40"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-              {t("podcast.download")}
+              {audioQueue.podcastDownloading ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+                  {t("podcast.downloading")}
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                  {t("podcast.download")}
+                </>
+              )}
             </button>
           )}
 
