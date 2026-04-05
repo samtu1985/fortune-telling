@@ -389,12 +389,19 @@ export async function POST(request: NextRequest) {
       let totalOutput = 0;
 
       let buffer = "";
+      let chunkCount = 0;
+      let parsedCount = 0;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        chunkCount++;
+        if (chunkCount <= 3) {
+          console.log(`[divine] SSE chunk #${chunkCount} (${chunk.length} bytes):`, chunk.slice(0, 300));
+        }
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
@@ -404,7 +411,13 @@ export async function POST(request: NextRequest) {
           const data = trimmed.slice(6);
 
           const result = parseSSELine(data, req.isAnthropic);
-          if (!result) continue;
+          if (!result) {
+            if (parsedCount === 0 && data !== "[DONE]") {
+              console.log("[divine] parseSSELine returned null for:", data.slice(0, 200));
+            }
+            continue;
+          }
+          parsedCount++;
           if (result.done) {
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             continue;
@@ -426,6 +439,8 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+
+      console.log(`[divine] Stream ended. Chunks: ${chunkCount}, Parsed results: ${parsedCount}, Tokens: in=${totalInput} out=${totalOutput}`);
 
       // Log usage (fire-and-forget)
       logUsage({
