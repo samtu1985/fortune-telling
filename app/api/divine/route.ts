@@ -264,13 +264,15 @@ export async function POST(request: NextRequest) {
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
   systemPrompt += `\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
 
-  // Inject language directive if locale is not default
+  // Add follow-up chart rule to system prompt
+  systemPrompt += FOLLOWUP_CHART_RULE;
+
+  // Inject language directive LAST so it takes highest priority
   if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {
     systemPrompt += AI_LANGUAGE_DIRECTIVES[locale];
   }
 
-  // Add follow-up chart rule to system prompt
-  systemPrompt += FOLLOWUP_CHART_RULE;
+  console.log(`[divine] locale=${locale}, directive=${AI_LANGUAGE_DIRECTIVES[locale as Locale]?.slice(0, 30) || "none"}`);
 
   // Collect generated charts for client-side saving
   const generatedCharts: { index: number; chart: string }[] = [];

@@ -171,17 +171,19 @@ export async function POST(request: NextRequest) {
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
   let promptWithDate = `${systemPrompt}\n\n【重要：今天的日期是 ${dateStr}，請以此為準判斷流年運勢，不要自行假設年份。】`;
 
-  // Inject language directive if locale is not default
-  if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {
-    promptWithDate += AI_LANGUAGE_DIRECTIVES[locale];
-  }
-
   // Inject this master's chart data into system prompt
   const chartKey = master as keyof typeof charts;
   const chartData = charts[chartKey] || "";
-  const fullSystemPrompt = chartData
+  let fullSystemPrompt = chartData
     ? `${promptWithDate}\n\n【以下是由排盤程式精確計算的命盤數據】\n\n${chartData}`
     : promptWithDate;
+
+  // Inject language directive LAST so it takes highest priority
+  if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {
+    fullSystemPrompt += AI_LANGUAGE_DIRECTIVES[locale];
+  }
+
+  console.log(`[divine-multi] ${master} locale=${locale}, directive=${AI_LANGUAGE_DIRECTIVES[locale as Locale]?.slice(0, 30) || "none"}`);
 
   // Convert multi-master messages to API format:
   // - This master's messages → "assistant"
