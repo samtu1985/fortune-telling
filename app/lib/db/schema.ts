@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   multiCredits: integer("multi_credits").notNull().default(0),
   singleUsed: integer("single_used").notNull().default(0),
   multiUsed: integer("multi_used").notNull().default(0),
+  isAmbassador: boolean("is_ambassador").notNull().default(false),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -116,4 +117,14 @@ export const creditSettings = pgTable("credit_settings", {
   defaultSingleRounds: integer("default_single_rounds").notNull().default(10),
   defaultMultiSessions: integer("default_multi_sessions").notNull().default(1),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── Pending Credits ────────────────────────────────────
+export const pendingCredits = pgTable("pending_credits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull(),
+  singleCredits: integer("single_credits").notNull().default(0),
+  multiCredits: integer("multi_credits").notNull().default(0),
+  sentBy: varchar("sent_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
