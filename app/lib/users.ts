@@ -2,6 +2,43 @@ import bcrypt from "bcryptjs";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { users, profiles, conversations, pendingCredits } from "./db/schema";
+import { encrypt, decrypt } from "./db/encryption";
+
+// ─── PII Encryption Helpers ─────────────────────────────
+
+function encryptField(value: string): string {
+  return value ? encrypt(value) : "";
+}
+
+function decryptField(value: string): string {
+  if (!value) return "";
+  // If value doesn't look encrypted (no colons = iv:tag:ciphertext), return as-is (legacy plaintext)
+  if (!value.includes(":")) return value;
+  try {
+    return decrypt(value);
+  } catch {
+    // Decryption failed — likely plaintext from before encryption was enabled
+    return value;
+  }
+}
+
+function encryptCharts(charts: Record<string, string> | null | undefined): unknown {
+  if (!charts) return null;
+  return encrypt(JSON.stringify(charts));
+}
+
+function decryptCharts(stored: unknown): { bazi?: string; ziwei?: string; zodiac?: string } | undefined {
+  if (!stored) return undefined;
+  if (typeof stored === "object") return stored as { bazi?: string; ziwei?: string; zodiac?: string }; // legacy plaintext jsonb
+  if (typeof stored === "string" && stored.includes(":")) {
+    try {
+      return JSON.parse(decrypt(stored));
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
 
 export type UserStatus = "unverified" | "pending" | "approved" | "disabled";
 
@@ -333,13 +370,13 @@ export async function createProfile(
     .values({
       userId,
       label: profile.label,
-      birthDate: profile.birthDate,
-      birthTime: profile.birthTime,
-      gender: profile.gender,
-      birthPlace: profile.birthPlace,
+      birthDate: encryptField(profile.birthDate),
+      birthTime: encryptField(profile.birthTime),
+      gender: encryptField(profile.gender),
+      birthPlace: encryptField(profile.birthPlace),
       calendarType: profile.calendarType,
       isLeapMonth: profile.isLeapMonth,
-      savedCharts: profile.savedCharts ?? null,
+      savedCharts: encryptCharts(profile.savedCharts) as typeof profile.savedCharts ?? null,
       createdAt: now,
       updatedAt: now,
     })
@@ -358,13 +395,13 @@ export async function updateProfileById(
 
   const set: Record<string, unknown> = { updatedAt: new Date() };
   if (updates.label !== undefined) set.label = updates.label;
-  if (updates.birthDate !== undefined) set.birthDate = updates.birthDate;
-  if (updates.birthTime !== undefined) set.birthTime = updates.birthTime;
-  if (updates.gender !== undefined) set.gender = updates.gender;
-  if (updates.birthPlace !== undefined) set.birthPlace = updates.birthPlace;
+  if (updates.birthDate !== undefined) set.birthDate = encryptField(updates.birthDate);
+  if (updates.birthTime !== undefined) set.birthTime = encryptField(updates.birthTime);
+  if (updates.gender !== undefined) set.gender = encryptField(updates.gender);
+  if (updates.birthPlace !== undefined) set.birthPlace = encryptField(updates.birthPlace);
   if (updates.calendarType !== undefined) set.calendarType = updates.calendarType;
   if (updates.isLeapMonth !== undefined) set.isLeapMonth = updates.isLeapMonth;
-  if (updates.savedCharts !== undefined) set.savedCharts = updates.savedCharts;
+  if (updates.savedCharts !== undefined) set.savedCharts = encryptCharts(updates.savedCharts);
 
   const result = await db
     .update(profiles)
@@ -388,13 +425,13 @@ function mapProfile(row: typeof profiles.$inferSelect): SavedProfile {
   return {
     id: row.id,
     label: row.label,
-    birthDate: row.birthDate,
-    birthTime: row.birthTime,
-    gender: row.gender,
-    birthPlace: row.birthPlace,
+    birthDate: decryptField(row.birthDate),
+    birthTime: decryptField(row.birthTime),
+    gender: decryptField(row.gender),
+    birthPlace: decryptField(row.birthPlace),
     calendarType: row.calendarType as "solar" | "lunar",
     isLeapMonth: row.isLeapMonth,
-    savedCharts: row.savedCharts ?? undefined,
+    savedCharts: decryptCharts(row.savedCharts),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -429,9 +466,9 @@ export async function createSavedConversation(
     .values({
       userId,
       type: conv.type,
-      userQuestion: conv.userQuestion,
-      aiResponse: conv.aiResponse,
-      aiReasoning: conv.aiReasoning ?? null,
+      userQuestion: encryptField(conv.userQuestion),
+      aiResponse: encryptField(conv.aiResponse),
+      aiReasoning: conv.aiReasoning ? encryptField(conv.aiReasoning) : null,
       profileLabel: conv.profileLabel ?? null,
       savedAt: new Date(),
     })
@@ -454,9 +491,9 @@ function mapConversation(row: typeof conversations.$inferSelect): SavedConversat
   return {
     id: row.id,
     type: row.type as "bazi" | "ziwei" | "zodiac",
-    userQuestion: row.userQuestion,
-    aiResponse: row.aiResponse,
-    aiReasoning: row.aiReasoning ?? undefined,
+    userQuestion: decryptField(row.userQuestion),
+    aiResponse: decryptField(row.aiResponse),
+    aiReasoning: row.aiReasoning ? decryptField(row.aiReasoning) : undefined,
     profileLabel: row.profileLabel ?? undefined,
     savedAt: row.savedAt.toISOString(),
   };
