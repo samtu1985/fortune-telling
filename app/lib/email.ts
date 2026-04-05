@@ -112,3 +112,76 @@ export async function sendAdminNotification(
     console.error("[email] Failed to send admin notification:", e);
   }
 }
+
+export async function sendTrialNotification(
+  to: string,
+  singleCredits: number,
+  multiCredits: number
+): Promise<void> {
+  const subject = "FortuneFor.me — 您收到免費體驗額度！";
+  const html = `
+    <div style="font-family: serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1e1a14;">
+      <h2 style="color: #7a5c10; text-align: center;">天機 FortuneFor.me</h2>
+      <p>您收到了免費體驗額度：</p>
+      <ul>
+        <li><strong>個別問答（八字/紫微/星座）：</strong>${singleCredits} 輪</li>
+        <li><strong>三師論道：</strong>${multiCredits} 次</li>
+      </ul>
+      <p>額度已加入您的帳戶，登入後點擊右上角頭像，即可查詢剩餘免費體驗次數。</p>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${SITE_URL}/login" style="display: inline-block; padding: 12px 32px; background: #7a5c10; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px;">
+          登入 FortuneFor.me
+        </a>
+      </p>
+    </div>
+  `;
+
+  if (!resend) {
+    console.log("[email] Resend not configured. Trial notification for:", to);
+    return;
+  }
+
+  try {
+    await resend.emails.send({ from: FROM, to, subject, html });
+    console.log("[email] Trial notification sent to:", to);
+  } catch (e) {
+    console.error("[email] Failed to send trial notification:", e);
+  }
+}
+
+export async function sendTrialInvitation(
+  to: string,
+  singleCredits: number,
+  multiCredits: number
+): Promise<void> {
+  const subject = "FortuneFor.me — 邀請您免費體驗命理分析！";
+  const html = `
+    <div style="font-family: serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1e1a14;">
+      <h2 style="color: #7a5c10; text-align: center;">天機 FortuneFor.me</h2>
+      <p>您被邀請免費體驗 FortuneFor.me 的 AI 命理分析服務！</p>
+      <p>為您準備的免費體驗額度：</p>
+      <ul>
+        <li><strong>個別問答（八字/紫微/星座）：</strong>${singleCredits} 輪</li>
+        <li><strong>三師論道：</strong>${multiCredits} 次</li>
+      </ul>
+      <p>註冊帳號並通過審核後，額度將自動加入您的帳戶。登入後點擊右上角頭像，即可查詢剩餘免費體驗次數。</p>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${SITE_URL}/register" style="display: inline-block; padding: 12px 32px; background: #7a5c10; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px;">
+          免費註冊 FortuneFor.me
+        </a>
+      </p>
+    </div>
+  `;
+
+  if (!resend) {
+    console.log("[email] Resend not configured. Trial invitation for:", to);
+    return;
+  }
+
+  try {
+    await resend.emails.send({ from: FROM, to, subject, html });
+    console.log("[email] Trial invitation sent to:", to);
+  } catch (e) {
+    console.error("[email] Failed to send trial invitation:", e);
+  }
+}
