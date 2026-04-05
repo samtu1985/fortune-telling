@@ -15,6 +15,10 @@ interface UserItem {
   createdAt: string;
   approvedAt: string | null;
   authProvider?: string;
+  singleCredits?: number;
+  multiCredits?: number;
+  singleUsed?: number;
+  multiUsed?: number;
 }
 
 // --- AI Settings types ---
@@ -134,6 +138,9 @@ export default function AdminPage() {
   const [casesLoading, setCasesLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState<{ id: string; summary: string; fullContent: string; originalQuestion: string; masterTypes: string; createdAt: string } | null>(null);
 
+  const [creditDefaults, setCreditDefaults] = useState({ defaultSingleRounds: 10, defaultMultiSessions: 1 });
+  const [creditSaving, setCreditSaving] = useState(false);
+
   // --- AI Settings state ---
   const [aiSettings, setAiSettings] = useState<Record<string, MasterAIConfig>>({});
   const [aiLoading, setAiLoading] = useState(true);
@@ -180,6 +187,17 @@ export default function AdminPage() {
     fetchUsers();
     fetchAISettings();
   }, [fetchUsers, fetchAISettings]);
+
+  useEffect(() => {
+    fetch("/api/admin/credit-settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.defaultSingleRounds !== undefined) {
+          setCreditDefaults(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchUsage = useCallback(async (range: string) => {
     setUsageLoading(true);
@@ -362,6 +380,23 @@ export default function AdminPage() {
       await fetchAISettings();
     } finally {
       setAiSaving(null);
+    }
+  };
+
+  const saveCreditSettings = async () => {
+    setCreditSaving(true);
+    try {
+      const res = await fetch("/api/admin/credit-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(creditDefaults),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`${t("admin.saveFailed")} ${data.error || ""}`);
+      }
+    } finally {
+      setCreditSaving(false);
     }
   };
 
@@ -571,6 +606,11 @@ export default function AdminPage() {
                             {t("admin.registeredOn")}{" "}
                             {new Date(user.createdAt).toLocaleDateString("zh-TW")}
                           </p>
+                          {(user.singleCredits > 0 || user.multiCredits > 0) && (
+                            <p className="text-[10px] text-stone/40 mt-0.5">
+                              {t("admin.userCredits")}: S {user.singleUsed}/{user.singleCredits} | M {user.multiUsed}/{user.multiCredits}
+                            </p>
+                          )}
                         </div>
 
                         {/* Actions */}
@@ -978,6 +1018,44 @@ export default function AdminPage() {
                 })}
               </div>
             )}
+
+            {/* Credit Settings */}
+            <div className="mt-8 pt-6 border-t border-gold/10">
+              <h3 className="text-sm font-serif text-gold mb-4">{t("admin.creditSettings")}</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="text-xs text-stone mb-1 block">{t("admin.defaultSingleRounds")}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={creditDefaults.defaultSingleRounds}
+                    onChange={(e) => setCreditDefaults((prev) => ({ ...prev, defaultSingleRounds: parseInt(e.target.value) || 0 }))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-stone mb-1 block">{t("admin.defaultMultiSessions")}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={creditDefaults.defaultMultiSessions}
+                    onChange={(e) => setCreditDefaults((prev) => ({ ...prev, defaultMultiSessions: parseInt(e.target.value) || 0 }))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={saveCreditSettings}
+                disabled={creditSaving}
+                className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors disabled:opacity-40"
+              >
+                {creditSaving ? (
+                  <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                ) : (
+                  t("admin.creditsSave")
+                )}
+              </button>
+            </div>
           </>
         )}
 
