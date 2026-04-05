@@ -397,6 +397,43 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
   }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Follow-up question
+  // Inject @mentioned profiles' chart data into the message for synastry analysis
+  const injectMentionCharts = useCallback(
+    (message: string): string => {
+      const mentionRegex = /@(\S+)/g;
+      let match;
+      const injections: string[] = [];
+
+      while ((match = mentionRegex.exec(message)) !== null) {
+        const label = match[1];
+        const profile = profiles.find((p) => p.label === label);
+        if (!profile) continue;
+
+        const savedCharts = profile.savedCharts;
+        if (!savedCharts?.bazi && !savedCharts?.ziwei && !savedCharts?.zodiac) {
+          injections.push(
+            `\n\n【系統提示】使用者提到了「${label}」，但此人尚未生成並保存命盤。請提醒使用者先為「${label}」生成命盤後再進行合盤分析。`
+          );
+          continue;
+        }
+
+        injections.push(`\n\n【以下是「${label}」由排盤程式精確計算的命盤數據，進行合盤分析時必須完全依照這些數據，不得自行排盤或編造任何數據】`);
+        if (savedCharts.bazi) {
+          injections.push(`\n【${label}的八字命盤】\n${savedCharts.bazi}`);
+        }
+        if (savedCharts.ziwei) {
+          injections.push(`\n【${label}的紫微命盤】\n${savedCharts.ziwei}`);
+        }
+        if (savedCharts.zodiac) {
+          injections.push(`\n【${label}的西洋星盤】\n${savedCharts.zodiac}`);
+        }
+      }
+
+      return message + injections.join("");
+    },
+    [profiles]
+  );
+
   const handleFollowUp = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -404,14 +441,18 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       isNearBottomRef.current = true;
       setMentionOpen(false);
 
-      const userMsg: MasterMessage = { role: "user", content: followUp.trim() };
+      const rawMsg = followUp.trim();
+      const msgWithCharts = injectMentionCharts(rawMsg);
       setFollowUp("");
 
+      // Store chart-injected content in the message itself — the chart data
+      // is essential context for the AI masters to do synastry analysis
+      const userMsg: MasterMessage = { role: "user", content: msgWithCharts };
       const updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
       await runRound(updatedMessages);
     },
-    [followUp, loading, messages, runRound]
+    [followUp, loading, messages, runRound, injectMentionCharts]
   );
 
   // Mention handling
@@ -846,10 +887,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             if (msg.role === "user") {
               // Hide auto-discussion system prompts from the UI
               if (msg.content.startsWith("請針對前面其他老師")) return null;
+              if (msg.content.startsWith("這是最後一輪")) return null;
+              // Strip injected chart data from display (keep only the user's original text)
+              const displayContent = msg.content.replace(/\n\n【(以下是|系統提示)[\s\S]*$/, "").trim();
+              if (!displayContent) return null;
               return (
                 <div key={i} className="flex justify-end">
                   <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 leading-relaxed">
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    <div className="whitespace-pre-wrap">{displayContent}</div>
                   </div>
                 </div>
               );
