@@ -91,7 +91,7 @@ export default function ComprehensiveMode({
   const reasoningDepthRef = useRef(reasoningDepth);
   reasoningDepthRef.current = reasoningDepth;
 
-  const MAX_ROUNDS = 5;
+  const MAX_ROUNDS = 3;
 
   // Auto-scroll + collapse mobile controls on scroll
   const handleScroll = useCallback(() => {
