@@ -146,6 +146,9 @@ export default function Home() {
   const reasoningDepthRef = useRef(reasoningDepth);
   reasoningDepthRef.current = reasoningDepth;
 
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+
   // Listen for reasoning depth changes from UserMenu
   useEffect(() => {
     const handler = (e: Event) => {
@@ -255,7 +258,7 @@ export default function Home() {
         const response = await fetch("/api/divine", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current, locale }),
+          body: JSON.stringify({ type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current, locale: localeRef.current }),
         });
 
         if (!response.ok) {
