@@ -76,6 +76,7 @@ export default function ComprehensiveMode({
   // Mention state
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(true);
 
   const [discussionEnded, setDiscussionEnded] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
@@ -92,11 +93,17 @@ export default function ComprehensiveMode({
 
   const MAX_ROUNDS = 5;
 
-  // Auto-scroll
+  // Auto-scroll + collapse mobile controls on scroll
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 80;
+    // On mobile, collapse controls when user scrolls
+    if (window.innerWidth < 640) {
+      setMobileControlsOpen(false);
+      clearTimeout(scrollTimeoutRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -104,6 +111,13 @@ export default function ComprehensiveMode({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [streamingContent, messages.length]);
+
+  // Auto-collapse mobile controls when AI starts responding
+  useEffect(() => {
+    if ((loading || isAutoDiscussing) && window.innerWidth < 640) {
+      setMobileControlsOpen(false);
+    }
+  }, [loading, isAutoDiscussing]);
 
   // Stream a single master's response
   const streamMaster = useCallback(
@@ -889,6 +903,31 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             );
           })}
 
+          {/* Thinking indicator — before content starts streaming */}
+          {streamingMaster && !streamingContent && (
+            <div className="flex justify-start">
+              {(() => {
+                const masterInfo = getMasterInfo(streamingMaster);
+                return (
+                  <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterInfo?.bgClass || ""}`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className={`text-base ${masterInfo?.color}`}>{masterInfo?.symbol}</span>
+                      <span className={`text-xs font-serif font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm text-stone/60">
+                      <span className="inline-flex gap-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </span>
+                      <span className="text-xs animate-pulse">{t("comprehensive.thinking")}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Currently streaming */}
           {streamingMaster && streamingContent && (
             <div className="flex justify-start">
@@ -913,9 +952,24 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </div>
       </div>
 
-      {/* Bottom controls */}
+      {/* Mobile FAB — collapsed state */}
+      {!mobileControlsOpen && phase === "discussion" && (
+        <button
+          onClick={() => setMobileControlsOpen(true)}
+          className="sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full border border-gold/30 bg-[var(--parchment)] shadow-lg flex items-center justify-center text-gold/70 active:scale-95 transition-transform animate-fade-in-up"
+          style={{ opacity: 0, animationDuration: "200ms", animationFillMode: "forwards" }}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </button>
+      )}
+
+      {/* Bottom controls — hidden on mobile when collapsed */}
       <div
-        className="relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0"
+        className={`relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0 ${
+          !mobileControlsOpen && phase === "discussion" ? "hidden sm:block" : ""
+        }`}
         style={{ background: "var(--parchment)" }}
       >
         <div className="max-w-2xl mx-auto">
