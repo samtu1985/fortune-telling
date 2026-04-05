@@ -607,9 +607,9 @@ export default function AdminPage() {
                             {t("admin.registeredOn")}{" "}
                             {new Date(user.createdAt).toLocaleDateString("zh-TW")}
                           </p>
-                          {(user.singleCredits > 0 || user.multiCredits > 0) && (
+                          {((user.singleCredits ?? 0) > 0 || (user.multiCredits ?? 0) > 0) && (
                             <p className="text-[10px] text-stone/40 mt-0.5">
-                              {t("admin.userCredits")}: S {user.singleUsed}/{user.singleCredits} | M {user.multiUsed}/{user.multiCredits}
+                              {t("admin.userCredits")}: S {user.singleUsed ?? 0}/{user.singleCredits ?? 0} | M {user.multiUsed ?? 0}/{user.multiCredits ?? 0}
                             </p>
                           )}
                         </div>
