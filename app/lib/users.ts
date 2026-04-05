@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
-import { users, profiles, conversations } from "./db/schema";
+import { users, profiles, conversations, pendingCredits } from "./db/schema";
 
 export type UserStatus = "unverified" | "pending" | "approved" | "disabled";
 
@@ -137,6 +137,42 @@ export async function updateUserStatus(
     set.approvedAt = new Date();
   }
   const result = await db.update(users).set(set).where(eq(users.email, email));
+
+  // When approving, apply any pending credits
+  if (status === "approved") {
+    try {
+      const pending = await db
+        .select()
+        .from(pendingCredits)
+        .where(eq(pendingCredits.email, email));
+
+      if (pending.length > 0) {
+        let totalSingle = 0;
+        let totalMulti = 0;
+        for (const p of pending) {
+          totalSingle += p.singleCredits;
+          totalMulti += p.multiCredits;
+        }
+
+        if (totalSingle > 0 || totalMulti > 0) {
+          await db
+            .update(users)
+            .set({
+              singleCredits: sql`${users.singleCredits} + ${totalSingle}`,
+              multiCredits: sql`${users.multiCredits} + ${totalMulti}`,
+            })
+            .where(eq(users.email, email));
+        }
+
+        // Delete applied pending credits
+        await db.delete(pendingCredits).where(eq(pendingCredits.email, email));
+        console.log(`[users] Applied pending credits for ${email}: single=${totalSingle}, multi=${totalMulti}`);
+      }
+    } catch (e) {
+      console.error("[users] Failed to apply pending credits:", e);
+    }
+  }
+
   return (result.rowCount ?? 0) > 0;
 }
 
