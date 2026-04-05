@@ -93,9 +93,10 @@ export function useAudioQueue() {
     playingRef.current = false;
   }, []);
 
-  // Download all segments as a single WAV podcast
-  // MP3 concatenation doesn't produce valid files for all players.
-  // Instead, decode all MP3 segments via AudioContext, merge PCM, encode as WAV.
+  // Download all segments as M4A podcast
+  // 1. Decode MP3 segments → PCM via AudioContext
+  // 2. Encode as WAV (intermediate)
+  // 3. Convert WAV → M4A via ffmpeg.wasm for smaller file size
   const [podcastDownloading, setPodcastDownloading] = useState(false);
 
   const downloadPodcast = useCallback(async () => {
@@ -128,18 +129,31 @@ export function useAudioQueue() {
         writeOffset += buf.length;
       }
 
-      // Encode as WAV
+      // Encode as WAV first
       const wavBlob = encodeWAV(merged);
-
-      const url = URL.createObjectURL(wavBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `fortunefor-me-podcast-${new Date().toISOString().slice(0, 10)}.wav`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       audioCtx.close();
+
+      // Convert WAV → M4A via ffmpeg.wasm
+      try {
+        const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+        const { fetchFile } = await import("@ffmpeg/util");
+
+        const ffmpeg = new FFmpeg();
+        await ffmpeg.load();
+
+        const wavData = await fetchFile(wavBlob);
+        await ffmpeg.writeFile("input.wav", wavData);
+        await ffmpeg.exec(["-i", "input.wav", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "output.m4a"]);
+        const outputData = await ffmpeg.readFile("output.m4a");
+        ffmpeg.terminate();
+
+        const m4aBlob = new Blob([outputData as BlobPart], { type: "audio/mp4" });
+        triggerDownload(m4aBlob, `fortunefor-me-podcast-${new Date().toISOString().slice(0, 10)}.m4a`);
+      } catch (ffmpegErr) {
+        // Fallback to WAV if ffmpeg.wasm fails (e.g., on some mobile browsers)
+        console.warn("[audio] ffmpeg.wasm failed, falling back to WAV:", ffmpegErr);
+        triggerDownload(wavBlob, `fortunefor-me-podcast-${new Date().toISOString().slice(0, 10)}.wav`);
+      }
     } catch (e) {
       console.error("[audio] Failed to generate podcast:", e);
     } finally {
@@ -171,6 +185,19 @@ export function useAudioQueue() {
     downloadPodcast,
     podcastDownloading,
   };
+}
+
+// ─── Download Helper ────────────────────────────────────
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ─── WAV Encoding Helpers ───────────────────────────────
