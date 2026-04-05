@@ -61,21 +61,45 @@ export async function PATCH(request: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const { email, status } = (await request.json()) as {
+  const body = (await request.json()) as {
     email: string;
-    status: UserStatus;
+    status?: UserStatus;
+    isAmbassador?: boolean;
   };
 
-  if (!email || !["pending", "approved", "disabled"].includes(status)) {
-    return Response.json({ error: "Invalid request" }, { status: 400 });
-  }
+  const { email } = body;
 
   if (email === ADMIN_EMAIL) {
     return Response.json({ error: "Cannot modify admin" }, { status: 400 });
   }
 
+  // Handle ambassador toggle
+  if (body.isAmbassador !== undefined) {
+    try {
+      const { db } = await import("@/app/lib/db");
+      const { users } = await import("@/app/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const result = await db
+        .update(users)
+        .set({ isAmbassador: body.isAmbassador })
+        .where(eq(users.email, email));
+      if ((result.rowCount ?? 0) === 0) {
+        return Response.json({ error: "User not found" }, { status: 404 });
+      }
+      return Response.json({ success: true });
+    } catch (e) {
+      console.error("[admin] Ambassador toggle failed:", e);
+      return Response.json({ error: "Update failed" }, { status: 500 });
+    }
+  }
+
+  // Handle status update (existing logic)
+  if (!body.status || !["pending", "approved", "disabled"].includes(body.status)) {
+    return Response.json({ error: "Invalid request" }, { status: 400 });
+  }
+
   try {
-    const ok = await updateUserStatus(email, status);
+    const ok = await updateUserStatus(email, body.status);
     if (!ok) {
       return Response.json({ error: "User not found" }, { status: 404 });
     }
