@@ -569,62 +569,100 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         zodiac: "#06b6d4",
       };
 
-      // Build HTML content
+      // Build HTML — each message block is a separate div for page-break control
       const container = document.createElement("div");
       container.style.cssText = "width:700px;padding:40px;font-family:serif;background:#fff;color:#1e1a14;position:absolute;left:-9999px;top:0;";
-      container.innerHTML = `
+
+      // Header
+      const header = `
         <div style="text-align:center;margin-bottom:32px;">
-          <h1 style="color:#7a5c10;font-size:28px;margin:0;">天機 Fortune-For.me</h1>
+          <h1 style="color:#7a5c10;font-size:28px;margin:0;">天機 FortuneFor.me</h1>
           <p style="color:#847b72;font-size:13px;margin-top:4px;">三師論道 — ${t("comprehensive.discussionEnded")}</p>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,#7a5c10,transparent);margin:16px auto;"></div>
-        </div>
-        ${messages
-          .filter((m) => m.role === "user" && !m.content.startsWith("請針對") && !m.content.startsWith("這是最後"))
-          .slice(0, 1)
-          .map((m) => `<div style="background:#f5f0e5;border-radius:8px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/</g, "&lt;")}</div>`)
-          .join("")}
-        ${messages
-          .filter((m) => m.role === "assistant" && m.master)
-          .map((m) => {
-            const color = MASTER_COLORS[m.master!] || "#666";
-            const info = getMasterInfo(m.master);
-            return `
-              <div style="border-left:3px solid ${color};padding:12px 16px;margin-bottom:12px;background:${color}08;border-radius:0 8px 8px 0;">
-                <div style="font-size:14px;font-weight:600;color:${color};margin-bottom:8px;">${info?.symbol || ""} ${info?.label || m.master}</div>
-                <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/</g, "&lt;")}</div>
-              </div>`;
-          })
-          .join("")}
-        <div style="text-align:center;margin-top:24px;color:#847b72;font-size:11px;">
-          <p>以上分析由 AI 生成，僅供參考</p>
-          <p style="margin-top:4px;">${new Date().toLocaleDateString()}</p>
-        </div>
-      `;
+        </div>`;
+
+      // User question
+      const userBlock = messages
+        .filter((m) => m.role === "user" && !m.content.startsWith("請針對") && !m.content.startsWith("這是最後"))
+        .slice(0, 1)
+        .map((m) => `<div style="background:#f5f0e5;border-radius:8px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/\n\n【(以下是|系統提示)[\s\S]*$/, "").replace(/</g, "&lt;")}</div>`)
+        .join("");
+
+      // Master messages
+      const masterBlocks = messages
+        .filter((m) => m.role === "assistant" && m.master)
+        .map((m) => {
+          const color = MASTER_COLORS[m.master!] || "#666";
+          const info = getMasterInfo(m.master);
+          return `<div class="pdf-block" style="border-left:3px solid ${color};padding:12px 16px;margin-bottom:12px;background:${color}08;border-radius:0 8px 8px 0;page-break-inside:avoid;">
+            <div style="font-size:14px;font-weight:600;color:${color};margin-bottom:8px;">${info?.symbol || ""} ${info?.label || m.master}</div>
+            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/</g, "&lt;")}</div>
+          </div>`;
+        });
+
+      const footer = `<div style="text-align:center;margin-top:24px;color:#847b72;font-size:11px;">
+        <p>以上分析由 AI 生成，僅供參考</p>
+        <p style="margin-top:4px;">${new Date().toLocaleDateString()}</p>
+      </div>`;
+
+      container.innerHTML = header + userBlock + masterBlocks.join("") + footer;
       document.body.appendChild(container);
 
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
-      document.body.removeChild(container);
-
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Render each block separately and place on PDF pages
       const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 5;
+      const usableHeight = pageHeight - margin * 2;
+      let yOffset = margin;
 
-      // Handle multi-page
-      const pageHeight = 297; // A4 height in mm
-      let position = 0;
-      let remaining = imgHeight;
+      // Get all top-level children as separate blocks
+      const blocks = Array.from(container.children) as HTMLElement[];
 
-      while (remaining > 0) {
-        if (position > 0) pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL("image/jpeg", 0.95),
-          "JPEG", 0, -position, imgWidth, imgHeight
-        );
-        position += pageHeight;
-        remaining -= pageHeight;
+      for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+        const blockCanvas = await html2canvas(block, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        const blockImgHeight = (blockCanvas.height * (pageWidth - margin * 2)) / blockCanvas.width;
+
+        // If block doesn't fit on current page, start a new page
+        if (yOffset + blockImgHeight > pageHeight - margin && yOffset > margin + 10) {
+          pdf.addPage();
+          yOffset = margin;
+        }
+
+        // If a single block is taller than a page, split it across pages
+        if (blockImgHeight > usableHeight) {
+          const imgData = blockCanvas.toDataURL("image/jpeg", 0.95);
+          const totalImgWidth = pageWidth - margin * 2;
+          let drawn = 0;
+          while (drawn < blockImgHeight) {
+            if (drawn > 0) {
+              pdf.addPage();
+              yOffset = margin;
+            }
+            const drawHeight = Math.min(usableHeight, blockImgHeight - drawn);
+            // Use canvas clipping for clean page breaks
+            const clipCanvas = document.createElement("canvas");
+            const srcPixelsPerMm = blockCanvas.width / totalImgWidth;
+            clipCanvas.width = blockCanvas.width;
+            clipCanvas.height = Math.ceil(drawHeight * srcPixelsPerMm);
+            const ctx = clipCanvas.getContext("2d")!;
+            ctx.drawImage(blockCanvas, 0, Math.floor(drawn * srcPixelsPerMm), clipCanvas.width, clipCanvas.height, 0, 0, clipCanvas.width, clipCanvas.height);
+            pdf.addImage(clipCanvas.toDataURL("image/jpeg", 0.95), "JPEG", margin, yOffset, totalImgWidth, drawHeight);
+            drawn += drawHeight;
+            yOffset = margin + drawHeight;
+          }
+        } else {
+          pdf.addImage(
+            blockCanvas.toDataURL("image/jpeg", 0.95),
+            "JPEG", margin, yOffset, pageWidth - margin * 2, blockImgHeight
+          );
+          yOffset += blockImgHeight + 2;
+        }
       }
 
-      pdf.save(`fortune-for-me-${new Date().toISOString().slice(0, 10)}.pdf`);
+      document.body.removeChild(container);
+      pdf.save(`fortunefor-me-${new Date().toISOString().slice(0, 10)}.pdf`);
       // After successful download, ask about case study
       setTimeout(() => setCasePhase("consent"), 1000);
     } catch (e) {
