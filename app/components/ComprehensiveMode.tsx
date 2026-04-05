@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "react";
 import InputForm, { type ChartRequest, timeToShichen } from "./InputForm";
 import ZiweiChart from "./ZiweiChart";
-import ResultDisplay from "./ResultDisplay";
+import ResultDisplay, { renderMarkdown } from "./ResultDisplay";
 import ConfirmDialog from "./ConfirmDialog";
 import MentionDropdown from "./MentionDropdown";
 import ThemeToggle from "./ThemeToggle";
@@ -854,9 +854,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     <span className={`text-base ${masterColor}`}>{masterInfo?.symbol}</span>
                     <span className={`text-xs font-serif font-semibold ${masterColor}`}>{masterInfo?.label}</span>
                   </div>
-                  <div className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap">
-                    {msg.content}
-                  </div>
+                  <div
+                    className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap prose-sm"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                  />
                   {/* Save button */}
                   <div className="flex justify-end mt-1">
                     <button
@@ -900,9 +901,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                       <span className={`text-xs font-serif font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-gold/60 animate-pulse" />
                     </div>
-                    <div className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap streaming-cursor">
-                      {streamingContent}
-                    </div>
+                    <div
+                      className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap streaming-cursor prose-sm"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(streamingContent) }}
+                    />
                   </div>
                 );
               })()}

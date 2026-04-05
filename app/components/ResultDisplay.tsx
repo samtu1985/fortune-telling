@@ -56,7 +56,7 @@ function renderInlineMarkdown(text: string): string {
     .replace(/`(.+?)`/g, '<code class="text-gold-bright text-[0.85em]">$1</code>');
 }
 
-function renderMarkdown(text: string): string {
+export function renderMarkdown(text: string): string {
   const lines = text.split("\n");
   const result: string[] = [];
   let i = 0;
