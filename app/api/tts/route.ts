@@ -77,9 +77,11 @@ async function synthesize(
     if (!response.ok) {
       const errText = await response.text().catch(() => "Unknown error");
       console.error(`[tts] ElevenLabs error ${response.status}:`, errText);
+      // Return 503 for quota/payment issues so client knows to fallback gracefully
+      const isQuotaOrPayment = response.status === 401 || response.status === 402;
       return Response.json(
-        { error: `TTS API error: ${response.status}`, detail: errText },
-        { status: response.status }
+        { error: isQuotaOrPayment ? "TTS quota exceeded or payment required" : `TTS API error: ${response.status}`, detail: errText },
+        { status: isQuotaOrPayment ? 503 : response.status }
       );
     }
 
