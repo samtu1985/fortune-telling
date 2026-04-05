@@ -7,6 +7,9 @@ import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
 import { auth } from "@/app/lib/auth";
 import { logUsage } from "@/app/lib/usage";
+import { db } from "@/app/lib/db";
+import { users } from "@/app/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -432,6 +435,12 @@ export async function POST(request: NextRequest) {
         inputTokens: totalInput,
         outputTokens: totalOutput,
       });
+
+      // Consume single credit
+      db.update(users)
+        .set({ singleUsed: sql`${users.singleUsed} + 1` })
+        .where(eq(users.email, userEmail))
+        .catch((e) => console.error("[credits] consume failed:", e));
 
       controller.close();
     },

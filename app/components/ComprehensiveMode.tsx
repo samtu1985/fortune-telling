@@ -298,6 +298,12 @@ export default function ComprehensiveMode({
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
     setPhase("discussion");
+    // Consume multi credit
+    fetch("/api/credits/consume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "multi" }),
+    }).catch(() => {});
     isNearBottomRef.current = true;
     roundCountRef.current = 0;
     setDiscussionEnded(false);
