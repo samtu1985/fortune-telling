@@ -596,7 +596,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           const info = getMasterInfo(m.master);
           return `<div class="pdf-block" style="border-left:3px solid ${color};padding:12px 16px;margin-bottom:12px;background:${color}08;border-radius:0 8px 8px 0;page-break-inside:avoid;">
             <div style="font-size:14px;font-weight:600;color:${color};margin-bottom:8px;">${info?.symbol || ""} ${info?.label || m.master}</div>
-            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${m.content.replace(/</g, "&lt;")}</div>
+            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${renderMarkdown(m.content)}</div>
           </div>`;
         });
 
