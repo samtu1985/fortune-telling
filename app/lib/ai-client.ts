@@ -162,21 +162,38 @@ export function parseSSELine(
       return null;
     }
 
-    // OpenAI-compatible: usage arrives in the final chunk
+    // OpenAI-compatible format
+    const choice = parsed.choices?.[0];
+    const delta = choice?.delta;
+    const result: { content?: string; reasoning?: string; usage?: { input: number; output: number } } = {};
+
+    // Usage can arrive in the final chunk (alongside or separate from content)
     if (parsed.usage) {
-      return {
-        usage: {
-          input: parsed.usage.prompt_tokens || 0,
-          output: parsed.usage.completion_tokens || 0,
-        },
+      result.usage = {
+        input: parsed.usage.prompt_tokens || 0,
+        output: parsed.usage.completion_tokens || 0,
       };
     }
 
-    const delta = parsed.choices?.[0]?.delta;
-    if (!delta) return null;
-    const result: { content?: string; reasoning?: string } = {};
-    if (delta.content) result.content = delta.content;
-    if (delta.reasoning_content) result.reasoning = delta.reasoning_content;
+    // Content from delta (standard streaming)
+    if (delta?.content) {
+      result.content = delta.content;
+    }
+
+    // Reasoning/thinking content (different providers use different field names)
+    if (delta?.reasoning_content) {
+      result.reasoning = delta.reasoning_content;
+    } else if (delta?.reasoning) {
+      result.reasoning = delta.reasoning;
+    }
+
+    // Gemini: finish_reason "stop" without content means stream is ending
+    if (choice?.finish_reason === "stop" && !result.content && !result.reasoning) {
+      // Don't return null — there might be usage data
+      if (result.usage) return result;
+      return null;
+    }
+
     if (Object.keys(result).length > 0) return result;
     return null;
   } catch {

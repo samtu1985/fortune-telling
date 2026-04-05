@@ -425,7 +425,6 @@ export async function POST(request: NextRequest) {
           if (result.usage) {
             totalInput += result.usage.input;
             totalOutput += result.usage.output;
-            continue;
           }
           if (result.content) {
             controller.enqueue(
