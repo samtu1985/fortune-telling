@@ -119,6 +119,21 @@ function generateChartForType(
   return null;
 }
 
+// Gemini models tend to be clinical and formulaic. This directive adds warmth.
+const GEMINI_TONE_DIRECTIVE = `
+
+【說話風格 — 非常重要】
+你不是在寫論文或報告，你是在跟一個真實的人聊他的人生。請做到：
+
+1. 像一個有智慧的長輩在跟晚輩聊天，溫暖、接地氣、有同理心
+2. 不要用「根據命盤顯示」「由此可見」這種教科書語氣，改成「你這個人啊...」「說白了就是...」「你有沒有覺得自己...」
+3. 先共情，再分析。比如不要直接說「你的財運不佳」，而是「賺錢這件事對你來說可能一直有種使不上力的感覺，對吧？」
+4. 適時用比喻和生活化的例子，讓命理概念變得好懂
+5. 給建議的時候要具體、可行動，不要空泛的「宜多注意」
+6. 保持鼓勵的基調，即使是不利的格局也要點出轉機和可以努力的方向
+7. 可以偶爾用輕鬆的語氣調侃，但不要失去專業感
+8. 每段分析都要回扣到這個人的真實生活可能碰到的情境`;
+
 const FOLLOWUP_CHART_RULE = `
 
 【追問中的命盤計算規則】
@@ -266,6 +281,12 @@ export async function POST(request: NextRequest) {
 
   // Add follow-up chart rule to system prompt
   systemPrompt += FOLLOWUP_CHART_RULE;
+
+  // For Gemini models: inject warmth and conversational tone directive
+  // Gemini tends to be clinical and formulaic without explicit guidance
+  if (config.provider === "google") {
+    systemPrompt += GEMINI_TONE_DIRECTIVE;
+  }
 
   // Inject language directive LAST so it takes highest priority
   if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {

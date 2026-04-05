@@ -121,6 +121,18 @@ const MASTER_PROMPTS: Record<string, string> = {
 `,
 };
 
+// Gemini tends to be dry in multi-master discussion. Add conversational warmth.
+const GEMINI_MULTI_TONE = `
+
+【語氣調整 — 重要】
+你現在是在跟真人聊天，不是在寫分析報告。請做到：
+- 說人話！像朋友聊天一樣自然，不要「根據命盤分析」「綜上所述」這種套話
+- 用「你有沒有發現...」「說真的...」「老實講...」這種口語開頭
+- 先同理對方的處境，再帶入命理觀點
+- 舉生活中的例子讓命理概念好理解
+- 給的建議要具體、接地氣，不要空泛的「多加留意」
+- 即使格局不利也要指出路在哪裡，給人希望`;
+
 const MASTER_LABELS: Record<string, string> = {
   bazi: "八字老師",
   ziwei: "紫微老師",
@@ -177,6 +189,11 @@ export async function POST(request: NextRequest) {
   let fullSystemPrompt = chartData
     ? `${promptWithDate}\n\n【以下是由排盤程式精確計算的命盤數據】\n\n${chartData}`
     : promptWithDate;
+
+  // For Gemini models: inject conversational tone
+  if (config.provider === "google") {
+    fullSystemPrompt += GEMINI_MULTI_TONE;
+  }
 
   // Inject language directive LAST so it takes highest priority
   if (locale && AI_LANGUAGE_DIRECTIVES[locale]) {
