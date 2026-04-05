@@ -163,6 +163,7 @@ export default function AdminPage() {
     hasKey: boolean; modelId: string; stability: number; similarityBoost: number; style: number; speed: number;
   } | null>(null);
   const [ttsVoices, setTtsVoices] = useState<Record<string, Record<string, string>>>({});
+  const [availableVoices, setAvailableVoices] = useState<{ voice_id: string; name: string; language: string; accent: string; description: string; gender: string; category: string }[]>([]);
   const [ttsApiKey, setTtsApiKey] = useState("");
   const [ttsEditConfig, setTtsEditConfig] = useState({
     modelId: "eleven_flash_v2_5", stability: 0.7, similarityBoost: 0.75, style: 0.0, speed: 1.0,
@@ -281,6 +282,12 @@ export default function AdminPage() {
           });
         }
         if (data.voices) setTtsVoices(data.voices);
+      }
+      // Fetch available ElevenLabs voices
+      const voicesRes = await fetch("/api/admin/tts-voices/list");
+      if (voicesRes.ok) {
+        const voicesData = await voicesRes.json();
+        if (voicesData.voices) setAvailableVoices(voicesData.voices);
       }
     } catch (e) {
       console.error("[admin] Failed to fetch TTS settings:", e);
@@ -1252,25 +1259,29 @@ export default function AdminPage() {
             <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
               <h3 className="text-sm font-serif text-gold mb-4">{t("admin.ttsVoices")}</h3>
 
+              {availableVoices.length === 0 && ttsConfig?.hasKey && (
+                <p className="text-xs text-stone/50 mb-4">Loading voices from ElevenLabs...</p>
+              )}
+              {!ttsConfig?.hasKey && (
+                <p className="text-xs text-stone/50 mb-4">{t("admin.ttsNoKey")}</p>
+              )}
+
               <div className="space-y-6">
                 {["bazi", "ziwei", "zodiac"].map((master) => (
                   <div key={master}>
                     <p className="text-xs text-cream font-medium mb-2">{t(`master.${master}` as string)}</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {["zh-Hant", "zh-Hans", "en", "ja"].map((loc) => (
                         <div key={loc} className="flex items-center gap-2">
                           <span className="text-[10px] text-stone/50 w-14 shrink-0">{loc}</span>
-                          <input
-                            type="text"
+                          <select
                             value={ttsVoices[master]?.[loc] || ""}
-                            onChange={(e) => {
+                            onChange={async (e) => {
+                              const val = e.target.value;
                               setTtsVoices((prev) => ({
                                 ...prev,
-                                [master]: { ...prev[master], [loc]: e.target.value },
+                                [master]: { ...prev[master], [loc]: val },
                               }));
-                            }}
-                            onBlur={async (e) => {
-                              const val = e.target.value.trim();
                               if (val) {
                                 await fetch("/api/admin/tts-voices", {
                                   method: "PUT",
@@ -1279,9 +1290,21 @@ export default function AdminPage() {
                                 });
                               }
                             }}
-                            placeholder={t("admin.ttsVoiceId")}
                             className="flex-1 text-xs"
-                          />
+                          >
+                            <option value="">-- {t("admin.ttsVoiceId")} --</option>
+                            {availableVoices.map((v) => (
+                              <option key={v.voice_id} value={v.voice_id}>
+                                {v.name} {v.language ? `(${v.language})` : ""} {v.gender ? `· ${v.gender}` : ""} {v.description ? `— ${v.description}` : ""}
+                              </option>
+                            ))}
+                            {/* Custom voice ID option */}
+                            {ttsVoices[master]?.[loc] && !availableVoices.some((v) => v.voice_id === ttsVoices[master]?.[loc]) && (
+                              <option value={ttsVoices[master][loc]}>
+                                Custom: {ttsVoices[master][loc]}
+                              </option>
+                            )}
+                          </select>
                         </div>
                       ))}
                     </div>
