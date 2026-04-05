@@ -265,7 +265,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         );
       })()}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Birth Date */}
         <div className="space-y-1.5">
           <label>{t("form.birthDate")} {t("form.required")}</label>
@@ -274,6 +274,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
             required
+            className="w-full min-w-0"
           />
         </div>
 
@@ -285,6 +286,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             value={birthTime}
             onChange={(e) => setBirthTime(e.target.value)}
             required
+            className="w-full min-w-0"
           />
           {isChineseType && birthTime && (
             <p className="text-xs text-gold-dim mt-1">
