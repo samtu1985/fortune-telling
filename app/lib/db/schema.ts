@@ -8,6 +8,7 @@ import {
   timestamp,
   uuid,
   jsonb,
+  real,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -127,4 +128,24 @@ export const pendingCredits = pgTable("pending_credits", {
   multiCredits: integer("multi_credits").notNull().default(0),
   sentBy: varchar("sent_by", { length: 255 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── TTS Settings ───────────────────────────────────────
+export const ttsSettings = pgTable("tts_settings", {
+  id: serial("id").primaryKey(),
+  apiKeyEncrypted: text("api_key_encrypted").notNull().default(""),
+  modelId: varchar("model_id", { length: 50 }).notNull().default("eleven_flash_v2_5"),
+  stability: real("stability").notNull().default(0.7),
+  similarityBoost: real("similarity_boost").notNull().default(0.75),
+  style: real("style").notNull().default(0.0),
+  speed: real("speed").notNull().default(1.0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── TTS Voices ─────────────────────────────────────────
+export const ttsVoices = pgTable("tts_voices", {
+  id: serial("id").primaryKey(),
+  masterKey: varchar("master_key", { length: 30 }).notNull(),
+  locale: varchar("locale", { length: 10 }).notNull(),
+  voiceId: varchar("voice_id", { length: 100 }).notNull(),
 });
