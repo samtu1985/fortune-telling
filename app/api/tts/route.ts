@@ -20,11 +20,13 @@ export async function POST(request: NextRequest) {
   }
 
   const config = await getTTSConfig();
+  console.log("[tts] Config loaded:", { hasKey: !!config?.apiKey, modelId: config?.modelId });
   if (!config || !config.apiKey) {
     return Response.json({ error: "TTS not configured" }, { status: 503 });
   }
 
   const voiceId = await getVoiceId(masterKey, locale);
+  console.log("[tts] Voice lookup:", { masterKey, locale, voiceId });
   if (!voiceId) {
     // Try fallback to zh-Hant
     const fallbackVoice = await getVoiceId(masterKey, "zh-Hant");

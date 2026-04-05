@@ -223,7 +223,10 @@ export default function ComprehensiveMode({
 
           // Trigger TTS in background (don't block next master)
           if (podcastModeRef.current && fetchTTSRef.current) {
+            console.log("[tts] Triggering TTS for", master, "text length:", cleanContent.length);
             fetchTTSRef.current(master, cleanContent);
+          } else {
+            console.log("[tts] Skipped - podcastMode:", podcastModeRef.current, "fetchTTS:", !!fetchTTSRef.current);
           }
 
           // Only stop the round on consensus if this is the last master
@@ -572,6 +575,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
   // Fetch TTS audio for a master's response
   const fetchTTS = useCallback(
     async (master: MasterType, text: string): Promise<void> => {
+      console.log("[tts] fetchTTS called for", master, "locale:", locale, "text:", text.slice(0, 50));
       try {
         const res = await fetch("/api/tts", {
           method: "POST",
