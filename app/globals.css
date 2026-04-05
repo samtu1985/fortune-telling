@@ -59,6 +59,10 @@
   --font-calligraphy: 'Zhi Mang Xing', 'Noto Serif TC', serif;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--gold-dim) transparent;
