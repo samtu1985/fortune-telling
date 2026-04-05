@@ -16,6 +16,20 @@ export default function UserMenu() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [credits, setCredits] = useState<{ singleRemaining: number; multiRemaining: number } | null>(null);
+
+  useEffect(() => {
+    if (dropdownOpen && !credits) {
+      fetch("/api/credits")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.singleRemaining !== undefined) {
+            setCredits({ singleRemaining: data.singleRemaining, multiRemaining: data.multiRemaining });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [dropdownOpen, credits]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -111,6 +125,20 @@ export default function UserMenu() {
                   </svg>
                   {t("admin.title")}
                 </a>
+              </>
+            )}
+            {credits && (credits.singleRemaining > 0 || credits.multiRemaining > 0 || credits.singleRemaining < 0 || credits.multiRemaining < 0) && (
+              <>
+                <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
+                <div className="px-4 py-3 space-y-1">
+                  <p className="text-[10px] text-stone/50 uppercase tracking-wider">{t("credits.title")}</p>
+                  <p className="text-xs text-cream/70">
+                    {t("credits.singleRemaining").replace("{n}", String(Math.max(0, credits.singleRemaining)))}
+                  </p>
+                  <p className="text-xs text-cream/70">
+                    {t("credits.multiRemaining").replace("{n}", String(Math.max(0, credits.multiRemaining)))}
+                  </p>
+                </div>
               </>
             )}
             <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
