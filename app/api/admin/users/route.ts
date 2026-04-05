@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/app/lib/auth";
 import {
-  readUsers,
   updateUserStatus,
   deleteUser,
   ADMIN_EMAIL,
   type UserStatus,
 } from "@/app/lib/users";
+import { db } from "@/app/lib/db";
+import { users as usersTable } from "@/app/lib/db/schema";
 
 async function checkAdmin(): Promise<boolean> {
   const session = await auth();
@@ -23,7 +24,7 @@ export async function GET() {
     : "local";
 
   try {
-    const users = await readUsers();
+    const rows = await db.select().from(usersTable);
 
     const statusOrder: Record<UserStatus, number> = {
       unverified: 0,
@@ -32,8 +33,21 @@ export async function GET() {
       disabled: 3,
     };
 
-    const list = Object.entries(users)
-      .map(([email, data]) => ({ email, ...data }))
+    const list = rows
+      .map((row) => ({
+        email: row.email,
+        name: row.name,
+        image: row.image,
+        status: row.status as UserStatus,
+        createdAt: row.createdAt.toISOString(),
+        approvedAt: row.approvedAt?.toISOString() ?? null,
+        authProvider: row.authProvider,
+        singleCredits: row.singleCredits,
+        multiCredits: row.multiCredits,
+        singleUsed: row.singleUsed,
+        multiUsed: row.multiUsed,
+        isAmbassador: row.isAmbassador,
+      }))
       .sort((a, b) => {
         const statusDiff = statusOrder[a.status] - statusOrder[b.status];
         if (statusDiff !== 0) return statusDiff;
@@ -76,13 +90,11 @@ export async function PATCH(request: NextRequest) {
   // Handle ambassador toggle
   if (body.isAmbassador !== undefined) {
     try {
-      const { db } = await import("@/app/lib/db");
-      const { users } = await import("@/app/lib/db/schema");
       const { eq } = await import("drizzle-orm");
       const result = await db
-        .update(users)
+        .update(usersTable)
         .set({ isAmbassador: body.isAmbassador })
-        .where(eq(users.email, email));
+        .where(eq(usersTable.email, email));
       if ((result.rowCount ?? 0) === 0) {
         return Response.json({ error: "User not found" }, { status: 404 });
       }

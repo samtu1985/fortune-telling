@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import ProfileModal from "./ProfileModal";
+import SendTrialModal from "./SendTrialModal";
 import { useLocale } from "./LocaleProvider";
 import { useFontSize } from "./FontSizeProvider";
 
@@ -15,6 +16,8 @@ export default function UserMenu() {
   const { fontSize, toggleFontSize } = useFontSize();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [trialOpen, setTrialOpen] = useState(false);
+  const [isAmbassador, setIsAmbassador] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [credits, setCredits] = useState<{ singleRemaining: number; multiRemaining: number } | null>(null);
 
@@ -25,6 +28,9 @@ export default function UserMenu() {
         .then((data) => {
           if (data.singleRemaining !== undefined) {
             setCredits({ singleRemaining: data.singleRemaining, multiRemaining: data.multiRemaining });
+          }
+          if (data.isAmbassador) {
+            setIsAmbassador(true);
           }
         })
         .catch(() => {});
@@ -111,6 +117,23 @@ export default function UserMenu() {
               {fontSize === "normal" ? t("menu.fontLarge") : t("menu.fontNormal")}
             </button>
 
+            {(session.user.email === ADMIN_EMAIL || isAmbassador) && (
+              <>
+                <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    setTrialOpen(true);
+                  }}
+                  className="w-full text-left px-4 py-3 min-h-[44px] text-sm text-cream hover:bg-gold/10 transition-colors flex items-center gap-2.5"
+                >
+                  <svg className="w-4 h-4 text-gold-dim shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </svg>
+                  {t("menu.sendTrial")}
+                </button>
+              </>
+            )}
             {session.user.email === ADMIN_EMAIL && (
               <>
                 <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
@@ -156,6 +179,7 @@ export default function UserMenu() {
       </div>
 
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <SendTrialModal open={trialOpen} onClose={() => setTrialOpen(false)} />
     </>
   );
 }

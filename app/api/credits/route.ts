@@ -15,6 +15,7 @@ export async function GET() {
       multiCredits: users.multiCredits,
       singleUsed: users.singleUsed,
       multiUsed: users.multiUsed,
+      isAmbassador: users.isAmbassador,
     })
     .from(users)
     .where(eq(users.email, session.user.email))
@@ -32,5 +33,6 @@ export async function GET() {
     multiCredits: u.multiCredits,
     multiUsed: u.multiUsed,
     multiRemaining: u.multiCredits - u.multiUsed,
+    isAmbassador: u.isAmbassador,
   });
 }

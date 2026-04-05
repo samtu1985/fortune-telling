@@ -19,6 +19,7 @@ interface UserItem {
   multiCredits?: number;
   singleUsed?: number;
   multiUsed?: number;
+  isAmbassador?: boolean;
 }
 
 // --- AI Settings types ---
@@ -656,6 +657,28 @@ export default function AdminPage() {
                                 className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
                               >
                                 {t("admin.delete")}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setActionLoading(user.email);
+                                  try {
+                                    await fetch("/api/admin/users", {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ email: user.email, isAmbassador: !user.isAmbassador }),
+                                    });
+                                    fetchUsers();
+                                  } finally {
+                                    setActionLoading(null);
+                                  }
+                                }}
+                                className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
+                                  user.isAmbassador
+                                    ? "text-violet-400 border-violet-400/30 hover:bg-violet-400/10"
+                                    : "text-stone/50 border-stone/20 hover:bg-stone/10"
+                                }`}
+                              >
+                                {user.isAmbassador ? t("admin.removeAmbassador") : t("admin.setAmbassador")}
                               </button>
                             </>
                           )}
