@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "react";
 import InputForm, { type ChartRequest, timeToShichen } from "./InputForm";
 import ZiweiChart from "./ZiweiChart";
+import DOMPurify from "dompurify";
 import ResultDisplay, { renderMarkdown } from "./ResultDisplay";
 import ConfirmDialog from "./ConfirmDialog";
 import MentionDropdown from "./MentionDropdown";
@@ -1038,7 +1039,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   </div>
                   <div
                     className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap prose-sm"
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(msg.content)) }}
                   />
                   {/* Save button */}
                   <div className="flex justify-end mt-1">
@@ -1110,7 +1111,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     </div>
                     <div
                       className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap streaming-cursor prose-sm"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(streamingContent) }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(streamingContent)) }}
                     />
                   </div>
                 );

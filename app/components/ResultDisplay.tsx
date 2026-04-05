@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { useLocale } from "./LocaleProvider";
 
 interface ResultDisplayProps {
@@ -166,8 +167,8 @@ export default function ResultDisplay({
   const { t } = useLocale();
   const [showReasoning, setShowReasoning] = useState(false);
 
-  const renderedContent = useMemo(() => renderMarkdown(content), [content]);
-  const renderedReasoning = useMemo(() => renderMarkdown(reasoning), [reasoning]);
+  const renderedContent = useMemo(() => DOMPurify.sanitize(renderMarkdown(content)), [content]);
+  const renderedReasoning = useMemo(() => DOMPurify.sanitize(renderMarkdown(reasoning)), [reasoning]);
 
   if (!content && !reasoning) return null;
 
