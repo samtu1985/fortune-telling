@@ -22,7 +22,7 @@ export default function UserMenu() {
   const [credits, setCredits] = useState<{ singleRemaining: number; multiRemaining: number } | null>(null);
 
   useEffect(() => {
-    if (dropdownOpen && !credits) {
+    if (dropdownOpen) {
       fetch("/api/credits")
         .then((r) => r.json())
         .then((data) => {
