@@ -440,6 +440,8 @@ export async function POST(request: NextRequest) {
       db.update(users)
         .set({ singleUsed: sql`${users.singleUsed} + 1` })
         .where(eq(users.email, userEmail))
+        .execute()
+        .then(() => console.log("[credits] single credit consumed for:", userEmail))
         .catch((e) => console.error("[credits] consume failed:", e));
 
       controller.close();
