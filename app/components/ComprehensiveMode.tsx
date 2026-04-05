@@ -10,6 +10,7 @@ import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import SmokeParticles from "./SmokeParticles";
 import { useLocale } from "./LocaleProvider";
+import { useAudioQueue, type AudioSegment } from "@/app/hooks/useAudioQueue";
 
 type Profile = {
   id: string;
@@ -80,6 +81,8 @@ export default function ComprehensiveMode({
 
   const [discussionEnded, setDiscussionEnded] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [podcastMode, setPodcastMode] = useState(false);
+  const audioQueue = useAudioQueue();
   const [casePhase, setCasePhase] = useState<"idle" | "consent" | "processing" | "preview" | "done">("idle");
   const [caseSummary, setCaseSummary] = useState("");
 
@@ -90,6 +93,9 @@ export default function ComprehensiveMode({
   const roundCountRef = useRef(0);
   const reasoningDepthRef = useRef(reasoningDepth);
   reasoningDepthRef.current = reasoningDepth;
+  const podcastModeRef = useRef(false);
+  const fetchTTSRef = useRef<((master: MasterType, text: string) => Promise<void>) | null>(null);
+  const audioQueueRef = useRef<ReturnType<typeof useAudioQueue> | null>(null);
 
   const MAX_ROUNDS = 3;
 
@@ -214,6 +220,11 @@ export default function ComprehensiveMode({
           const newMsg: MasterMessage = { role: "assistant", content: cleanContent, master };
           msgs = [...msgs, newMsg];
           setMessages(msgs);
+
+          // Trigger TTS in background (don't block next master)
+          if (podcastModeRef.current && fetchTTSRef.current) {
+            fetchTTSRef.current(master, cleanContent);
+          }
 
           // Only stop the round on consensus if this is the last master
           // so every master gets a chance to speak each round
@@ -537,6 +548,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
   );
 
   const handleNewDiscussion = useCallback(() => {
+    audioQueueRef.current?.stop();
+    setPodcastMode(false);
     setPhase("input");
     setCharts({});
     setChartRequest(null);
@@ -555,6 +568,34 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
   }, [t]);
 
   const getMasterInfo = (id?: MasterType) => MASTERS.find((m) => m.id === id);
+
+  // Fetch TTS audio for a master's response
+  const fetchTTS = useCallback(
+    async (master: MasterType, text: string): Promise<void> => {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, masterKey: master, locale }),
+        });
+        if (!res.ok) {
+          console.warn("[tts] Failed for", master, res.status);
+          return;
+        }
+        const buffer = await res.arrayBuffer();
+        const blob = new Blob([buffer], { type: "audio/mpeg" });
+        const audioUrl = URL.createObjectURL(blob);
+        audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
+      } catch (e) {
+        console.warn("[tts] Error:", e);
+      }
+    },
+    [locale, audioQueue]
+  );
+  // Keep refs in sync so runRound can access latest values without stale closures
+  podcastModeRef.current = podcastMode;
+  fetchTTSRef.current = fetchTTS;
+  audioQueueRef.current = audioQueue;
 
   // PDF download
   const handleDownloadPdf = useCallback(async () => {
@@ -831,6 +872,24 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               onChange={(e) => setAiQuestion(e.target.value)}
               placeholder="例：事業方向、感情發展、近期運勢..."
             />
+            {/* Podcast mode toggle */}
+                <div className="flex items-center gap-3 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setPodcastMode(!podcastMode)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      podcastMode ? "bg-gold/40" : "bg-stone/20"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-cream transition-transform ${
+                      podcastMode ? "translate-x-5" : ""
+                    }`} />
+                  </button>
+                  <div>
+                    <span className="text-sm text-cream">{t("podcast.toggle")}</span>
+                    <p className="text-[10px] text-stone/50">{t("podcast.toggleHint")}</p>
+                  </div>
+                </div>
             <button
               onClick={handleStartDiscussion}
               disabled={!aiQuestion.trim() || !charts.bazi}
@@ -925,6 +984,23 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             </div>
           )}
         </div>
+
+          {/* Audio playback indicator */}
+          {audioQueue.isPlaying && audioQueue.currentMaster && (
+            <div className="flex justify-center mb-2">
+              <span className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                getMasterInfo(audioQueue.currentMaster)?.bgClass || ""
+              }`}>
+                <svg className="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                </svg>
+                <span className={getMasterInfo(audioQueue.currentMaster)?.color}>
+                  {getMasterInfo(audioQueue.currentMaster)?.label}
+                </span>
+                <span className="text-stone/50">{t("podcast.playing")}</span>
+              </span>
+            </div>
+          )}
 
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.map((msg, i) => {
@@ -1152,6 +1228,19 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   {t("comprehensive.downloadPdf")}
                 </>
               )}
+            </button>
+          )}
+
+          {/* Podcast download */}
+          {discussionEnded && !loading && !isAutoDiscussing && podcastMode && audioQueue.hasSegments && (
+            <button
+              onClick={audioQueue.downloadPodcast}
+              className="w-full mt-2 py-3 text-sm border border-violet-400/30 rounded-sm text-violet-400 hover:bg-violet-400/10 transition-all duration-500 font-serif tracking-widest flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              {t("podcast.download")}
             </button>
           )}
 
