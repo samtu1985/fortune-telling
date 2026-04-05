@@ -142,7 +142,7 @@ async function main() {
             birthPlace: p.birthPlace,
             calendarType: p.calendarType || "solar",
             isLeapMonth: p.isLeapMonth || false,
-            savedCharts: p.savedCharts ?? null,
+            savedCharts: p.savedCharts ? JSON.stringify(p.savedCharts) : null,
             createdAt: new Date(p.createdAt),
             updatedAt: new Date(p.updatedAt),
           })
