@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email)) {
     return Response.json(
       { error: "email_invalid", message: "Invalid email format" },
       { status: 400 }

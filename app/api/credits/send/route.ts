@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     multiCredits: number;
   };
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email)) {
     return Response.json({ error: "Invalid email" }, { status: 400 });
   }
 
