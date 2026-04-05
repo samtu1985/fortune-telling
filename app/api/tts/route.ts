@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   const config = await getTTSConfig();
-  console.log("[tts] Config loaded:", { hasKey: !!config?.apiKey, modelId: config?.modelId });
+  console.log("[tts] Config loaded:", { hasKey: !!config?.apiKey, modelId: config?.modelId, keyPrefix: config?.apiKey?.slice(0, 8) });
   if (!config || !config.apiKey) {
     return Response.json({ error: "TTS not configured" }, { status: 503 });
   }
@@ -78,7 +78,7 @@ async function synthesize(
       const errText = await response.text().catch(() => "Unknown error");
       console.error(`[tts] ElevenLabs error ${response.status}:`, errText);
       return Response.json(
-        { error: `TTS API error: ${response.status}` },
+        { error: `TTS API error: ${response.status}`, detail: errText },
         { status: response.status }
       );
     }
