@@ -84,7 +84,7 @@ export default function AdminPage() {
     google: {
       label: "Google (Gemini)",
       defaultUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      defaultModel: "gemini-2.5-flash",
+      defaultModel: "gemini-3-flash-preview",
     },
     custom: {
       label: t("admin.customProvider"),
@@ -740,6 +740,11 @@ export default function AdminPage() {
                                     {t("admin.depth")}:{config.reasoningDepth}
                                   </span>
                                 )}
+                                {config.provider === "google" && config.effort && (
+                                  <span className="ml-1.5 text-blue-400">
+                                    {t("admin.thinking")}:{config.effort}
+                                  </span>
+                                )}
                                 {config.hasKey && (
                                   <span className="ml-1.5 text-green-500">Key {config.apiKey}</span>
                                 )}
@@ -962,6 +967,32 @@ export default function AdminPage() {
                                   </button>
                                 ))}
                               </div>
+                            </div>
+                          )}
+
+                          {/* Google Gemini thinking depth */}
+                          {editForm.provider === "google" && (
+                            <div>
+                              <label className="block text-xs text-stone/70 mb-2">
+                                {t("admin.thinkingDepth")}
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {EFFORT_OPTIONS.map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setEditForm((f) => ({ ...f, effort: opt.value }))}
+                                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                                      editForm.effort === opt.value
+                                        ? "border-gold/50 text-gold bg-gold/10"
+                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                              <p className="text-[10px] text-stone/40 mt-2">{t("admin.comprehensiveNote")}</p>
                             </div>
                           )}
 

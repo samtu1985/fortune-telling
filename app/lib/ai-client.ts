@@ -37,11 +37,20 @@ export function buildRequest(config: MasterAIConfig, options: AIRequestOptions) 
 
   // BytePlus Seed models support thinking/reasoning
   if (config.provider === "byteplus") {
-    // Use admin-configured reasoning depth, fall back to user preference, then "high"
     const depth = config.reasoningDepth || reasoningDepth || "high";
     body.thinking = { type: depth === "off" ? "disabled" : "enabled" };
     if (depth !== "off") {
       body.reasoning_effort = depth;
+    }
+  }
+
+  // Google Gemini 3/2.5 models support thinking via reasoning_effort
+  // Maps to thinkingLevel (Gemini 3) or thinkingBudget (Gemini 2.5)
+  // via the OpenAI-compatible endpoint
+  if (config.provider === "google") {
+    const effort = config.effort || config.reasoningDepth || "high";
+    if (effort !== "off") {
+      body.reasoning_effort = effort;
     }
   }
 
