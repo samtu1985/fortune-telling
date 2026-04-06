@@ -1,4 +1,5 @@
 import { auth } from "@/app/lib/auth";
+import { ADMIN_EMAIL } from "@/app/lib/users";
 import { db } from "@/app/lib/db";
 import { users } from "@/app/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -26,13 +27,17 @@ export async function GET() {
   }
 
   const u = row[0];
+  const isAdmin = session.user.email === ADMIN_EMAIL;
+  const unlimited = isAdmin || u.isAmbassador;
+
   return Response.json({
     singleCredits: u.singleCredits,
     singleUsed: u.singleUsed,
-    singleRemaining: u.singleCredits - u.singleUsed,
+    singleRemaining: unlimited ? -1 : u.singleCredits - u.singleUsed,
     multiCredits: u.multiCredits,
     multiUsed: u.multiUsed,
-    multiRemaining: u.multiCredits - u.multiUsed,
+    multiRemaining: unlimited ? -1 : u.multiCredits - u.multiUsed,
     isAmbassador: u.isAmbassador,
+    unlimited,
   });
 }

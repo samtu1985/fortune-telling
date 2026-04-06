@@ -83,6 +83,7 @@ export default function ComprehensiveMode({
   const [discussionEnded, setDiscussionEnded] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [podcastMode, setPodcastMode] = useState(false);
+  const [ttsGeneratingCount, setTtsGeneratingCount] = useState(0);
   const audioQueue = useAudioQueue();
   const [casePhase, setCasePhase] = useState<"idle" | "consent" | "processing" | "preview" | "done">("idle");
   const [caseSummary, setCaseSummary] = useState("");
@@ -577,6 +578,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
   const fetchTTS = useCallback(
     async (master: MasterType, text: string): Promise<void> => {
       console.log("[tts] fetchTTS called for", master, "locale:", locale, "text:", text.slice(0, 50));
+      setTtsGeneratingCount((c) => c + 1);
       try {
         const res = await fetch("/api/tts", {
           method: "POST",
@@ -593,6 +595,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
       } catch (e) {
         console.warn("[tts] Error:", e);
+      } finally {
+        setTtsGeneratingCount((c) => Math.max(0, c - 1));
       }
     },
     [locale, audioQueue]
@@ -989,6 +993,22 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             </div>
           )}
         </div>
+
+          {/* TTS generating indicator */}
+          {podcastMode && ttsGeneratingCount > 0 && !audioQueue.isPlaying && (
+            <div className="flex justify-center mb-2">
+              <span className="text-xs px-3 py-1.5 rounded-full border border-gold/20 bg-gold/5 flex items-center gap-2 text-gold-dim">
+                <span className="flex gap-0.5">
+                  <span className="w-1 h-3 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1 h-4 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1 h-2 bg-gold/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span className="w-1 h-5 bg-gold/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
+                  <span className="w-1 h-3 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
+                </span>
+                {t("podcast.generating")}...
+              </span>
+            </div>
+          )}
 
           {/* Audio playback indicator */}
           {audioQueue.isPlaying && audioQueue.currentMaster && (

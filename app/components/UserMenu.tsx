@@ -19,7 +19,7 @@ export default function UserMenu() {
   const [trialOpen, setTrialOpen] = useState(false);
   const [isAmbassador, setIsAmbassador] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [credits, setCredits] = useState<{ singleRemaining: number; multiRemaining: number } | null>(null);
+  const [credits, setCredits] = useState<{ singleRemaining: number; multiRemaining: number; unlimited?: boolean } | null>(null);
 
   useEffect(() => {
     if (dropdownOpen) {
@@ -27,7 +27,7 @@ export default function UserMenu() {
         .then((r) => r.json())
         .then((data) => {
           if (data.singleRemaining !== undefined) {
-            setCredits({ singleRemaining: data.singleRemaining, multiRemaining: data.multiRemaining });
+            setCredits({ singleRemaining: data.singleRemaining, multiRemaining: data.multiRemaining, unlimited: data.unlimited });
           }
           if (data.isAmbassador) {
             setIsAmbassador(true);
@@ -150,16 +150,20 @@ export default function UserMenu() {
                 </a>
               </>
             )}
-            {credits && (credits.singleRemaining > 0 || credits.multiRemaining > 0 || credits.singleRemaining < 0 || credits.multiRemaining < 0) && (
+            {credits && (
               <>
                 <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
                 <div className="px-4 py-3 space-y-1">
                   <p className="text-[10px] text-stone/50 uppercase tracking-wider">{t("credits.title")}</p>
                   <p className="text-xs text-cream/70">
-                    {t("credits.singleRemaining").replace("{n}", String(Math.max(0, credits.singleRemaining)))}
+                    {credits.unlimited
+                      ? t("credits.singleRemaining").replace("{n}", "∞")
+                      : t("credits.singleRemaining").replace("{n}", String(Math.max(0, credits.singleRemaining)))}
                   </p>
                   <p className="text-xs text-cream/70">
-                    {t("credits.multiRemaining").replace("{n}", String(Math.max(0, credits.multiRemaining)))}
+                    {credits.unlimited
+                      ? t("credits.multiRemaining").replace("{n}", "∞")
+                      : t("credits.multiRemaining").replace("{n}", String(Math.max(0, credits.multiRemaining)))}
                   </p>
                 </div>
               </>

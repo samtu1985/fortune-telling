@@ -35,7 +35,7 @@ export default function LocaleSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 min-w-[140px] rounded border border-gold/20 bg-[var(--bg)] shadow-lg z-50">
+        <div className="absolute right-0 top-full mt-1 min-w-[140px] rounded border border-gold/20 shadow-lg z-[100]" style={{ background: "var(--parchment-light)" }}>
           {LOCALE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
