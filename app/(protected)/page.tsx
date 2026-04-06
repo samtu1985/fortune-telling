@@ -1332,10 +1332,10 @@ ${t("birth.topic")}：${aiQuestion}`;
               >
                 <div
                   className={`
-                    relative overflow-hidden rounded-sm border transition-all duration-500
+                    relative overflow-hidden glass-card-premium
                     ${isActive
-                      ? "border-gold/60 bg-gold/[0.06]"
-                      : "border-gold/25 hover:border-gold/40"
+                      ? "!border-gold/60 !bg-gold/[0.08] !shadow-[0_0_30px_var(--card-shadow)]"
+                      : ""
                     }
                   `}
                   style={{

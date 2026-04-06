@@ -85,6 +85,7 @@ const translations: Record<Locale, TranslationSet> = {
     "type.comprehensive": "三師論道",
     "type.comprehensive.subtitle": "Comprehensive Analysis",
     "type.comprehensive.desc": "八字、紫微、星座三位大師同場論道，從不同命理觀點交叉分析，激盪出更全面的洞察。",
+    "type.cta": "開始分析",
 
     // Main page
     "main.selectType": "選擇命理方式",
@@ -454,6 +455,7 @@ const translations: Record<Locale, TranslationSet> = {
     "type.comprehensive": "三师论道",
     "type.comprehensive.subtitle": "Comprehensive Analysis",
     "type.comprehensive.desc": "八字、紫微、星座三位大师同场论道，从不同命理观点交叉分析，激荡出更全面的洞察。",
+    "type.cta": "开始分析",
 
     "main.selectType": "选择命理方式",
     "main.backToSelect": "返回选择",
@@ -804,6 +806,7 @@ const translations: Record<Locale, TranslationSet> = {
     "type.comprehensive": "Three Masters",
     "type.comprehensive.subtitle": "Comprehensive Analysis",
     "type.comprehensive.desc": "Three divination masters discuss together — cross-analyzing from different perspectives to provide comprehensive insights.",
+    "type.cta": "Start Analysis",
 
     "main.selectType": "Select divination type",
     "main.backToSelect": "Back",
@@ -1154,6 +1157,7 @@ const translations: Record<Locale, TranslationSet> = {
     "type.comprehensive": "三師論道",
     "type.comprehensive.subtitle": "Comprehensive Analysis",
     "type.comprehensive.desc": "四柱推命、紫微斗数、西洋占星術の三人のマスターが議論し、異なる視点から総合的な洞察を導きます。",
+    "type.cta": "分析を開始",
 
     "main.selectType": "占い方式を選択",
     "main.backToSelect": "戻る",

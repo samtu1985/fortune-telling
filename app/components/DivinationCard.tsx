@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "./LocaleProvider";
+
 interface DivinationCardProps {
   title: string;
   subtitle: string;
@@ -19,6 +21,8 @@ export default function DivinationCard({
   onClick,
   delay,
 }: DivinationCardProps) {
+  const { t } = useLocale();
+
   return (
     <button
       onClick={onClick}
@@ -27,28 +31,11 @@ export default function DivinationCard({
     >
       <div
         className={`
-          relative overflow-hidden rounded-sm border transition-all duration-500 h-full
-          ${
-            active
-              ? "border-gold/60 bg-gold/[0.06]"
-              : "border-gold/10 hover:border-gold/30"
-          }
+          relative overflow-hidden h-full glass-card
+          ${active ? "!border-gold/60 !bg-gold/[0.08] !shadow-[0_0_30px_var(--card-shadow)]" : ""}
         `}
-        style={{
-          backgroundColor: active ? undefined : `rgba(var(--glass-rgb), 0.02)`,
-          boxShadow: active ? `0 0 30px var(--card-shadow)` : undefined,
-        }}
       >
-        {/* Top gold accent line */}
-        <div
-          className={`h-[2px] transition-all duration-500 ${
-            active
-              ? "bg-gradient-to-r from-transparent via-gold to-transparent"
-              : "bg-gradient-to-r from-transparent via-gold-dim/30 to-transparent"
-          }`}
-        />
-
-        <div className="p-6 sm:p-8">
+        <div className="p-6 sm:p-8 flex flex-col h-full">
           {/* Symbol */}
           <div
             className={`text-4xl sm:text-5xl mb-4 transition-all duration-500 ${
@@ -73,7 +60,14 @@ export default function DivinationCard({
           </p>
 
           {/* Description */}
-          <p className="text-sm text-mist/70 leading-relaxed">{description}</p>
+          <p className="text-sm text-mist/70 leading-relaxed flex-1">{description}</p>
+
+          {/* CTA */}
+          <p className={`mt-4 text-sm font-serif tracking-wide transition-colors duration-300 ${
+            active ? "text-gold" : "text-gold-dim/60 group-hover:text-gold"
+          }`}>
+            {t("type.cta")} →
+          </p>
         </div>
 
         {/* Active indicator seal */}
