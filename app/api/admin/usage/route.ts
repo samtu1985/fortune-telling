@@ -3,7 +3,7 @@ import { auth } from "@/app/lib/auth";
 import { ADMIN_EMAIL } from "@/app/lib/users";
 import { db } from "@/app/lib/db";
 import { apiUsage, users } from "@/app/lib/db/schema";
-import { gte, sql } from "drizzle-orm";
+import { gte, sql, and, eq } from "drizzle-orm";
 
 const RANGE_DAYS: Record<string, number> = {
   "1d": 1,
@@ -76,10 +76,27 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // TTS-specific stats (provider = 'elevenlabs')
+    const ttsRows = await db
+      .select({
+        calls: sql<number>`count(*)::int`,
+        characters: sql<number>`coalesce(sum(${apiUsage.inputTokens}), 0)::int`,
+        models: sql<string>`string_agg(distinct ${apiUsage.modelId}, ',')`,
+      })
+      .from(apiUsage)
+      .where(and(gte(apiUsage.createdAt, since), eq(apiUsage.provider, "elevenlabs")));
+
+    const tts = {
+      calls: ttsRows[0]?.calls || 0,
+      characters: ttsRows[0]?.characters || 0,
+      models: (ttsRows[0]?.models || "").split(",").filter(Boolean),
+    };
+
     return Response.json({
       range,
       summary: { totalCalls, totalInputTokens, totalOutputTokens },
       byUser,
+      tts,
     });
   } catch (e) {
     console.error("[admin/usage] Failed:", e);

@@ -132,6 +132,7 @@ export default function AdminPage() {
   const [usageData, setUsageData] = useState<{
     summary: { totalCalls: number; totalInputTokens: number; totalOutputTokens: number };
     byUser: { email: string; name: string | null; image: string | null; calls: number; inputTokens: number; outputTokens: number; models: Record<string, number> }[];
+    tts?: { calls: number; characters: number; models: string[] };
   } | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
 
@@ -1355,6 +1356,23 @@ export default function AdminPage() {
                     <p className="text-xs text-stone/60 mt-1">{t("admin.totalOutputTokens")}</p>
                   </div>
                 </div>
+
+                {/* TTS (ElevenLabs) stats */}
+                {usageData.tts && usageData.tts.calls > 0 && (
+                  <div className="mb-6 rounded-lg border border-violet-400/15 p-4" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                      <span className="text-sm font-serif text-violet-400">ElevenLabs TTS</span>
+                    </div>
+                    <div className="flex gap-6 text-xs text-stone/70">
+                      <span>Calls: <span className="text-cream font-medium">{usageData.tts.calls}</span></span>
+                      <span>Characters: <span className="text-cream font-medium">{formatTokens(usageData.tts.characters)}</span></span>
+                      <span>Models: <span className="text-cream">{usageData.tts.models.join(", ") || "-"}</span></span>
+                    </div>
+                  </div>
+                )}
 
                 {/* User detail table */}
                 {usageData.byUser.length === 0 ? (
