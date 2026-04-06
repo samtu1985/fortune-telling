@@ -20,13 +20,19 @@ export function useAudioQueue() {
   const unlockedRef = useRef(false);
 
   // Unlock audio playback on iOS Safari — must be called from a user gesture handler
+  // Uses a separate Audio instance so it doesn't interfere with the playback queue
   const unlockAudio = useCallback(() => {
     if (unlockedRef.current) return;
-    const silence = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwBHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAAQAAAGkAAAAIAAANIAAAAR//lwYJDP/U0l7GO0OGAABhQc/4nB5///5cGCQz/1NJexjtDhgAAYUHP+Jwef///+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQxAAAAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
-    silence.play().then(() => {
-      unlockedRef.current = true;
-      console.log("[audio] iOS audio unlocked");
-    }).catch(() => {});
+    try {
+      const silence = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwBHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAAQAAAGkAAAAIAAANIAAAAR//lwYJDP/U0l7GO0OGAABhQc/4nB5///5cGCQz/1NJexjtDhgAAYUHP+Jwef///+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQxAAAAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+      // No onended handler — this is just to unlock, not part of the queue
+      silence.play().then(() => {
+        unlockedRef.current = true;
+        console.log("[audio] iOS audio unlocked");
+      }).catch(() => {});
+    } catch {
+      // Ignore errors
+    }
   }, []);
 
   // Play next segment in queue
@@ -58,9 +64,15 @@ export function useAudioQueue() {
     };
 
     audio.play().catch((err) => {
-      console.warn("[audio] Play failed (mobile restriction?):", err);
-      // On mobile, auto-play might be blocked. Skip to next.
-      playNext();
+      console.warn("[audio] Play failed, will retry in 1s:", err);
+      // Retry after a short delay instead of skipping
+      setTimeout(() => {
+        audio.play().catch(() => {
+          console.warn("[audio] Retry also failed, skipping segment");
+          URL.revokeObjectURL(segment.audioUrl);
+          playNext();
+        });
+      }, 1000);
     });
   }, []);
 
