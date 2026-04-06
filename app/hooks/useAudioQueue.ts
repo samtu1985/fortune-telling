@@ -13,38 +13,12 @@ export interface AudioSegment {
 export function useAudioQueue() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMaster, setCurrentMaster] = useState<MasterType | null>(null);
+  const [waitingForTap, setWaitingForTap] = useState(false);
   const queueRef = useRef<AudioSegment[]>([]);
   const allSegmentsRef = useRef<AudioSegment[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playingRef = useRef(false);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  // Unlock audio on iOS Safari using AudioContext.resume()
-  // This is the most reliable method — once resumed in a user gesture,
-  // ALL audio on the page (including HTMLAudioElement) is permanently unlocked.
-  const unlockAudio = useCallback(() => {
-    // Method 1: AudioContext resume (unlocks all audio on the page)
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
-      }
-      if (audioCtxRef.current.state === "suspended") {
-        audioCtxRef.current.resume().then(() => {
-          console.log("[audio] AudioContext resumed — audio unlocked");
-        });
-      }
-    } catch { /* ignore */ }
-
-    // Method 2: Also play a silent Audio element as backup
-    try {
-      const a = new Audio();
-      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      a.volume = 0;
-      a.play().then(() => a.remove()).catch(() => {});
-    } catch { /* ignore */ }
-
-    console.log("[audio] unlockAudio called");
-  }, []);
+  const startedRef = useRef(false); // true after user taps to start
 
   // Play next segment in queue
   const playNext = useCallback(() => {
@@ -81,15 +55,27 @@ export function useAudioQueue() {
     });
   }, []);
 
+  // User taps to start playback — this is a direct user gesture, always works
+  const startPlayback = useCallback(() => {
+    startedRef.current = true;
+    setWaitingForTap(false);
+    playNext();
+  }, [playNext]);
+
   // Enqueue a new audio segment
   const enqueue = useCallback(
     (segment: AudioSegment) => {
       allSegmentsRef.current.push(segment);
       queueRef.current.push(segment);
 
-      // Start playing if not already
-      if (!playingRef.current) {
-        playNext();
+      if (startedRef.current) {
+        // User already tapped — auto-play subsequent segments
+        if (!playingRef.current) {
+          playNext();
+        }
+      } else {
+        // First segment arrived — wait for user tap
+        setWaitingForTap(true);
       }
     },
     [playNext]
@@ -119,6 +105,8 @@ export function useAudioQueue() {
     setIsPlaying(false);
     setCurrentMaster(null);
     playingRef.current = false;
+    startedRef.current = false;
+    setWaitingForTap(false);
   }, []);
 
   // Download all segments as M4A podcast
@@ -205,10 +193,11 @@ export function useAudioQueue() {
     enqueue,
     isPlaying,
     currentMaster,
+    waitingForTap,
+    startPlayback,
     pause,
     resume,
     stop,
-    unlockAudio,
     allSegments: allSegmentsRef.current,
     hasSegments: allSegmentsRef.current.length > 0,
     downloadPodcast,

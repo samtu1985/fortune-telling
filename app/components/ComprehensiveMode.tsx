@@ -324,20 +324,12 @@ export default function ComprehensiveMode({
   // Start the initial discussion round
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
-    // Unlock iOS audio on user gesture (must happen synchronously in tap handler)
-    // IMPORTANT: unlockAudio() must be the FIRST and ONLY thing called synchronously
-    if (podcastMode) {
-      audioQueue.unlockAudio();
-      // Wake Lock must be deferred — requesting it synchronously may consume
-      // the user gesture token that iOS Safari needs for audio unlock
-      setTimeout(() => {
-        if ("wakeLock" in navigator) {
-          navigator.wakeLock.request("screen").then((lock) => {
-            wakeLockRef.current = lock;
-            console.log("[wakeLock] Screen wake lock acquired");
-          }).catch((e) => console.warn("[wakeLock] Failed:", e));
-        }
-      }, 500);
+    // Request Wake Lock for podcast mode
+    if (podcastMode && "wakeLock" in navigator) {
+      navigator.wakeLock.request("screen").then((lock) => {
+        wakeLockRef.current = lock;
+        console.log("[wakeLock] Screen wake lock acquired");
+      }).catch((e) => console.warn("[wakeLock] Failed:", e));
     }
     setPhase("discussion");
     // Consume multi credit
@@ -1141,32 +1133,46 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       </div>
 
       {/* Floating TTS status bar — always visible at top */}
-      {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying) && (
+      {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying || audioQueue.waitingForTap) && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
-          <div className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5" style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.06)" }}>
-            {audioQueue.isPlaying && audioQueue.currentMaster ? (
-              <>
-                <svg className="w-3.5 h-3.5 animate-pulse text-gold" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                </svg>
-                <span className={`text-xs font-serif ${getMasterInfo(audioQueue.currentMaster)?.color}`}>
-                  {getMasterInfo(audioQueue.currentMaster)?.label}
-                </span>
-                <span className="text-[10px] text-stone/50">{t("podcast.playing")}</span>
-              </>
-            ) : (
-              <>
-                <span className="flex gap-0.5 items-end">
-                  <span className="w-0.5 h-2 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-0.5 h-3 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-0.5 h-1.5 bg-gold/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                  <span className="w-0.5 h-4 bg-gold/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
-                  <span className="w-0.5 h-2.5 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
-                </span>
-                <span className="text-xs text-gold-dim">{t("podcast.generating")}...</span>
-              </>
-            )}
-          </div>
+          {audioQueue.waitingForTap ? (
+            /* Ready to play — user needs to tap */
+            <button
+              onClick={audioQueue.startPlayback}
+              className="px-5 py-2.5 rounded-full border border-gold/40 shadow-lg flex items-center gap-2.5 active:scale-95 transition-transform"
+              style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.08)" }}
+            >
+              <svg className="w-4 h-4 text-gold" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span className="text-sm text-gold font-serif">{t("podcast.tapToPlay")}</span>
+            </button>
+          ) : (
+            <div className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5" style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.06)" }}>
+              {audioQueue.isPlaying && audioQueue.currentMaster ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-pulse text-gold" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                  </svg>
+                  <span className={`text-xs font-serif ${getMasterInfo(audioQueue.currentMaster)?.color}`}>
+                    {getMasterInfo(audioQueue.currentMaster)?.label}
+                  </span>
+                  <span className="text-[10px] text-stone/50">{t("podcast.playing")}</span>
+                </>
+              ) : (
+                <>
+                  <span className="flex gap-0.5 items-end">
+                    <span className="w-0.5 h-2 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-0.5 h-3 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-0.5 h-1.5 bg-gold/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="w-0.5 h-4 bg-gold/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
+                    <span className="w-0.5 h-2.5 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
+                  </span>
+                  <span className="text-xs text-gold-dim">{t("podcast.generating")}...</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
