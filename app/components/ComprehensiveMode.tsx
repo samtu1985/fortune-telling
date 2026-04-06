@@ -339,6 +339,7 @@ export default function ComprehensiveMode({
         }
       }, 500);
     }
+    setPhase("discussion");
     // Consume multi credit
     fetch("/api/credits/consume", {
       method: "POST",
