@@ -619,8 +619,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           return;
         }
         const buffer = await res.arrayBuffer();
-        const blob = new Blob([buffer], { type: "audio/mpeg" });
-        const audioUrl = URL.createObjectURL(blob);
+        // Use data URL instead of blob URL for iOS Safari compatibility
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const audioUrl = `data:audio/mpeg;base64,${btoa(binary)}`;
         audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
       } catch (e) {
         console.warn("[tts] Error:", e);
