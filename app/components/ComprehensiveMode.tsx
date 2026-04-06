@@ -120,7 +120,7 @@ export default function ComprehensiveMode({
     }
   }, [streamingContent, messages.length]);
 
-  // Release wake lock when discussion ends or all audio finishes
+  // Release wake lock when discussion ends AND audio finishes
   useEffect(() => {
     if (discussionEnded && !audioQueue.isPlaying && wakeLockRef.current) {
       wakeLockRef.current.release().then(() => {
@@ -129,6 +129,27 @@ export default function ComprehensiveMode({
       }).catch(() => {});
     }
   }, [discussionEnded, audioQueue.isPlaying]);
+
+  // Re-acquire wake lock when page becomes visible again
+  // (browsers auto-release wake lock on visibility change)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        podcastMode &&
+        phase === "discussion" &&
+        !discussionEnded &&
+        "wakeLock" in navigator
+      ) {
+        navigator.wakeLock.request("screen").then((lock) => {
+          wakeLockRef.current = lock;
+          console.log("[wakeLock] Re-acquired after visibility change");
+        }).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [podcastMode, phase, discussionEnded]);
 
   // Auto-collapse mobile controls when AI starts responding
   useEffect(() => {
