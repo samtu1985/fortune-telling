@@ -17,23 +17,28 @@ export function useAudioQueue() {
   const allSegmentsRef = useRef<AudioSegment[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playingRef = useRef(false);
-  const unlockedRef = useRef(false);
+  // Persistent Audio element — reuse the same element for iOS compatibility
+  // iOS Safari only allows playback on the Audio element that was
+  // first play()'d during a user gesture. By reusing the same element
+  // and changing its src, all subsequent plays are allowed.
+  const persistentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const getAudio = useCallback((): HTMLAudioElement => {
+    if (!persistentAudioRef.current) {
+      persistentAudioRef.current = new Audio();
+    }
+    return persistentAudioRef.current;
+  }, []);
 
   // Unlock audio playback on iOS Safari — must be called from a user gesture handler
-  // Uses a separate Audio instance so it doesn't interfere with the playback queue
   const unlockAudio = useCallback(() => {
-    if (unlockedRef.current) return;
-    try {
-      const silence = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwBHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAAQAAAGkAAAAIAAANIAAAAR//lwYJDP/U0l7GO0OGAABhQc/4nB5///5cGCQz/1NJexjtDhgAAYUHP+Jwef///+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQxAAAAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
-      // No onended handler — this is just to unlock, not part of the queue
-      silence.play().then(() => {
-        unlockedRef.current = true;
-        console.log("[audio] iOS audio unlocked");
-      }).catch(() => {});
-    } catch {
-      // Ignore errors
-    }
-  }, []);
+    const audio = getAudio();
+    // Play a tiny silent mp3 to unlock this Audio element
+    audio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwBHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAAQAAAGkAAAAIAAANIAAAAR//lwYJDP/U0l7GO0OGAABhQc/4nB5///5cGCQz/1NJexjtDhgAAYUHP+Jwef///+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQxAAAAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+    audio.play().then(() => {
+      console.log("[audio] iOS audio unlocked via persistent element");
+    }).catch(() => {});
+  }, [getAudio]);
 
   // Play next segment in queue
   const playNext = useCallback(() => {
@@ -49,7 +54,8 @@ export function useAudioQueue() {
     setIsPlaying(true);
     playingRef.current = true;
 
-    const audio = new Audio(segment.audioUrl);
+    // Reuse the persistent Audio element — just change src
+    const audio = getAudio();
     audioRef.current = audio;
 
     audio.onended = () => {
@@ -63,18 +69,13 @@ export function useAudioQueue() {
       playNext();
     };
 
+    audio.src = segment.audioUrl;
     audio.play().catch((err) => {
-      console.warn("[audio] Play failed, will retry in 1s:", err);
-      // Retry after a short delay instead of skipping
-      setTimeout(() => {
-        audio.play().catch(() => {
-          console.warn("[audio] Retry also failed, skipping segment");
-          URL.revokeObjectURL(segment.audioUrl);
-          playNext();
-        });
-      }, 1000);
+      console.warn("[audio] Play failed:", err);
+      URL.revokeObjectURL(segment.audioUrl);
+      playNext();
     });
-  }, []);
+  }, [getAudio]);
 
   // Enqueue a new audio segment
   const enqueue = useCallback(
@@ -107,7 +108,7 @@ export function useAudioQueue() {
   const stop = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current = null;
+      audioRef.current.src = "";
     }
     queueRef.current = [];
     allSegmentsRef.current = [];
