@@ -313,6 +313,8 @@ export default function ComprehensiveMode({
   // Start the initial discussion round
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
+    // Unlock iOS audio on user gesture (must happen synchronously in tap handler)
+    if (podcastMode) audioQueue.unlockAudio();
     setPhase("discussion");
     // Consume multi credit
     fetch("/api/credits/consume", {

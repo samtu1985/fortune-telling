@@ -17,6 +17,17 @@ export function useAudioQueue() {
   const allSegmentsRef = useRef<AudioSegment[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playingRef = useRef(false);
+  const unlockedRef = useRef(false);
+
+  // Unlock audio playback on iOS Safari — must be called from a user gesture handler
+  const unlockAudio = useCallback(() => {
+    if (unlockedRef.current) return;
+    const silence = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwBHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAAQAAAGkAAAAIAAANIAAAAR//lwYJDP/U0l7GO0OGAABhQc/4nB5///5cGCQz/1NJexjtDhgAAYUHP+Jwef///+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQxAAAAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+    silence.play().then(() => {
+      unlockedRef.current = true;
+      console.log("[audio] iOS audio unlocked");
+    }).catch(() => {});
+  }, []);
 
   // Play next segment in queue
   const playNext = useCallback(() => {
@@ -180,6 +191,7 @@ export function useAudioQueue() {
     pause,
     resume,
     stop,
+    unlockAudio,
     allSegments: allSegmentsRef.current,
     hasSegments: allSegmentsRef.current.length > 0,
     downloadPodcast,
