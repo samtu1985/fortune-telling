@@ -85,6 +85,7 @@ export default function ComprehensiveMode({
   const [podcastMode, setPodcastMode] = useState(false);
   const [ttsGeneratingCount, setTtsGeneratingCount] = useState(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const noSleepVideoRef = useRef<HTMLVideoElement | null>(null);
   const audioQueue = useAudioQueue();
   const [casePhase, setCasePhase] = useState<"idle" | "consent" | "processing" | "preview" | "done">("idle");
   const [caseSummary, setCaseSummary] = useState("");
@@ -120,36 +121,70 @@ export default function ComprehensiveMode({
     }
   }, [streamingContent, messages.length]);
 
-  // Release wake lock when discussion ends AND audio finishes
-  useEffect(() => {
-    if (discussionEnded && !audioQueue.isPlaying && wakeLockRef.current) {
-      wakeLockRef.current.release().then(() => {
-        console.log("[wakeLock] Released");
-        wakeLockRef.current = null;
+  // Keep screen awake during podcast — uses two methods:
+  // 1. Wake Lock API (modern browsers)
+  // 2. Hidden looping video fallback (older iOS / Android)
+  const keepScreenAwake = useCallback(() => {
+    // Method 1: Wake Lock API
+    if ("wakeLock" in navigator) {
+      navigator.wakeLock.request("screen").then((lock) => {
+        wakeLockRef.current = lock;
+        console.log("[wakeLock] Acquired");
       }).catch(() => {});
     }
-  }, [discussionEnded, audioQueue.isPlaying]);
+    // Method 2: Tiny looping video (prevents iOS from sleeping)
+    if (!noSleepVideoRef.current) {
+      const video = document.createElement("video");
+      video.setAttribute("playsinline", "");
+      video.setAttribute("muted", "");
+      video.setAttribute("loop", "");
+      video.style.cssText = "position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0.01;pointer-events:none;";
+      // Tiny black mp4 (< 1KB)
+      video.src = "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhmcmVlAAAAGm1kYXQAAABAAEQAFAAg//ENYAAABAAABQA=";
+      video.muted = true;
+      document.body.appendChild(video);
+      video.play().catch(() => {});
+      noSleepVideoRef.current = video;
+      console.log("[noSleep] Video started");
+    }
+  }, []);
 
-  // Re-acquire wake lock when page becomes visible again
-  // (browsers auto-release wake lock on visibility change)
+  const releaseScreenAwake = useCallback(() => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+      console.log("[wakeLock] Released");
+    }
+    if (noSleepVideoRef.current) {
+      noSleepVideoRef.current.pause();
+      noSleepVideoRef.current.remove();
+      noSleepVideoRef.current = null;
+      console.log("[noSleep] Video stopped");
+    }
+  }, []);
+
+  // Release when discussion ends AND audio finishes
+  useEffect(() => {
+    if (discussionEnded && !audioQueue.isPlaying) {
+      releaseScreenAwake();
+    }
+  }, [discussionEnded, audioQueue.isPlaying, releaseScreenAwake]);
+
+  // Re-acquire wake lock when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (
         document.visibilityState === "visible" &&
         podcastMode &&
         phase === "discussion" &&
-        !discussionEnded &&
-        "wakeLock" in navigator
+        !discussionEnded
       ) {
-        navigator.wakeLock.request("screen").then((lock) => {
-          wakeLockRef.current = lock;
-          console.log("[wakeLock] Re-acquired after visibility change");
-        }).catch(() => {});
+        keepScreenAwake();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [podcastMode, phase, discussionEnded]);
+  }, [podcastMode, phase, discussionEnded, keepScreenAwake]);
 
   // Auto-collapse mobile controls when AI starts responding
   useEffect(() => {
@@ -345,12 +380,9 @@ export default function ComprehensiveMode({
   // Start the initial discussion round
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
-    // Request Wake Lock for podcast mode
-    if (podcastMode && "wakeLock" in navigator) {
-      navigator.wakeLock.request("screen").then((lock) => {
-        wakeLockRef.current = lock;
-        console.log("[wakeLock] Screen wake lock acquired");
-      }).catch((e) => console.warn("[wakeLock] Failed:", e));
+    // Keep screen awake during podcast
+    if (podcastMode) {
+      keepScreenAwake();
     }
     setPhase("discussion");
     // Consume multi credit
@@ -593,10 +625,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
   const handleNewDiscussion = useCallback(() => {
     audioQueueRef.current?.stop();
-    if (wakeLockRef.current) {
-      wakeLockRef.current.release().catch(() => {});
-      wakeLockRef.current = null;
-    }
+    releaseScreenAwake();
     setPodcastMode(false);
     setPhase("input");
     setCharts({});
