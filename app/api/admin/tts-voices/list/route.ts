@@ -13,6 +13,7 @@ export async function GET() {
   }
 
   const config = await getTTSConfig();
+  console.log("[tts-voices] Config:", { hasKey: !!config?.apiKey, keyLength: config?.apiKey?.length });
   if (!config?.apiKey) {
     return Response.json({ error: "TTS API key not configured", voices: [] }, { status: 200 });
   }
@@ -23,6 +24,8 @@ export async function GET() {
     });
 
     if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.error("[tts-voices] ElevenLabs error:", res.status, errBody.slice(0, 200));
       return Response.json({ error: `ElevenLabs API error: ${res.status}`, voices: [] }, { status: 200 });
     }
 
