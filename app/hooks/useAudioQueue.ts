@@ -64,19 +64,19 @@ export function useAudioQueue() {
     audioRef.current = audio;
 
     audio.onended = () => {
-      if (segment.audioUrl.startsWith("blob:")) URL.revokeObjectURL(segment.audioUrl);
+      URL.revokeObjectURL(segment.audioUrl);
       playNext();
     };
 
     audio.onerror = () => {
       console.warn("[audio] Playback error, skipping segment");
-      if (segment.audioUrl.startsWith("blob:")) URL.revokeObjectURL(segment.audioUrl);
+      URL.revokeObjectURL(segment.audioUrl);
       playNext();
     };
 
     audio.play().catch((err) => {
       console.warn("[audio] Play failed:", err);
-      if (segment.audioUrl.startsWith("blob:")) URL.revokeObjectURL(segment.audioUrl);
+      URL.revokeObjectURL(segment.audioUrl);
       playNext();
     });
   }, []);
@@ -196,7 +196,7 @@ export function useAudioQueue() {
         audioRef.current.pause();
       }
       for (const segment of queueRef.current) {
-        if (segment.audioUrl.startsWith("blob:")) URL.revokeObjectURL(segment.audioUrl);
+        URL.revokeObjectURL(segment.audioUrl);
       }
     };
   }, []);

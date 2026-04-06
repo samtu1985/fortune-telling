@@ -325,19 +325,19 @@ export default function ComprehensiveMode({
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
     // Unlock iOS audio on user gesture (must happen synchronously in tap handler)
-    // IMPORTANT: unlockAudio() must be the FIRST thing called in this handler
+    // IMPORTANT: unlockAudio() must be the FIRST and ONLY thing called synchronously
     if (podcastMode) {
       audioQueue.unlockAudio();
-    }
-    setPhase("discussion");
-    // Request Wake Lock AFTER phase change (async, won't block audio unlock)
-    if (podcastMode && "wakeLock" in navigator) {
-      try {
-        navigator.wakeLock.request("screen").then((lock) => {
-          wakeLockRef.current = lock;
-          console.log("[wakeLock] Screen wake lock acquired");
-        }).catch((e) => console.warn("[wakeLock] Failed:", e));
-      } catch { /* ignore */ }
+      // Wake Lock must be deferred — requesting it synchronously may consume
+      // the user gesture token that iOS Safari needs for audio unlock
+      setTimeout(() => {
+        if ("wakeLock" in navigator) {
+          navigator.wakeLock.request("screen").then((lock) => {
+            wakeLockRef.current = lock;
+            console.log("[wakeLock] Screen wake lock acquired");
+          }).catch((e) => console.warn("[wakeLock] Failed:", e));
+        }
+      }, 500);
     }
     // Consume multi credit
     fetch("/api/credits/consume", {
@@ -619,13 +619,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           return;
         }
         const buffer = await res.arrayBuffer();
-        // Use data URL instead of blob URL for iOS Safari compatibility
-        const bytes = new Uint8Array(buffer);
-        let binary = "";
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const audioUrl = `data:audio/mpeg;base64,${btoa(binary)}`;
+        const blob = new Blob([buffer], { type: "audio/mpeg" });
+        const audioUrl = URL.createObjectURL(blob);
         audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
       } catch (e) {
         console.warn("[tts] Error:", e);
