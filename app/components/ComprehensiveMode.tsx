@@ -84,8 +84,7 @@ export default function ComprehensiveMode({
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [podcastMode, setPodcastMode] = useState(false);
   const [ttsGeneratingCount, setTtsGeneratingCount] = useState(0);
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  const noSleepVideoRef = useRef<HTMLVideoElement | null>(null);
+  const noSleepRef = useRef<{ enable: () => Promise<void>; disable: () => void } | null>(null);
   const audioQueue = useAudioQueue();
   const [casePhase, setCasePhase] = useState<"idle" | "consent" | "processing" | "preview" | "done">("idle");
   const [caseSummary, setCaseSummary] = useState("");
@@ -121,45 +120,25 @@ export default function ComprehensiveMode({
     }
   }, [streamingContent, messages.length]);
 
-  // Keep screen awake during podcast — uses two methods:
-  // 1. Wake Lock API (modern browsers)
-  // 2. Hidden looping video fallback (older iOS / Android)
-  const keepScreenAwake = useCallback(() => {
-    // Method 1: Wake Lock API
-    if ("wakeLock" in navigator) {
-      navigator.wakeLock.request("screen").then((lock) => {
-        wakeLockRef.current = lock;
-        console.log("[wakeLock] Acquired");
-      }).catch(() => {});
-    }
-    // Method 2: Tiny looping video (prevents iOS from sleeping)
-    if (!noSleepVideoRef.current) {
-      const video = document.createElement("video");
-      video.setAttribute("playsinline", "");
-      video.setAttribute("muted", "");
-      video.setAttribute("loop", "");
-      video.style.cssText = "position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0.01;pointer-events:none;";
-      // Tiny black mp4 (< 1KB)
-      video.src = "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhmcmVlAAAAGm1kYXQAAABAAEQAFAAg//ENYAAABAAABQA=";
-      video.muted = true;
-      document.body.appendChild(video);
-      video.play().catch(() => {});
-      noSleepVideoRef.current = video;
-      console.log("[noSleep] Video started");
+  // Keep screen awake using NoSleep.js (proven library for iOS/Android)
+  const keepScreenAwake = useCallback(async () => {
+    if (noSleepRef.current) return;
+    try {
+      const NoSleep = (await import("nosleep.js")).default;
+      const ns = new NoSleep();
+      await ns.enable();
+      noSleepRef.current = ns;
+      console.log("[noSleep] Enabled");
+    } catch (e) {
+      console.warn("[noSleep] Failed:", e);
     }
   }, []);
 
   const releaseScreenAwake = useCallback(() => {
-    if (wakeLockRef.current) {
-      wakeLockRef.current.release().catch(() => {});
-      wakeLockRef.current = null;
-      console.log("[wakeLock] Released");
-    }
-    if (noSleepVideoRef.current) {
-      noSleepVideoRef.current.pause();
-      noSleepVideoRef.current.remove();
-      noSleepVideoRef.current = null;
-      console.log("[noSleep] Video stopped");
+    if (noSleepRef.current) {
+      noSleepRef.current.disable();
+      noSleepRef.current = null;
+      console.log("[noSleep] Disabled");
     }
   }, []);
 
@@ -169,22 +148,6 @@ export default function ComprehensiveMode({
       releaseScreenAwake();
     }
   }, [discussionEnded, audioQueue.isPlaying, releaseScreenAwake]);
-
-  // Re-acquire wake lock when page becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (
-        document.visibilityState === "visible" &&
-        podcastMode &&
-        phase === "discussion" &&
-        !discussionEnded
-      ) {
-        keepScreenAwake();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [podcastMode, phase, discussionEnded, keepScreenAwake]);
 
   // Auto-collapse mobile controls when AI starts responding
   useEffect(() => {
@@ -380,10 +343,8 @@ export default function ComprehensiveMode({
   // Start the initial discussion round
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
-    // Keep screen awake during podcast
-    if (podcastMode) {
-      keepScreenAwake();
-    }
+    // Note: keepScreenAwake is called when user taps "start playback" button
+    // because NoSleep.js requires a direct user gesture
     setPhase("discussion");
     // Consume multi credit
     fetch("/api/credits/consume", {
@@ -1188,7 +1149,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           {audioQueue.waitingForTap ? (
             /* Ready to play — user needs to tap */
             <button
-              onClick={audioQueue.startPlayback}
+              onClick={() => { keepScreenAwake(); audioQueue.startPlayback(); }}
               className="px-5 py-2.5 rounded-full border border-gold/40 shadow-lg flex items-center gap-2.5 active:scale-95 transition-transform"
               style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.08)" }}
             >
