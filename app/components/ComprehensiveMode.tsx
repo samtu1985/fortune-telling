@@ -996,38 +996,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           )}
         </div>
 
-          {/* TTS generating indicator */}
-          {podcastMode && ttsGeneratingCount > 0 && !audioQueue.isPlaying && (
-            <div className="flex justify-center mb-2">
-              <span className="text-xs px-3 py-1.5 rounded-full border border-gold/20 bg-gold/5 flex items-center gap-2 text-gold-dim">
-                <span className="flex gap-0.5">
-                  <span className="w-1 h-3 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1 h-4 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1 h-2 bg-gold/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                  <span className="w-1 h-5 bg-gold/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
-                  <span className="w-1 h-3 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
-                </span>
-                {t("podcast.generating")}...
-              </span>
-            </div>
-          )}
-
-          {/* Audio playback indicator */}
-          {audioQueue.isPlaying && audioQueue.currentMaster && (
-            <div className="flex justify-center mb-2">
-              <span className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1.5 ${
-                getMasterInfo(audioQueue.currentMaster)?.bgClass || ""
-              }`}>
-                <svg className="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                </svg>
-                <span className={getMasterInfo(audioQueue.currentMaster)?.color}>
-                  {getMasterInfo(audioQueue.currentMaster)?.label}
-                </span>
-                <span className="text-stone/50">{t("podcast.playing")}</span>
-              </span>
-            </div>
-          )}
+          {/* TTS indicators moved to fixed floating bar — see below */}
 
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.map((msg, i) => {
@@ -1142,6 +1111,36 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           )}
         </div>
       </div>
+
+      {/* Floating TTS status bar — always visible at top */}
+      {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying) && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
+          <div className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5" style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.06)" }}>
+            {audioQueue.isPlaying && audioQueue.currentMaster ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-pulse text-gold" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                </svg>
+                <span className={`text-xs font-serif ${getMasterInfo(audioQueue.currentMaster)?.color}`}>
+                  {getMasterInfo(audioQueue.currentMaster)?.label}
+                </span>
+                <span className="text-[10px] text-stone/50">{t("podcast.playing")}</span>
+              </>
+            ) : (
+              <>
+                <span className="flex gap-0.5 items-end">
+                  <span className="w-0.5 h-2 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-0.5 h-3 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-0.5 h-1.5 bg-gold/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span className="w-0.5 h-4 bg-gold/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
+                  <span className="w-0.5 h-2.5 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
+                </span>
+                <span className="text-xs text-gold-dim">{t("podcast.generating")}...</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mobile FAB — collapsed state */}
       {!mobileControlsOpen && phase === "discussion" && (
