@@ -74,6 +74,9 @@ body {
   font-family: var(--font-serif);
   overflow-x: hidden;
 }
+[data-theme="light"] body {
+  background: linear-gradient(160deg, #f8f2e6 0%, #f0e6d4 30%, #efe3cf 60%, #f5efe4 100%);
+}
 
 /* Cosmic background */
 body::before {

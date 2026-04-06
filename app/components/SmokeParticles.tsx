@@ -93,21 +93,50 @@ export default function SmokeParticles() {
           />
         ))}
 
-      {/* Light mode: soft golden particles */}
+      {/* Light mode: warm golden atmosphere */}
       {!isDark && (
         <>
-          {[...Array(5)].map((_, i) => (
+          {/* Large ambient glow orbs */}
+          <div
+            className="absolute rounded-full animate-smoke"
+            style={{
+              width: "600px", height: "600px",
+              left: "-5%", top: "10%",
+              background: "radial-gradient(circle, rgba(212,173,74,0.08) 0%, transparent 60%)",
+              animationDuration: "20s",
+            }}
+          />
+          <div
+            className="absolute rounded-full animate-smoke"
+            style={{
+              width: "500px", height: "500px",
+              right: "-10%", top: "30%",
+              background: "radial-gradient(circle, rgba(180,140,60,0.06) 0%, transparent 60%)",
+              animationDelay: "4s", animationDuration: "18s",
+            }}
+          />
+          <div
+            className="absolute rounded-full animate-smoke"
+            style={{
+              width: "400px", height: "400px",
+              left: "30%", bottom: "0%",
+              background: "radial-gradient(circle, rgba(160,120,50,0.05) 0%, transparent 60%)",
+              animationDelay: "8s", animationDuration: "15s",
+            }}
+          />
+          {/* Subtle floating gold dots */}
+          {stars.slice(0, 30).map((star, i) => (
             <div
-              key={i}
-              className="absolute rounded-full animate-smoke"
+              key={`light-${i}`}
+              className="absolute rounded-full animate-twinkle"
               style={{
-                width: `${60 + i * 40}px`,
-                height: `${60 + i * 40}px`,
-                left: `${15 + i * 18}%`,
-                top: `${20 + (i % 3) * 25}%`,
-                background: `radial-gradient(circle, rgba(139,112,40,${0.04 - i * 0.005}) 0%, transparent 70%)`,
-                animationDelay: `${i * 1.6}s`,
-                animationDuration: `${8 + i * 2}s`,
+                width: `${star.size + 0.5}px`,
+                height: `${star.size + 0.5}px`,
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                backgroundColor: `rgba(180, 140, 50, ${star.opacity * 0.3})`,
+                animationDelay: `${star.delay}s`,
+                animationDuration: `${star.duration + 2}s`,
               }}
             />
           ))}
