@@ -325,17 +325,20 @@ export default function ComprehensiveMode({
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
     // Unlock iOS audio on user gesture (must happen synchronously in tap handler)
+    // IMPORTANT: unlockAudio() must be the FIRST thing called in this handler
     if (podcastMode) {
       audioQueue.unlockAudio();
-      // Request Wake Lock to prevent screen from turning off during podcast
-      if ("wakeLock" in navigator) {
+    }
+    setPhase("discussion");
+    // Request Wake Lock AFTER phase change (async, won't block audio unlock)
+    if (podcastMode && "wakeLock" in navigator) {
+      try {
         navigator.wakeLock.request("screen").then((lock) => {
           wakeLockRef.current = lock;
           console.log("[wakeLock] Screen wake lock acquired");
         }).catch((e) => console.warn("[wakeLock] Failed:", e));
-      }
+      } catch { /* ignore */ }
     }
-    setPhase("discussion");
     // Consume multi credit
     fetch("/api/credits/consume", {
       method: "POST",
@@ -1138,7 +1141,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
       {/* Floating TTS status bar — always visible at top */}
       {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying) && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
           <div className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5" style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.06)" }}>
             {audioQueue.isPlaying && audioQueue.currentMaster ? (
               <>
