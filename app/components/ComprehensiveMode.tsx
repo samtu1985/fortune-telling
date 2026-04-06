@@ -84,6 +84,7 @@ export default function ComprehensiveMode({
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [podcastMode, setPodcastMode] = useState(false);
   const [ttsGeneratingCount, setTtsGeneratingCount] = useState(0);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const audioQueue = useAudioQueue();
   const [casePhase, setCasePhase] = useState<"idle" | "consent" | "processing" | "preview" | "done">("idle");
   const [caseSummary, setCaseSummary] = useState("");
@@ -118,6 +119,16 @@ export default function ComprehensiveMode({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [streamingContent, messages.length]);
+
+  // Release wake lock when discussion ends or all audio finishes
+  useEffect(() => {
+    if (discussionEnded && !audioQueue.isPlaying && wakeLockRef.current) {
+      wakeLockRef.current.release().then(() => {
+        console.log("[wakeLock] Released");
+        wakeLockRef.current = null;
+      }).catch(() => {});
+    }
+  }, [discussionEnded, audioQueue.isPlaying]);
 
   // Auto-collapse mobile controls when AI starts responding
   useEffect(() => {
@@ -314,7 +325,16 @@ export default function ComprehensiveMode({
   const handleStartDiscussion = useCallback(async () => {
     if (!aiQuestion.trim()) return;
     // Unlock iOS audio on user gesture (must happen synchronously in tap handler)
-    if (podcastMode) audioQueue.unlockAudio();
+    if (podcastMode) {
+      audioQueue.unlockAudio();
+      // Request Wake Lock to prevent screen from turning off during podcast
+      if ("wakeLock" in navigator) {
+        navigator.wakeLock.request("screen").then((lock) => {
+          wakeLockRef.current = lock;
+          console.log("[wakeLock] Screen wake lock acquired");
+        }).catch((e) => console.warn("[wakeLock] Failed:", e));
+      }
+    }
     setPhase("discussion");
     // Consume multi credit
     fetch("/api/credits/consume", {
@@ -556,6 +576,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
   const handleNewDiscussion = useCallback(() => {
     audioQueueRef.current?.stop();
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
     setPodcastMode(false);
     setPhase("input");
     setCharts({});
