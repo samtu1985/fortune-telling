@@ -17,28 +17,34 @@ export function useAudioQueue() {
   const allSegmentsRef = useRef<AudioSegment[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playingRef = useRef(false);
-  // Persistent Audio element — reuse the same element for iOS compatibility
-  // iOS Safari only allows playback on the Audio element that was
-  // first play()'d during a user gesture. By reusing the same element
-  // and changing its src, all subsequent plays are allowed.
-  const persistentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
-  const getAudio = useCallback((): HTMLAudioElement => {
-    if (!persistentAudioRef.current) {
-      persistentAudioRef.current = new Audio();
-    }
-    return persistentAudioRef.current;
-  }, []);
-
-  // Unlock audio playback on iOS Safari — must be called from a user gesture handler
+  // Unlock audio on iOS Safari using AudioContext.resume()
+  // This is the most reliable method — once resumed in a user gesture,
+  // ALL audio on the page (including HTMLAudioElement) is permanently unlocked.
   const unlockAudio = useCallback(() => {
-    const audio = getAudio();
-    // Play a tiny silent mp3 to unlock this Audio element
-    audio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwBHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAAQAAAGkAAAAIAAANIAAAAR//lwYJDP/U0l7GO0OGAABhQc/4nB5///5cGCQz/1NJexjtDhgAAYUHP+Jwef///+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQxAAAAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
-    audio.play().then(() => {
-      console.log("[audio] iOS audio unlocked via persistent element");
-    }).catch(() => {});
-  }, [getAudio]);
+    // Method 1: AudioContext resume (unlocks all audio on the page)
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().then(() => {
+          console.log("[audio] AudioContext resumed — audio unlocked");
+        });
+      }
+    } catch { /* ignore */ }
+
+    // Method 2: Also play a silent Audio element as backup
+    try {
+      const a = new Audio();
+      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      a.volume = 0;
+      a.play().then(() => a.remove()).catch(() => {});
+    } catch { /* ignore */ }
+
+    console.log("[audio] unlockAudio called");
+  }, []);
 
   // Play next segment in queue
   const playNext = useCallback(() => {
@@ -54,8 +60,7 @@ export function useAudioQueue() {
     setIsPlaying(true);
     playingRef.current = true;
 
-    // Reuse the persistent Audio element — just change src
-    const audio = getAudio();
+    const audio = new Audio(segment.audioUrl);
     audioRef.current = audio;
 
     audio.onended = () => {
@@ -69,13 +74,12 @@ export function useAudioQueue() {
       playNext();
     };
 
-    audio.src = segment.audioUrl;
     audio.play().catch((err) => {
       console.warn("[audio] Play failed:", err);
       URL.revokeObjectURL(segment.audioUrl);
       playNext();
     });
-  }, [getAudio]);
+  }, []);
 
   // Enqueue a new audio segment
   const enqueue = useCallback(
@@ -108,7 +112,7 @@ export function useAudioQueue() {
   const stop = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.src = "";
+      audioRef.current = null;
     }
     queueRef.current = [];
     allSegmentsRef.current = [];
