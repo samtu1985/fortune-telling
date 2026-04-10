@@ -127,9 +127,9 @@ export async function getAIConfig(key: string): Promise<MasterAIConfig> {
   }
 
   return {
-    provider: "byteplus",
-    modelId: process.env.BYTEPLUS_MODEL_ID || "seed-2-0-pro-260328",
-    apiKey: process.env.BYTEPLUS_API_KEY || "",
-    apiUrl: "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
+    provider: "google",
+    modelId: process.env.GOOGLE_MODEL_ID || "gemini-2.5-flash",
+    apiKey: process.env.GOOGLE_API_KEY || "",
+    apiUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
   };
 }

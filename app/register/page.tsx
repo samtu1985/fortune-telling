@@ -49,7 +49,7 @@ export default function RegisterPage() {
     setError("");
 
     if (!USERNAME_REGEX.test(username)) {
-      setError(t("register.usernamePlaceholder"));
+      setError(t("register.usernameInvalid"));
       return;
     }
     if (password !== confirmPassword) {
