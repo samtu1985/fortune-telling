@@ -406,8 +406,6 @@ export default function AdminPage() {
       };
       setAiSettings((prev) => ({ ...prev, [key]: updated }));
       setEditingKey(null);
-      // Also re-fetch in background to sync
-      fetchAISettings();
     } finally {
       setAiSaving(null);
     }

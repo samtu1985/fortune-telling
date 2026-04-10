@@ -102,6 +102,9 @@ export async function PUT(request: NextRequest) {
     if (provider === "byteplus" && reasoningDepth) {
       entry.reasoningDepth = reasoningDepth as MasterAIConfig["reasoningDepth"];
     }
+    if (provider === "google" && effort) {
+      entry.effort = effort as MasterAIConfig["effort"];
+    }
     settings[key] = entry;
     console.log(`[ai-settings] Saving ${key}:`, { provider, modelId, hasKey: !!finalApiKey, thinkingMode, effort, reasoningDepth });
     await writeAISettings(settings);

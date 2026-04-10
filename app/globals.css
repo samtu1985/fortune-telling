@@ -228,6 +228,12 @@ body::before {
   animation: ink-reveal 1.2s ease-out forwards;
 }
 
+/* Mobile FAB attention ring */
+@keyframes fab-ring-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Tap-to-play attention pulse */
 @keyframes tap-to-play-pulse {
   0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--gold-rgb, 212 175 55), 0.4); }
