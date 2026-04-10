@@ -1151,7 +1151,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             <button
               onClick={() => { keepScreenAwake(); audioQueue.startPlayback(); }}
               className="px-5 py-2.5 rounded-full border border-gold/40 shadow-lg flex items-center gap-2.5 active:scale-95 transition-transform"
-              style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.08)" }}
+              style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.08)", animation: "tap-to-play-pulse 2s ease-in-out infinite" }}
             >
               <svg className="w-4 h-4 text-gold" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
