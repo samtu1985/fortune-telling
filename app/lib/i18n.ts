@@ -399,6 +399,46 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Footer
     "footer.terms": "使用條款",
+    "footer.feedback": "意見反應",
+
+    // Feedback modal
+    "feedback.title": "意見反應與聯繫管理員",
+    "feedback.description": "歡迎提供您的意見、問題或建議。我們會盡快透過電子郵件回覆您。",
+    "feedback.nameLabel": "姓名",
+    "feedback.emailLabel": "電子郵件",
+    "feedback.messageLabel": "訊息內容",
+    "feedback.messagePlaceholder": "請詳細描述您的意見、問題或建議...",
+    "feedback.submit": "送出",
+    "feedback.cancel": "取消",
+    "feedback.successTitle": "已送出",
+    "feedback.successBody": "感謝您的意見！我們會盡快回覆。",
+    "feedback.errorGeneric": "送出失敗，請稍後再試",
+
+    // Admin — user management enhancements
+    "admin.userSearchPlaceholder": "搜尋帳號、姓名或信箱...",
+    "admin.sortCreatedDesc": "最新註冊",
+    "admin.sortCreatedAsc": "最舊註冊",
+    "admin.sortNameAsc": "姓名 A→Z",
+    "admin.sortNameDesc": "姓名 Z→A",
+    "admin.sortEmailAsc": "信箱 A→Z",
+    "admin.sortEmailDesc": "信箱 Z→A",
+    "admin.priorityUsersLabel": "需要處理",
+    "admin.allUsersLabel": "其他使用者",
+    "admin.noSearchResults": "找不到符合的使用者",
+    "admin.prevPage": "上一頁",
+    "admin.nextPage": "下一頁",
+
+    // Admin — feedback tab
+    "admin.feedbackTab": "使用者意見",
+    "admin.feedbackBack": "返回意見列表",
+    "admin.feedbackEmpty": "目前沒有使用者意見",
+    "admin.feedbackNew": "新",
+    "admin.feedbackReplied": "已回覆",
+    "admin.feedbackLoggedAs": "登入身份",
+    "admin.feedbackReplyLabel": "回覆內容",
+    "admin.feedbackReplyPlaceholder": "輸入您要回覆給使用者的訊息...",
+    "admin.feedbackSendReply": "送出回覆",
+    "admin.feedbackRepliedAt": "回覆於",
 
     // Terms of Service page
     "terms.title": "使用條款與免責聲明",
@@ -804,6 +844,46 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Footer
     "footer.terms": "使用条款",
+    "footer.feedback": "意见反馈",
+
+    // Feedback modal
+    "feedback.title": "意见反馈与联系管理员",
+    "feedback.description": "欢迎提供您的意见、问题或建议。我们会尽快通过电子邮件回复您。",
+    "feedback.nameLabel": "姓名",
+    "feedback.emailLabel": "电子邮件",
+    "feedback.messageLabel": "讯息内容",
+    "feedback.messagePlaceholder": "请详细描述您的意见、问题或建议...",
+    "feedback.submit": "送出",
+    "feedback.cancel": "取消",
+    "feedback.successTitle": "已送出",
+    "feedback.successBody": "感谢您的意见！我们会尽快回复。",
+    "feedback.errorGeneric": "送出失败，请稍后再试",
+
+    // Admin — user management enhancements
+    "admin.userSearchPlaceholder": "搜寻帐号、姓名或信箱...",
+    "admin.sortCreatedDesc": "最新注册",
+    "admin.sortCreatedAsc": "最旧注册",
+    "admin.sortNameAsc": "姓名 A→Z",
+    "admin.sortNameDesc": "姓名 Z→A",
+    "admin.sortEmailAsc": "信箱 A→Z",
+    "admin.sortEmailDesc": "信箱 Z→A",
+    "admin.priorityUsersLabel": "需要处理",
+    "admin.allUsersLabel": "其他使用者",
+    "admin.noSearchResults": "找不到符合的使用者",
+    "admin.prevPage": "上一页",
+    "admin.nextPage": "下一页",
+
+    // Admin — feedback tab
+    "admin.feedbackTab": "使用者意见",
+    "admin.feedbackBack": "返回意见列表",
+    "admin.feedbackEmpty": "目前没有使用者意见",
+    "admin.feedbackNew": "新",
+    "admin.feedbackReplied": "已回复",
+    "admin.feedbackLoggedAs": "登入身份",
+    "admin.feedbackReplyLabel": "回复内容",
+    "admin.feedbackReplyPlaceholder": "输入您要回复给使用者的讯息...",
+    "admin.feedbackSendReply": "送出回复",
+    "admin.feedbackRepliedAt": "回复于",
 
     // Terms of Service page
     "terms.title": "使用条款与免责声明",
@@ -1209,6 +1289,46 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Footer
     "footer.terms": "Terms of Service",
+    "footer.feedback": "Feedback",
+
+    // Feedback modal
+    "feedback.title": "Feedback & Contact Admin",
+    "feedback.description": "We welcome your questions, suggestions and feedback. We will reply by email as soon as possible.",
+    "feedback.nameLabel": "Name",
+    "feedback.emailLabel": "Email",
+    "feedback.messageLabel": "Message",
+    "feedback.messagePlaceholder": "Please describe your feedback, question or suggestion in detail...",
+    "feedback.submit": "Send",
+    "feedback.cancel": "Cancel",
+    "feedback.successTitle": "Sent",
+    "feedback.successBody": "Thank you for your feedback! We will respond soon.",
+    "feedback.errorGeneric": "Failed to send. Please try again later.",
+
+    // Admin — user management enhancements
+    "admin.userSearchPlaceholder": "Search by username, name or email...",
+    "admin.sortCreatedDesc": "Newest",
+    "admin.sortCreatedAsc": "Oldest",
+    "admin.sortNameAsc": "Name A→Z",
+    "admin.sortNameDesc": "Name Z→A",
+    "admin.sortEmailAsc": "Email A→Z",
+    "admin.sortEmailDesc": "Email Z→A",
+    "admin.priorityUsersLabel": "Needs attention",
+    "admin.allUsersLabel": "Other users",
+    "admin.noSearchResults": "No matching users",
+    "admin.prevPage": "Prev",
+    "admin.nextPage": "Next",
+
+    // Admin — feedback tab
+    "admin.feedbackTab": "User Feedback",
+    "admin.feedbackBack": "Back to list",
+    "admin.feedbackEmpty": "No user feedback yet",
+    "admin.feedbackNew": "NEW",
+    "admin.feedbackReplied": "Replied",
+    "admin.feedbackLoggedAs": "Logged in as",
+    "admin.feedbackReplyLabel": "Reply",
+    "admin.feedbackReplyPlaceholder": "Type your reply to the user...",
+    "admin.feedbackSendReply": "Send reply",
+    "admin.feedbackRepliedAt": "Replied at",
 
     // Terms of Service page
     "terms.title": "Terms of Service & Disclaimers",
@@ -1614,6 +1734,46 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Footer
     "footer.terms": "利用規約",
+    "footer.feedback": "お問い合わせ",
+
+    // Feedback modal
+    "feedback.title": "お問い合わせ・ご意見",
+    "feedback.description": "ご質問、ご意見、ご提案をお待ちしております。できるだけ早くメールでご返信いたします。",
+    "feedback.nameLabel": "お名前",
+    "feedback.emailLabel": "メールアドレス",
+    "feedback.messageLabel": "メッセージ",
+    "feedback.messagePlaceholder": "ご意見、ご質問、ご提案を詳しくお聞かせください...",
+    "feedback.submit": "送信",
+    "feedback.cancel": "キャンセル",
+    "feedback.successTitle": "送信完了",
+    "feedback.successBody": "ありがとうございます！できるだけ早くご返信いたします。",
+    "feedback.errorGeneric": "送信に失敗しました。しばらくしてからお試しください。",
+
+    // Admin — user management enhancements
+    "admin.userSearchPlaceholder": "アカウント、名前、メールで検索...",
+    "admin.sortCreatedDesc": "登録日（新しい順）",
+    "admin.sortCreatedAsc": "登録日（古い順）",
+    "admin.sortNameAsc": "名前 A→Z",
+    "admin.sortNameDesc": "名前 Z→A",
+    "admin.sortEmailAsc": "メール A→Z",
+    "admin.sortEmailDesc": "メール Z→A",
+    "admin.priorityUsersLabel": "要対応",
+    "admin.allUsersLabel": "その他のユーザー",
+    "admin.noSearchResults": "該当するユーザーがありません",
+    "admin.prevPage": "前へ",
+    "admin.nextPage": "次へ",
+
+    // Admin — feedback tab
+    "admin.feedbackTab": "ユーザーの声",
+    "admin.feedbackBack": "一覧に戻る",
+    "admin.feedbackEmpty": "現在ユーザーからのご意見はありません",
+    "admin.feedbackNew": "新規",
+    "admin.feedbackReplied": "返信済み",
+    "admin.feedbackLoggedAs": "ログイン中",
+    "admin.feedbackReplyLabel": "返信内容",
+    "admin.feedbackReplyPlaceholder": "ユーザーへの返信メッセージを入力してください...",
+    "admin.feedbackSendReply": "返信を送信",
+    "admin.feedbackRepliedAt": "返信日時",
 
     // Terms of Service page
     "terms.title": "利用規約および免責事項",

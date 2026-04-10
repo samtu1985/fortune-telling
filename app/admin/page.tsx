@@ -4,14 +4,16 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { signOut } from "next-auth/react";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
 interface UserItem {
   email: string;
   name: string | null;
+  username?: string | null;
   image: string | null;
-  status: "pending" | "approved" | "disabled";
+  status: "pending" | "approved" | "disabled" | "unverified";
   createdAt: string;
   approvedAt: string | null;
   authProvider?: string;
@@ -54,7 +56,20 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai" | "tts" | "usage" | "cases";
+type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback";
+
+interface FeedbackItem {
+  id: number;
+  name: string;
+  email: string;
+  userEmail: string | null;
+  message: string;
+  reply: string | null;
+  repliedAt: string | null;
+  repliedBy: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function AdminPage() {
   const { t } = useLocale();
@@ -116,7 +131,10 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      return params.get("tab") === "ai" ? "ai" : "users";
+      const tab = params.get("tab");
+      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback") {
+        return tab;
+      }
     }
     return "users";
   });
@@ -159,6 +177,21 @@ export default function AdminPage() {
     thinkingBudget: 5000,
     reasoningDepth: "high",
   });
+
+  // --- Feedback state ---
+  const [feedbackList, setFeedbackList] = useState<FeedbackItem[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackUnread, setFeedbackUnread] = useState(0);
+  const [selectedFeedbackId, setSelectedFeedbackId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replySaving, setReplySaving] = useState(false);
+
+  // --- User management filter/sort/pagination state ---
+  const [userSearch, setUserSearch] = useState("");
+  const [userSortBy, setUserSortBy] = useState<"createdAt" | "name" | "email">("createdAt");
+  const [userSortDir, setUserSortDir] = useState<"asc" | "desc">("desc");
+  const [userPage, setUserPage] = useState(1);
+  const USERS_PER_PAGE = 10;
 
   // --- TTS Settings state ---
   const [ttsConfig, setTtsConfig] = useState<{
@@ -267,6 +300,81 @@ export default function AdminPage() {
       fetchCases();
     }
   }, [activeTab, fetchCases]);
+
+  const fetchFeedback = useCallback(async () => {
+    setFeedbackLoading(true);
+    try {
+      const res = await fetch("/api/admin/feedback");
+      if (res.ok) {
+        const data = await res.json();
+        setFeedbackList(data.feedback || []);
+        setFeedbackUnread(data.unreadCount || 0);
+      }
+    } catch (e) {
+      console.error("[admin] Failed to fetch feedback:", e);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }, []);
+
+  // Poll unread feedback count every 30s (background indicator)
+  useEffect(() => {
+    const loadCount = async () => {
+      try {
+        const res = await fetch("/api/admin/feedback", { method: "HEAD" });
+        if (res.ok) {
+          const count = parseInt(res.headers.get("x-unread-count") || "0", 10);
+          setFeedbackUnread(count);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadCount();
+    const timer = setInterval(loadCount, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "feedback") {
+      fetchFeedback();
+    }
+  }, [activeTab, fetchFeedback]);
+
+  const submitReply = async (id: number) => {
+    if (!replyText.trim()) return;
+    setReplySaving(true);
+    try {
+      const res = await fetch("/api/admin/feedback", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, reply: replyText.trim() }),
+      });
+      if (res.ok) {
+        setReplyText("");
+        await fetchFeedback();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || t("admin.saveFailed"));
+      }
+    } finally {
+      setReplySaving(false);
+    }
+  };
+
+  const markFeedbackRead = async (id: number) => {
+    try {
+      await fetch("/api/admin/feedback", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, markRead: true }),
+      });
+      setFeedbackList((prev) => prev.map((f) => (f.id === id ? { ...f, isRead: true } : f)));
+      setFeedbackUnread((prev) => Math.max(0, prev - 1));
+    } catch {
+      // ignore
+    }
+  };
 
   const fetchTTSSettings = useCallback(async () => {
     try {
@@ -453,6 +561,189 @@ export default function AdminPage() {
 
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
+  const renderUserCard = (user: UserItem) => {
+    const status = STATUS_LABELS[user.status];
+    const isLoading = actionLoading === user.email;
+    const isAdmin = user.email === "geektu@gmail.com";
+
+    return (
+      <div
+        key={user.email}
+        className={`rounded-lg border p-4 transition-colors ${
+          user.status === "pending"
+            ? "border-yellow-500/30 bg-yellow-500/[0.03]"
+            : user.status === "unverified"
+            ? "border-orange-400/30 bg-orange-400/[0.03]"
+            : "border-gold/10"
+        }`}
+        style={{
+          backgroundColor:
+            user.status !== "pending" && user.status !== "unverified"
+              ? "rgba(var(--glass-rgb), 0.02)"
+              : undefined,
+        }}
+      >
+        <div className="flex items-start gap-3 sm:items-center">
+          {user.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.image} alt="" className="w-10 h-10 rounded-full border border-gold/20 shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-sm text-gold shrink-0">
+              {user.name?.[0] || "?"}
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-cream font-medium truncate">
+                {user.name || t("admin.unnamed")}
+              </span>
+              <span className={`text-xs ${status.color}`}>{status.text}</span>
+              {user.authProvider === "credentials" && (
+                <span className="text-[10px] px-1.5 py-0.5 border border-stone/20 rounded text-stone/50">ID</span>
+              )}
+              {user.username && (
+                <span className="text-[10px] text-stone/50">@{user.username}</span>
+              )}
+            </div>
+            <p className="text-xs text-stone/60 truncate">{user.email}</p>
+            <p className="text-xs text-stone/40 mt-0.5">
+              {t("admin.registeredOn")} {new Date(user.createdAt).toLocaleDateString("zh-TW")}
+            </p>
+            {((user.singleCredits ?? 0) > 0 || (user.multiCredits ?? 0) > 0) && (
+              <p className="text-[10px] text-stone/40 mt-0.5">
+                {t("admin.userCredits")}: S {user.singleUsed ?? 0}/{user.singleCredits ?? 0} | M {user.multiUsed ?? 0}/{user.multiCredits ?? 0}
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+            {isAdmin ? (
+              <span className="text-xs text-stone/40">{t("admin.adminLabel")}</span>
+            ) : isLoading ? (
+              <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+            ) : (
+              <>
+                {user.status === "pending" && (
+                  <button
+                    onClick={() => updateStatus(user.email, "approved")}
+                    className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
+                  >
+                    {t("admin.approve")}
+                  </button>
+                )}
+                {user.status === "approved" && (
+                  <button
+                    onClick={() => updateStatus(user.email, "disabled")}
+                    className="px-3 py-1.5 min-h-[36px] text-xs text-yellow-500 border border-yellow-500/30 rounded hover:bg-yellow-500/10 transition-colors"
+                  >
+                    {t("admin.disable")}
+                  </button>
+                )}
+                {user.status === "disabled" && (
+                  <button
+                    onClick={() => updateStatus(user.email, "approved")}
+                    className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
+                  >
+                    {t("admin.enable")}
+                  </button>
+                )}
+                <button
+                  onClick={() => removeUser(user.email)}
+                  className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
+                >
+                  {t("admin.delete")}
+                </button>
+                <button
+                  onClick={async () => {
+                    setActionLoading(user.email);
+                    try {
+                      await fetch("/api/admin/users", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: user.email, isAmbassador: !user.isAmbassador }),
+                      });
+                      fetchUsers();
+                    } finally {
+                      setActionLoading(null);
+                    }
+                  }}
+                  className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
+                    user.isAmbassador
+                      ? "text-violet-400 border-violet-400/30 hover:bg-violet-400/10"
+                      : "text-stone/50 border-stone/20 hover:bg-stone/10"
+                  }`}
+                >
+                  {user.isAmbassador ? t("admin.removeAmbassador") : t("admin.setAmbassador")}
+                </button>
+                <button
+                  onClick={async () => {
+                    setActionLoading(user.email);
+                    try {
+                      await fetch("/api/admin/users", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: user.email, isFriend: !user.isFriend }),
+                      });
+                      fetchUsers();
+                    } finally {
+                      setActionLoading(null);
+                    }
+                  }}
+                  className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
+                    user.isFriend
+                      ? "text-pink-400 border-pink-400/30 hover:bg-pink-400/10"
+                      : "text-stone/50 border-stone/20 hover:bg-stone/10"
+                  }`}
+                >
+                  {user.isFriend ? t("admin.removeFriend") : t("admin.setFriend")}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Priority users (need attention) and the rest
+  const { priorityUsers, normalUsers } = useMemo(() => {
+    const search = userSearch.trim().toLowerCase();
+    const matches = (u: UserItem) => {
+      if (!search) return true;
+      return (
+        (u.name?.toLowerCase().includes(search) ?? false) ||
+        (u.username?.toLowerCase().includes(search) ?? false) ||
+        u.email.toLowerCase().includes(search)
+      );
+    };
+    const filtered = users.filter(matches);
+    const priority = filtered.filter((u) => u.status === "pending" || u.status === "unverified");
+    const rest = filtered.filter((u) => u.status !== "pending" && u.status !== "unverified");
+
+    const sorted = [...rest].sort((a, b) => {
+      let cmp = 0;
+      if (userSortBy === "name") {
+        cmp = (a.name || "").localeCompare(b.name || "");
+      } else if (userSortBy === "email") {
+        cmp = a.email.localeCompare(b.email);
+      } else {
+        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return userSortDir === "asc" ? cmp : -cmp;
+    });
+
+    return { priorityUsers: priority, normalUsers: sorted };
+  }, [users, userSearch, userSortBy, userSortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(normalUsers.length / USERS_PER_PAGE));
+  const paginatedUsers = normalUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE);
+
+  // Reset to page 1 when search/sort changes
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearch, userSortBy, userSortDir]);
+
   return (
     <main className="relative z-10 min-h-screen">
       <SmokeParticles />
@@ -570,6 +861,24 @@ export default function AdminPage() {
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("feedback")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "feedback"
+                ? "text-gold"
+                : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            {t("admin.feedbackTab")}
+            {feedbackUnread > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] bg-red-500/20 text-red-400 rounded-full animate-pulse">
+                {feedbackUnread}
+              </span>
+            )}
+            {activeTab === "feedback" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -602,169 +911,91 @@ export default function AdminPage() {
             ) : users.length === 0 ? (
               <p className="text-center text-stone/60 py-12">{t("admin.noUsers")}</p>
             ) : (
-              <div className="space-y-3">
-                {users.map((user) => {
-                  const status = STATUS_LABELS[user.status];
-                  const isLoading = actionLoading === user.email;
-                  const isAdmin = user.email === "geektu@gmail.com";
+              <>
+                {/* Search + Sort controls */}
+                <div className="mb-4 flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder={t("admin.userSearchPlaceholder")}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                      style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                    />
+                  </div>
+                  <select
+                    value={`${userSortBy}-${userSortDir}`}
+                    onChange={(e) => {
+                      const [by, dir] = e.target.value.split("-") as [typeof userSortBy, typeof userSortDir];
+                      setUserSortBy(by);
+                      setUserSortDir(dir);
+                    }}
+                    className="px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none sm:w-auto"
+                    style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                  >
+                    <option value="createdAt-desc">{t("admin.sortCreatedDesc")}</option>
+                    <option value="createdAt-asc">{t("admin.sortCreatedAsc")}</option>
+                    <option value="name-asc">{t("admin.sortNameAsc")}</option>
+                    <option value="name-desc">{t("admin.sortNameDesc")}</option>
+                    <option value="email-asc">{t("admin.sortEmailAsc")}</option>
+                    <option value="email-desc">{t("admin.sortEmailDesc")}</option>
+                  </select>
+                </div>
 
-                  return (
-                    <div
-                      key={user.email}
-                      className={`
-                        rounded-lg border p-4 transition-colors
-                        ${
-                          user.status === "pending"
-                            ? "border-yellow-500/30 bg-yellow-500/[0.03]"
-                            : "border-gold/10"
-                        }
-                      `}
-                      style={{
-                        backgroundColor:
-                          user.status !== "pending"
-                            ? "rgba(var(--glass-rgb), 0.02)"
-                            : undefined,
-                      }}
-                    >
-                      <div className="flex items-start gap-3 sm:items-center">
-                        {/* Avatar */}
-                        {user.image ? (
-                          <img
-                            src={user.image}
-                            alt=""
-                            className="w-10 h-10 rounded-full border border-gold/20 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-sm text-gold shrink-0">
-                            {user.name?.[0] || "?"}
-                          </div>
-                        )}
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-cream font-medium truncate">
-                              {user.name || t("admin.unnamed")}
-                            </span>
-                            <span className={`text-xs ${status.color}`}>
-                              {status.text}
-                            </span>
-                            {user.authProvider === "credentials" && (
-                              <span className="text-[10px] px-1.5 py-0.5 border border-stone/20 rounded text-stone/50">
-                                ID
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-stone/60 truncate">
-                            {user.email}
-                          </p>
-                          <p className="text-xs text-stone/40 mt-0.5">
-                            {t("admin.registeredOn")}{" "}
-                            {new Date(user.createdAt).toLocaleDateString("zh-TW")}
-                          </p>
-                          {((user.singleCredits ?? 0) > 0 || (user.multiCredits ?? 0) > 0) && (
-                            <p className="text-[10px] text-stone/40 mt-0.5">
-                              {t("admin.userCredits")}: S {user.singleUsed ?? 0}/{user.singleCredits ?? 0} | M {user.multiUsed ?? 0}/{user.multiCredits ?? 0}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2 shrink-0">
-                          {isAdmin ? (
-                            <span className="text-xs text-stone/40">{t("admin.adminLabel")}</span>
-                          ) : isLoading ? (
-                            <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              {user.status === "pending" && (
-                                <button
-                                  onClick={() =>
-                                    updateStatus(user.email, "approved")
-                                  }
-                                  className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
-                                >
-                                  {t("admin.approve")}
-                                </button>
-                              )}
-                              {user.status === "approved" && (
-                                <button
-                                  onClick={() =>
-                                    updateStatus(user.email, "disabled")
-                                  }
-                                  className="px-3 py-1.5 min-h-[36px] text-xs text-yellow-500 border border-yellow-500/30 rounded hover:bg-yellow-500/10 transition-colors"
-                                >
-                                  {t("admin.disable")}
-                                </button>
-                              )}
-                              {user.status === "disabled" && (
-                                <button
-                                  onClick={() =>
-                                    updateStatus(user.email, "approved")
-                                  }
-                                  className="px-3 py-1.5 min-h-[36px] text-xs text-green-500 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
-                                >
-                                  {t("admin.enable")}
-                                </button>
-                              )}
-                              <button
-                                onClick={() => removeUser(user.email)}
-                                className="px-3 py-1.5 min-h-[36px] text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
-                              >
-                                {t("admin.delete")}
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  setActionLoading(user.email);
-                                  try {
-                                    await fetch("/api/admin/users", {
-                                      method: "PATCH",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ email: user.email, isAmbassador: !user.isAmbassador }),
-                                    });
-                                    fetchUsers();
-                                  } finally {
-                                    setActionLoading(null);
-                                  }
-                                }}
-                                className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
-                                  user.isAmbassador
-                                    ? "text-violet-400 border-violet-400/30 hover:bg-violet-400/10"
-                                    : "text-stone/50 border-stone/20 hover:bg-stone/10"
-                                }`}
-                              >
-                                {user.isAmbassador ? t("admin.removeAmbassador") : t("admin.setAmbassador")}
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  setActionLoading(user.email);
-                                  try {
-                                    await fetch("/api/admin/users", {
-                                      method: "PATCH",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ email: user.email, isFriend: !user.isFriend }),
-                                    });
-                                    fetchUsers();
-                                  } finally {
-                                    setActionLoading(null);
-                                  }
-                                }}
-                                className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
-                                  user.isFriend
-                                    ? "text-pink-400 border-pink-400/30 hover:bg-pink-400/10"
-                                    : "text-stone/50 border-stone/20 hover:bg-stone/10"
-                                }`}
-                              >
-                                {user.isFriend ? t("admin.removeFriend") : t("admin.setFriend")}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                {/* Priority users (needs attention) */}
+                {priorityUsers.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-xs text-yellow-500/80 mb-2 flex items-center gap-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                      {t("admin.priorityUsersLabel")} ({priorityUsers.length})
+                    </p>
+                    <div className="space-y-3">
+                      {priorityUsers.map((user) => renderUserCard(user))}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                )}
+
+                {/* Regular users list (paginated) */}
+                {normalUsers.length === 0 && priorityUsers.length === 0 ? (
+                  <p className="text-center text-stone/60 py-8">{t("admin.noSearchResults")}</p>
+                ) : normalUsers.length > 0 && (
+                  <>
+                    {priorityUsers.length > 0 && (
+                      <p className="text-xs text-stone/50 mb-2 mt-4">
+                        {t("admin.allUsersLabel")} ({normalUsers.length})
+                      </p>
+                    )}
+                    <div className="space-y-3">
+                      {paginatedUsers.map((user) => renderUserCard(user))}
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="mt-5 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                          disabled={userPage === 1}
+                          className="px-3 py-1.5 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ← {t("admin.prevPage")}
+                        </button>
+                        <span className="text-xs text-stone/60">
+                          {userPage} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setUserPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={userPage === totalPages}
+                          className="px-3 py-1.5 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          {t("admin.nextPage")} →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </>
         )}
@@ -1495,7 +1726,129 @@ export default function AdminPage() {
             )}
           </>
         )}
+
+        {activeTab === "feedback" && (
+          <>
+            {feedbackLoading ? (
+              <div className="text-center py-12">
+                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              </div>
+            ) : selectedFeedbackId !== null ? (() => {
+              const fb = feedbackList.find((f) => f.id === selectedFeedbackId);
+              if (!fb) return null;
+              return (
+                <div>
+                  <button
+                    onClick={() => { setSelectedFeedbackId(null); setReplyText(""); }}
+                    className="text-sm text-stone hover:text-gold transition-colors mb-4 flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    {t("admin.feedbackBack")}
+                  </button>
+                  <div className="rounded-lg border border-gold/10 p-5" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <div className="mb-4">
+                      <p className="text-sm text-cream font-medium">{fb.name}</p>
+                      <p className="text-xs text-stone/60">{fb.email}{fb.userEmail && fb.userEmail !== fb.email && ` · ${t("admin.feedbackLoggedAs")}: ${fb.userEmail}`}</p>
+                      <p className="text-xs text-stone/40 mt-1">
+                        {new Date(fb.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="mb-4 p-3 rounded border border-gold/10 bg-gold/5">
+                      <p className="text-sm text-cream whitespace-pre-wrap leading-relaxed">{fb.message}</p>
+                    </div>
+
+                    {fb.reply ? (
+                      <div className="mt-5 pt-4 border-t border-gold/10">
+                        <p className="text-xs text-stone/50 mb-2">
+                          {t("admin.feedbackRepliedAt")} {fb.repliedAt ? new Date(fb.repliedAt).toLocaleString() : ""}
+                        </p>
+                        <div className="p-3 rounded border border-green-500/20 bg-green-500/5">
+                          <p className="text-sm text-cream/90 whitespace-pre-wrap leading-relaxed">{fb.reply}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-5 pt-4 border-t border-gold/10">
+                        <label className="block text-xs text-stone/70 mb-2">
+                          {t("admin.feedbackReplyLabel")}
+                        </label>
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          rows={5}
+                          placeholder={t("admin.feedbackReplyPlaceholder")}
+                          className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none resize-none"
+                          style={{ backgroundColor: "var(--parchment)" }}
+                        />
+                        <div className="flex justify-end mt-2">
+                          <button
+                            onClick={() => submitReply(fb.id)}
+                            disabled={replySaving || !replyText.trim()}
+                            className="px-4 py-2 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-40"
+                          >
+                            {replySaving ? (
+                              <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                            ) : (
+                              t("admin.feedbackSendReply")
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })() : feedbackList.length === 0 ? (
+              <p className="text-center text-stone/60 py-12">{t("admin.feedbackEmpty")}</p>
+            ) : (
+              <div className="space-y-3">
+                {feedbackList.map((fb) => (
+                  <button
+                    key={fb.id}
+                    onClick={() => {
+                      setSelectedFeedbackId(fb.id);
+                      setReplyText("");
+                      if (!fb.isRead) markFeedbackRead(fb.id);
+                    }}
+                    className={`w-full text-left rounded-lg border p-4 transition-colors ${
+                      !fb.isRead
+                        ? "border-red-400/30 bg-red-400/[0.03] hover:border-red-400/50"
+                        : "border-gold/10 hover:border-gold/25"
+                    }`}
+                    style={{ backgroundColor: fb.isRead ? "rgba(var(--glass-rgb), 0.02)" : undefined }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm text-cream font-medium truncate">{fb.name}</p>
+                          {!fb.isRead && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
+                              {t("admin.feedbackNew")}
+                            </span>
+                          )}
+                          {fb.reply && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-500">
+                              {t("admin.feedbackReplied")}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-stone/60 truncate">{fb.email}</p>
+                        <p className="text-sm text-cream/80 line-clamp-2 mt-2">{fb.message}</p>
+                      </div>
+                      <p className="text-[10px] text-stone/40 shrink-0">
+                        {new Date(fb.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </section>
+
+      <SiteFooter />
     </main>
   );
 }

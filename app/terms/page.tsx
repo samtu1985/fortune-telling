@@ -5,6 +5,7 @@ import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import SmokeParticles from "@/app/components/SmokeParticles";
+import SiteFooter from "@/app/components/SiteFooter";
 
 export default function TermsPage() {
   const { t } = useLocale();
@@ -69,12 +70,7 @@ export default function TermsPage() {
         ))}
       </article>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-gold/10 px-6 py-4 text-center text-xs text-stone/40">
-        <Link href="/" className="hover:text-gold transition-colors">
-          {t("terms.backHome")}
-        </Link>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

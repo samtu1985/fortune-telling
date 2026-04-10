@@ -13,6 +13,8 @@ import ZiweiChart from "@/app/components/ZiweiChart";
 import MentionDropdown from "@/app/components/MentionDropdown";
 import SavedCharts from "@/app/components/SavedCharts";
 import ComprehensiveMode from "@/app/components/ComprehensiveMode";
+import FeedbackModal from "@/app/components/FeedbackModal";
+import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
@@ -200,6 +202,7 @@ export default function Home() {
 
   const conversationStarted = conv.messages.length > 0 || conv.streaming;
   const [mobileControlsOpen, setMobileControlsOpen] = useState(true);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Track whether user is near the bottom of the scroll area
   const isNearBottomRef = useRef(true);
@@ -1137,6 +1140,14 @@ ${t("birth.topic")}：${aiQuestion}`;
               <a href="/terms" className="hover:text-gold transition-colors underline-offset-2 hover:underline">
                 {t("footer.terms")}
               </a>
+              {" · "}
+              <button
+                type="button"
+                onClick={() => setFeedbackOpen(true)}
+                className="hover:text-gold transition-colors underline-offset-2 hover:underline"
+              >
+                {t("footer.feedback")}
+              </button>
             </p>
             <button
               onClick={() => setNewDiscussionConfirm(true)}
@@ -1155,6 +1166,7 @@ ${t("birth.topic")}：${aiQuestion}`;
           onConfirm={handleNewDiscussion}
           onCancel={() => setNewDiscussionConfirm(false)}
         />
+        <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       </main>
     );
   }
@@ -1543,10 +1555,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="pb-8 text-center">
-        <div className="mx-auto w-16 gold-line mb-4" />
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

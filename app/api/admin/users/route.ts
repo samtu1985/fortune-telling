@@ -37,6 +37,7 @@ export async function GET() {
       .map((row) => ({
         email: row.email,
         name: row.name,
+        username: row.username,
         image: row.image,
         status: row.status as UserStatus,
         createdAt: row.createdAt.toISOString(),

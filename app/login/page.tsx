@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
@@ -170,12 +171,7 @@ function LoginContent() {
         )}
       </div>
 
-      <div className="absolute bottom-8 text-center">
-        <div className="mx-auto w-16 gold-line mb-4" />
-        <a href="/terms" className="text-xs text-stone/40 hover:text-gold transition-colors">
-          {t("footer.terms")}
-        </a>
-      </div>
+      <SiteFooter variant="absolute" />
     </main>
   );
 }

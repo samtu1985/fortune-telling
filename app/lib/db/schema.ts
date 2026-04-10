@@ -150,3 +150,18 @@ export const ttsVoices = pgTable("tts_voices", {
   locale: varchar("locale", { length: 10 }).notNull(),
   voiceId: varchar("voice_id", { length: 100 }).notNull(),
 });
+
+// ─── User Feedback ──────────────────────────────────────
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  // User email if logged in, null for anonymous
+  userEmail: varchar("user_email", { length: 255 }),
+  message: text("message").notNull(),
+  reply: text("reply"),
+  repliedAt: timestamp("replied_at", { withTimezone: true }),
+  repliedBy: varchar("replied_by", { length: 255 }),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

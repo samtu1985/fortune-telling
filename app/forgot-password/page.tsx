@@ -3,6 +3,7 @@
 import { useState } from "react";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
@@ -85,6 +86,8 @@ export default function ForgotPasswordPage() {
           </form>
         )}
       </div>
+
+      <SiteFooter variant="absolute" />
     </main>
   );
 }

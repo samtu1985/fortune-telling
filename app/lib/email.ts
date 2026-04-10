@@ -149,6 +149,89 @@ export async function sendTrialNotification(
   }
 }
 
+export async function sendFeedbackAdminNotification(
+  name: string,
+  email: string,
+  message: string,
+  feedbackId: number
+): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL || "geektu@gmail.com";
+  const subject = "Fortune-For.me — 新使用者意見 / New User Feedback";
+  const escapedMessage = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+  const html = `
+    <div style="font-family: serif; max-width: 560px; margin: 0 auto; padding: 32px; color: #1e1a14;">
+      <h2 style="color: #7a5c10; text-align: center;">天機 Fortune-For.me</h2>
+      <p>您收到一則新的使用者意見：</p>
+      <p>You received a new user feedback:</p>
+      <div style="border-left: 3px solid #7a5c10; padding: 12px 16px; margin: 20px 0; background: #faf7f1;">
+        <p style="margin: 0 0 6px 0;"><strong>From:</strong> ${name} &lt;${email}&gt;</p>
+        <p style="margin: 0 0 12px 0; color: #847b72; font-size: 12px;">Feedback #${feedbackId}</p>
+        <p style="margin: 0; white-space: pre-wrap;">${escapedMessage}</p>
+      </div>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${SITE_URL}/admin?tab=feedback" style="display: inline-block; padding: 12px 32px; background: #7a5c10; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px;">
+          前往後台查看 / View in Admin Panel
+        </a>
+      </p>
+    </div>
+  `;
+
+  if (!resend) {
+    console.log("[email] Resend not configured. Feedback notification for:", email);
+    return;
+  }
+
+  try {
+    await resend.emails.send({ from: FROM, to: adminEmail, subject, html });
+    console.log("[email] Feedback notification sent for:", email);
+  } catch (e) {
+    console.error("[email] Failed to send feedback notification:", e);
+  }
+}
+
+export async function sendFeedbackReply(
+  to: string,
+  name: string,
+  originalMessage: string,
+  replyMessage: string
+): Promise<void> {
+  const subject = "Fortune-For.me — 您的意見回覆 / Reply to Your Feedback";
+  const escapedOriginal = originalMessage.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+  const escapedReply = replyMessage.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+  const html = `
+    <div style="font-family: serif; max-width: 560px; margin: 0 auto; padding: 32px; color: #1e1a14;">
+      <h2 style="color: #7a5c10; text-align: center;">天機 Fortune-For.me</h2>
+      <p>親愛的 ${name}，</p>
+      <p>感謝您的意見回饋。我們已就您提出的問題做出回覆：</p>
+      <p>Dear ${name}, thank you for your feedback. Here is our reply:</p>
+      <div style="border-left: 3px solid #7a5c10; padding: 12px 16px; margin: 20px 0; background: #faf7f1;">
+        <p style="margin: 0; white-space: pre-wrap;">${escapedReply}</p>
+      </div>
+      <p style="color: #847b72; font-size: 13px; margin-top: 24px;">您原先提出的意見 / Your original message:</p>
+      <div style="border-left: 2px solid #c8bfa8; padding: 8px 14px; margin: 8px 0 24px 0; color: #847b72; font-size: 13px;">
+        <p style="margin: 0; white-space: pre-wrap;">${escapedOriginal}</p>
+      </div>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${SITE_URL}" style="display: inline-block; padding: 12px 32px; background: #7a5c10; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px;">
+          返回 Fortune-For.me
+        </a>
+      </p>
+    </div>
+  `;
+
+  if (!resend) {
+    console.log("[email] Resend not configured. Feedback reply for:", to);
+    return;
+  }
+
+  try {
+    await resend.emails.send({ from: FROM, to, subject, html });
+    console.log("[email] Feedback reply sent to:", to);
+  } catch (e) {
+    console.error("[email] Failed to send feedback reply:", e);
+  }
+}
+
 export async function sendTrialInvitation(
   to: string,
   singleCredits: number,

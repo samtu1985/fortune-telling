@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
@@ -69,6 +70,7 @@ function ResetPasswordContent() {
             {t("reset.backToLogin")}
           </a>
         </div>
+        <SiteFooter variant="absolute" />
       </main>
     );
   }
@@ -144,6 +146,8 @@ function ResetPasswordContent() {
           </form>
         )}
       </div>
+
+      <SiteFooter variant="absolute" />
     </main>
   );
 }

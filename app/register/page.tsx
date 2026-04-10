@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 
@@ -104,6 +105,8 @@ export default function RegisterPage() {
             {t("register.backToLogin")}
           </a>
         </div>
+
+        <SiteFooter variant="absolute" />
       </main>
     );
   }
@@ -213,12 +216,9 @@ export default function RegisterPage() {
             {t("register.backToLogin")}
           </a>
         </p>
-        <p className="text-center mt-3">
-          <a href="/terms" className="text-xs text-stone/40 hover:text-gold transition-colors">
-            {t("footer.terms")}
-          </a>
-        </p>
       </div>
+
+      <SiteFooter variant="absolute" />
     </main>
   );
 }

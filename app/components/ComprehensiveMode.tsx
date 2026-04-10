@@ -10,6 +10,7 @@ import MentionDropdown from "./MentionDropdown";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import SmokeParticles from "./SmokeParticles";
+import FeedbackModal from "./FeedbackModal";
 import { useLocale } from "./LocaleProvider";
 import { useAudioQueue, type AudioSegment } from "@/app/hooks/useAudioQueue";
 
@@ -79,6 +80,7 @@ export default function ComprehensiveMode({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mobileControlsOpen, setMobileControlsOpen] = useState(true);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const [discussionEnded, setDiscussionEnded] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
@@ -1296,6 +1298,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             <a href="/terms" className="hover:text-gold transition-colors underline-offset-2 hover:underline">
               {t("footer.terms")}
             </a>
+            {" · "}
+            <button
+              type="button"
+              onClick={() => setFeedbackOpen(true)}
+              className="hover:text-gold transition-colors underline-offset-2 hover:underline"
+            >
+              {t("footer.feedback")}
+            </button>
           </p>
 
           {/* PDF Download — shown after discussion ends */}
@@ -1416,6 +1426,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         onConfirm={handleNewDiscussion}
         onCancel={() => setNewDiscussionConfirm(false)}
       />
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </main>
   );
 }
