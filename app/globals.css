@@ -228,6 +228,16 @@ body::before {
   animation: ink-reveal 1.2s ease-out forwards;
 }
 
+/* Mobile controls collapse/expand transitions */
+@keyframes controls-slide-down {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(100%); }
+}
+@keyframes controls-slide-up {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Mobile FAB attention ring */
 @keyframes fab-ring-spin {
   0% { transform: rotate(0deg); }

@@ -47,6 +47,7 @@ export async function GET() {
         singleUsed: row.singleUsed,
         multiUsed: row.multiUsed,
         isAmbassador: row.isAmbassador,
+        isFriend: row.isFriend,
       }))
       .sort((a, b) => {
         const statusDiff = statusOrder[a.status] - statusOrder[b.status];
@@ -79,6 +80,7 @@ export async function PATCH(request: NextRequest) {
     email: string;
     status?: UserStatus;
     isAmbassador?: boolean;
+    isFriend?: boolean;
   };
 
   const { email } = body;
@@ -101,6 +103,24 @@ export async function PATCH(request: NextRequest) {
       return Response.json({ success: true });
     } catch (e) {
       console.error("[admin] Ambassador toggle failed:", e);
+      return Response.json({ error: "Update failed" }, { status: 500 });
+    }
+  }
+
+  // Handle friend toggle
+  if (body.isFriend !== undefined) {
+    try {
+      const { eq } = await import("drizzle-orm");
+      const result = await db
+        .update(usersTable)
+        .set({ isFriend: body.isFriend })
+        .where(eq(usersTable.email, email));
+      if ((result.rowCount ?? 0) === 0) {
+        return Response.json({ error: "User not found" }, { status: 404 });
+      }
+      return Response.json({ success: true });
+    } catch (e) {
+      console.error("[admin] Friend toggle failed:", e);
       return Response.json({ error: "Update failed" }, { status: 500 });
     }
   }

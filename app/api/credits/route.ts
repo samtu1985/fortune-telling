@@ -17,6 +17,7 @@ export async function GET() {
       singleUsed: users.singleUsed,
       multiUsed: users.multiUsed,
       isAmbassador: users.isAmbassador,
+      isFriend: users.isFriend,
     })
     .from(users)
     .where(eq(users.email, session.user.email))
@@ -28,7 +29,7 @@ export async function GET() {
 
   const u = row[0];
   const isAdmin = session.user.email === ADMIN_EMAIL;
-  const unlimited = isAdmin || u.isAmbassador;
+  const unlimited = isAdmin || u.isAmbassador || u.isFriend;
 
   return Response.json({
     singleCredits: u.singleCredits,
@@ -38,6 +39,7 @@ export async function GET() {
     multiUsed: u.multiUsed,
     multiRemaining: unlimited ? -1 : u.multiCredits - u.multiUsed,
     isAmbassador: u.isAmbassador,
+    isFriend: u.isFriend,
     unlimited,
   });
 }

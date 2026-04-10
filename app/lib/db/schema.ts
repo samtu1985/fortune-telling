@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   singleUsed: integer("single_used").notNull().default(0),
   multiUsed: integer("multi_used").notNull().default(0),
   isAmbassador: boolean("is_ambassador").notNull().default(false),
+  isFriend: boolean("is_friend").notNull().default(false),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

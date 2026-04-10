@@ -51,10 +51,16 @@ export async function readAISettings(): Promise<AISettingsStore> {
   const rows = await db.select().from(aiSettings);
   const store: AISettingsStore = {};
   for (const row of rows) {
+    let apiKey = "";
+    try {
+      apiKey = decrypt(row.apiKeyEncrypted);
+    } catch (e) {
+      console.error(`[ai-settings] Failed to decrypt key for ${row.masterKey}:`, e);
+    }
     store[row.masterKey] = {
       provider: row.provider,
       modelId: row.modelId,
-      apiKey: decrypt(row.apiKeyEncrypted),
+      apiKey,
       apiUrl: row.apiUrl,
       thinkingMode: row.thinkingMode as MasterAIConfig["thinkingMode"],
       effort: row.effort as MasterAIConfig["effort"],
@@ -68,10 +74,33 @@ export async function readAISettings(): Promise<AISettingsStore> {
 export async function writeAISettings(settings: AISettingsStore): Promise<void> {
   // Upsert each entry individually (atomic per key)
   for (const [key, config] of Object.entries(settings)) {
-    await db
-      .insert(aiSettings)
-      .values({
-        masterKey: key,
+    await upsertAISetting(key, config);
+  }
+}
+
+/**
+ * Upsert a single AI setting entry by master key.
+ * Prefer this over writeAISettings when updating a single entry
+ * to avoid re-encrypting (and potentially corrupting) other entries.
+ */
+export async function upsertAISetting(key: string, config: MasterAIConfig): Promise<void> {
+  await db
+    .insert(aiSettings)
+    .values({
+      masterKey: key,
+      provider: config.provider,
+      modelId: config.modelId,
+      apiKeyEncrypted: encrypt(config.apiKey),
+      apiUrl: config.apiUrl,
+      thinkingMode: config.thinkingMode ?? null,
+      effort: config.effort ?? null,
+      thinkingBudget: config.thinkingBudget ?? null,
+      reasoningDepth: config.reasoningDepth ?? null,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: aiSettings.masterKey,
+      set: {
         provider: config.provider,
         modelId: config.modelId,
         apiKeyEncrypted: encrypt(config.apiKey),
@@ -81,22 +110,8 @@ export async function writeAISettings(settings: AISettingsStore): Promise<void> 
         thinkingBudget: config.thinkingBudget ?? null,
         reasoningDepth: config.reasoningDepth ?? null,
         updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: aiSettings.masterKey,
-        set: {
-          provider: config.provider,
-          modelId: config.modelId,
-          apiKeyEncrypted: encrypt(config.apiKey),
-          apiUrl: config.apiUrl,
-          thinkingMode: config.thinkingMode ?? null,
-          effort: config.effort ?? null,
-          thinkingBudget: config.thinkingBudget ?? null,
-          reasoningDepth: config.reasoningDepth ?? null,
-          updatedAt: new Date(),
-        },
-      });
-  }
+      },
+    });
 }
 
 export async function deleteAISetting(key: string): Promise<void> {
@@ -122,7 +137,8 @@ export async function getAIConfig(key: string): Promise<MasterAIConfig> {
         reasoningDepth: row[0].reasoningDepth as MasterAIConfig["reasoningDepth"],
       };
     }
-  } catch {
+  } catch (e) {
+    console.error(`[ai-settings] Failed to load config for ${key}:`, e);
     // Fall through to default
   }
 

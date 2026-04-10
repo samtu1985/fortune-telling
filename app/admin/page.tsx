@@ -20,6 +20,7 @@ interface UserItem {
   singleUsed?: number;
   multiUsed?: number;
   isAmbassador?: boolean;
+  isFriend?: boolean;
 }
 
 // --- AI Settings types ---
@@ -733,6 +734,28 @@ export default function AdminPage() {
                                 }`}
                               >
                                 {user.isAmbassador ? t("admin.removeAmbassador") : t("admin.setAmbassador")}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setActionLoading(user.email);
+                                  try {
+                                    await fetch("/api/admin/users", {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ email: user.email, isFriend: !user.isFriend }),
+                                    });
+                                    fetchUsers();
+                                  } finally {
+                                    setActionLoading(null);
+                                  }
+                                }}
+                                className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
+                                  user.isFriend
+                                    ? "text-pink-400 border-pink-400/30 hover:bg-pink-400/10"
+                                    : "text-stone/50 border-stone/20 hover:bg-stone/10"
+                                }`}
+                              >
+                                {user.isFriend ? t("admin.removeFriend") : t("admin.setFriend")}
                               </button>
                             </>
                           )}

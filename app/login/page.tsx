@@ -172,6 +172,9 @@ function LoginContent() {
 
       <div className="absolute bottom-8 text-center">
         <div className="mx-auto w-16 gold-line mb-4" />
+        <a href="/terms" className="text-xs text-stone/40 hover:text-gold transition-colors">
+          {t("footer.terms")}
+        </a>
       </div>
     </main>
   );

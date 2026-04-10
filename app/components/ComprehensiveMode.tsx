@@ -1188,11 +1188,12 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       )}
 
       {/* Mobile FAB — collapsed state with spinning gradient ring */}
-      {!mobileControlsOpen && phase === "discussion" && (
+      {phase === "discussion" && (
         <button
           onClick={() => setMobileControlsOpen(true)}
-          className="sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-[var(--parchment)] shadow-lg flex items-center justify-center text-gold/70 active:scale-95 transition-transform animate-fade-in-up"
-          style={{ opacity: 0, animationDuration: "200ms", animationFillMode: "forwards" }}
+          className={`sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-[var(--parchment)] shadow-lg flex items-center justify-center text-gold/70 active:scale-95 transition-all duration-300 ease-in-out ${
+            mobileControlsOpen ? "opacity-0 scale-75 pointer-events-none" : "opacity-100 scale-100"
+          }`}
         >
           {/* Spinning gradient ring */}
           <span
@@ -1212,10 +1213,12 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </button>
       )}
 
-      {/* Bottom controls — hidden on mobile when collapsed */}
+      {/* Bottom controls — slides down on mobile when collapsed, always visible on desktop */}
       <div
-        className={`relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0 ${
-          !mobileControlsOpen && phase === "discussion" ? "hidden sm:block" : ""
+        className={`relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0 transition-all duration-300 ease-in-out sm:!translate-y-0 sm:!opacity-100 sm:!pointer-events-auto sm:!max-h-none ${
+          !mobileControlsOpen && phase === "discussion"
+            ? "max-sm:translate-y-full max-sm:opacity-0 max-sm:pointer-events-none max-sm:max-h-0 max-sm:py-0 max-sm:overflow-hidden"
+            : ""
         }`}
         style={{ background: "var(--parchment)" }}
       >
@@ -1289,6 +1292,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
           <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
             {t("main.aiDisclaimer")}
+            {" · "}
+            <a href="/terms" className="hover:text-gold transition-colors underline-offset-2 hover:underline">
+              {t("footer.terms")}
+            </a>
           </p>
 
           {/* PDF Download — shown after discussion ends */}

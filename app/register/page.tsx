@@ -213,6 +213,11 @@ export default function RegisterPage() {
             {t("register.backToLogin")}
           </a>
         </p>
+        <p className="text-center mt-3">
+          <a href="/terms" className="text-xs text-stone/40 hover:text-gold transition-colors">
+            {t("footer.terms")}
+          </a>
+        </p>
       </div>
     </main>
   );

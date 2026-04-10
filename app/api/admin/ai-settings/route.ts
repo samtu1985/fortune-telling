@@ -3,7 +3,8 @@ import { auth } from "@/app/lib/auth";
 import { ADMIN_EMAIL } from "@/app/lib/users";
 import {
   readAISettings,
-  writeAISettings,
+  getAIConfig,
+  upsertAISetting,
   deleteAISetting,
   type MasterAIConfig,
 } from "@/app/lib/ai-settings";
@@ -75,18 +76,11 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    // Read existing settings; if blob doesn't exist yet, start with empty
-    let settings: Record<string, { provider: string; modelId: string; apiKey: string; apiUrl: string }> = {};
-    try {
-      settings = await readAISettings();
-    } catch {
-      // First time — no existing settings file, start fresh
-    }
-
-    // If apiKey is not provided or is the masked placeholder, keep existing key
+    // If apiKey is not provided or is the masked placeholder, read only this entry's existing key
     let finalApiKey = apiKey || "";
     if (!apiKey || apiKey.startsWith("••••")) {
-      finalApiKey = settings[key]?.apiKey || "";
+      const existing = await getAIConfig(key);
+      finalApiKey = existing.apiKey || "";
     }
 
     const entry: MasterAIConfig = { provider, modelId, apiKey: finalApiKey, apiUrl };
@@ -105,10 +99,11 @@ export async function PUT(request: NextRequest) {
     if (provider === "google" && effort) {
       entry.effort = effort as MasterAIConfig["effort"];
     }
-    settings[key] = entry;
+
     console.log(`[ai-settings] Saving ${key}:`, { provider, modelId, hasKey: !!finalApiKey, thinkingMode, effort, reasoningDepth });
-    await writeAISettings(settings);
-    console.log(`[ai-settings] Saved successfully. Keys in store:`, Object.keys(settings));
+    // Upsert only this single entry — avoids re-encrypting (and potentially corrupting) other entries
+    await upsertAISetting(key, entry);
+    console.log(`[ai-settings] Saved ${key} successfully`);
 
     return Response.json({ success: true });
   } catch (e) {
