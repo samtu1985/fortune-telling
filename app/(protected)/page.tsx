@@ -1106,7 +1106,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                   }}
                   placeholder={t("main.followUpPlaceholder")}
                   disabled={conv.loading}
-                  rows={5}
+                  rows={2}
                   className="flex-1 w-full resize-none"
                 />
               </div>

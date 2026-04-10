@@ -1271,7 +1271,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                 }}
                 placeholder="追問三位老師... 輸入 @ 可引用已保存的命盤"
                 disabled={loading || isAutoDiscussing}
-                rows={3}
+                rows={2}
                 className="flex-1 w-full resize-none"
               />
             </div>
