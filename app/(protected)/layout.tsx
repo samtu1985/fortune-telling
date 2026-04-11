@@ -45,5 +45,16 @@ export default async function ProtectedLayout({
     return <PendingScreen type="disabled" />;
   }
 
+  // Age verification gate — blocks approved users who haven't verified yet
+  if (!userData.ageVerifiedAt) {
+    const AgeVerificationModal = (await import("@/app/components/AgeVerificationModal")).default;
+    return (
+      <>
+        {children}
+        <AgeVerificationModal />
+      </>
+    );
+  }
+
   return <>{children}</>;
 }

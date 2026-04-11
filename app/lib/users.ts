@@ -90,6 +90,7 @@ export interface UserData {
   savedConversations?: SavedConversation[];
   reasoningDepth?: ReasoningDepth;
   authProvider?: string;
+  ageVerifiedAt: Date | null;
 }
 
 export type UsersStore = Record<string, UserData>;
@@ -116,6 +117,7 @@ export async function readUsers(): Promise<UsersStore> {
       createdAt: row.createdAt.toISOString(),
       approvedAt: row.approvedAt?.toISOString() ?? null,
       authProvider: row.authProvider,
+      ageVerifiedAt: row.ageVerifiedAt ?? null,
     };
   }
   return store;
@@ -131,6 +133,7 @@ export async function getUser(email: string): Promise<UserData | null> {
     status: u.status as UserStatus,
     createdAt: u.createdAt.toISOString(),
     approvedAt: u.approvedAt?.toISOString() ?? null,
+    ageVerifiedAt: u.ageVerifiedAt ?? null,
   };
 }
 
