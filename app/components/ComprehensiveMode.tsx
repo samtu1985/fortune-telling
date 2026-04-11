@@ -969,11 +969,11 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
     <main className="relative z-10 flex flex-col h-dvh">
       <SmokeParticles />
 
-      {/* Top bar */}
-      <div className="relative z-20 flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
+      {/* Top bar — 3-column grid so the centered title never overlaps siblings */}
+      <div className="relative z-20 grid grid-cols-[auto_1fr_auto] items-center px-4 pt-4 pb-2 shrink-0 gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+          className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif justify-self-start"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
@@ -981,11 +981,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           返回選擇
         </button>
 
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+        <h1
+          className="text-xl font-bold tracking-[0.15em] text-gold justify-self-center text-center truncate"
+          style={{ fontFamily: "var(--font-calligraphy)" }}
+        >
           三師論道
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-self-end">
           <ThemeToggle />
           <UserMenu />
         </div>
