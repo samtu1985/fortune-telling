@@ -20,11 +20,16 @@ export interface UserForQuota {
   canPurchase: boolean;
 }
 
+// Kept in sync with app/lib/users.ts's ADMIN_EMAIL export. Inlined (not
+// imported) to avoid a circular import — users.ts type-imports from this
+// file. If process.env.ADMIN_EMAIL is unset on the deployment, the hardcoded
+// fallback applies so admin is never silently dropped from the exempt list.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "geektu@gmail.com";
+
 export function isExempt(
   user: Pick<UserForQuota, "email" | "isAmbassador" | "isFriend">
 ): boolean {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (adminEmail && user.email === adminEmail) return true;
+  if (user.email === ADMIN_EMAIL) return true;
   if (user.isAmbassador) return true;
   if (user.isFriend) return true;
   return false;
