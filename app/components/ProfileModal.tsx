@@ -181,7 +181,50 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
               </div>
               <div className="space-y-1.5">
                 <label>出生時間</label>
-                <input type="time" value={birthTime} onChange={(e) => setBirthTime(e.target.value)} />
+                <div className="flex items-center gap-2">
+                  <select
+                    aria-label="時"
+                    value={birthTime.split(":")[0] ?? ""}
+                    onChange={(e) => {
+                      const h = e.target.value;
+                      const m = birthTime.split(":")[1] ?? "00";
+                      setBirthTime(h ? `${h}:${m}` : "");
+                    }}
+                    className="flex-1"
+                  >
+                    <option value="">--</option>
+                    {Array.from({ length: 24 }, (_, i) => {
+                      const v = String(i).padStart(2, "0");
+                      return (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <span className="text-mist">:</span>
+                  <select
+                    aria-label="分"
+                    value={birthTime.split(":")[1] ?? ""}
+                    onChange={(e) => {
+                      const h = birthTime.split(":")[0] ?? "00";
+                      const m = e.target.value;
+                      setBirthTime(m ? `${h}:${m}` : "");
+                    }}
+                    className="flex-1"
+                  >
+                    <option value="">--</option>
+                    {Array.from({ length: 60 }, (_, i) => {
+                      const v = String(i).padStart(2, "0");
+                      return (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <span className="text-xs text-mist/70 whitespace-nowrap">24h</span>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label>性別</label>

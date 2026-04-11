@@ -507,7 +507,7 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Age verification modal
     "age.title": "請先完成年齡驗證",
-    "age.description": "依站點政策，開始使用前需要確認您的年齡。您的生日資訊會用於日後的命理分析。",
+    "age.description": "依站點政策，開始使用前需要確認您的年齡。",
     "age.paymentNotice": "由於本站包含可能需要付費的加值服務，為了保障您的權益，我們需要在您開始使用前完成年齡驗證。未滿 18 歲的使用者仍可體驗免費額度，但無法進行付費購買。",
     "age.birthdayLabel": "生日",
     "age.youAreN": "您現在 {n} 歲",
@@ -1021,7 +1021,7 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Age verification modal
     "age.title": "请先完成年龄验证",
-    "age.description": "依站点政策，开始使用前需要确认您的年龄。您的生日信息将用于日后的命理分析。",
+    "age.description": "依站点政策，开始使用前需要确认您的年龄。",
     "age.paymentNotice": "由于本站包含可能需要付费的增值服务，为了保障您的权益，我们需要在您开始使用前完成年龄验证。未满 18 岁的用户仍可体验免费额度，但无法进行付费购买。",
     "age.birthdayLabel": "生日",
     "age.youAreN": "您现在 {n} 岁",
@@ -1535,7 +1535,7 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Age verification modal
     "age.title": "Please verify your age",
-    "age.description": "Per site policy, we need to confirm your age before you start. Your birthday will also be used for future fortune readings.",
+    "age.description": "Per site policy, we need to confirm your age before you start.",
     "age.paymentNotice": "Because this site offers paid services, we ask you to verify your age before getting started — it's a safeguard to protect you. Users under 18 can still use the free trial, but cannot make purchases.",
     "age.birthdayLabel": "Birthday",
     "age.youAreN": "You are {n} years old",
@@ -2049,7 +2049,7 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Age verification modal
     "age.title": "年齢確認をお願いします",
-    "age.description": "サイトポリシーにより、ご利用前に年齢の確認が必要です。生年月日は今後の鑑定にも使用されます。",
+    "age.description": "サイトポリシーにより、ご利用前に年齢の確認が必要です。",
     "age.paymentNotice": "本サイトには有料サービスが含まれているため、お客様の権利を守るためにご利用前に年齢確認をお願いしております。18歳未満の方も無料体験枠はご利用いただけますが、購入はできません。",
     "age.birthdayLabel": "生年月日",
     "age.youAreN": "現在 {n} 歳です",
