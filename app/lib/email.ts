@@ -232,6 +232,20 @@ export async function sendFeedbackReply(
   }
 }
 
+// STUB — real implementation in Task 12
+export async function sendPurchaseAdminNotification(
+  _args: unknown
+): Promise<void> {
+  console.log("[email] (stub) sendPurchaseAdminNotification called");
+}
+
+// STUB — real implementation in Task 12
+export async function sendRefundAdminNotification(
+  _args: unknown
+): Promise<void> {
+  console.log("[email] (stub) sendRefundAdminNotification called");
+}
+
 export async function sendTrialInvitation(
   to: string,
   singleCredits: number,
