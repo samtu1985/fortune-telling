@@ -38,6 +38,10 @@ export async function GET() {
     purchases: rows,
     quota: {
       unlimited: isExempt(user),
+      singleCredits: user.singleCredits,
+      multiCredits: user.multiCredits,
+      singleUsed: user.singleUsed,
+      multiUsed: user.multiUsed,
       singleRemaining: user.singleCredits - user.singleUsed,
       multiRemaining: user.multiCredits - user.multiUsed,
     },

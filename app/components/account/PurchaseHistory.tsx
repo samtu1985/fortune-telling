@@ -13,7 +13,15 @@ type PurchaseRow = {
 };
 type Data = {
   purchases: PurchaseRow[];
-  quota: { unlimited: boolean; singleRemaining: number; multiRemaining: number };
+  quota: {
+    unlimited: boolean;
+    singleCredits: number;
+    multiCredits: number;
+    singleUsed: number;
+    multiUsed: number;
+    singleRemaining: number;
+    multiRemaining: number;
+  };
 };
 
 export default function PurchaseHistory() {
@@ -33,23 +41,60 @@ export default function PurchaseHistory() {
   if (error) return <div className="text-red-400 text-sm">載入失敗：{error}</div>;
   if (!data) return <div className="text-mist text-sm">載入中...</div>;
 
+  // Sum credits granted from paid purchases (refunded purchases are already
+  // reflected in the users.*Credits columns via webhook deduction, so we use
+  // paid-only totals here to show "this much came from purchases").
+  const purchasedSingle = data.purchases
+    .filter((p) => p.status === "paid")
+    .reduce((sum, p) => sum + p.singleGranted, 0);
+  const purchasedMulti = data.purchases
+    .filter((p) => p.status === "paid")
+    .reduce((sum, p) => sum + p.multiGranted, 0);
+
   return (
     <section className="mt-8 glass-card-premium p-6 rounded-2xl">
       <h3 className="font-serif text-xl text-gold mb-6">購買紀錄</h3>
 
-      <div className="mb-6 rounded-xl border border-gold/20 bg-gold/5 p-4">
-        <div className="text-xs uppercase tracking-wider text-mist mb-2">目前剩餘額度</div>
+      <div className="mb-6 rounded-xl border border-gold/20 bg-gold/5 p-5">
         {data.quota.unlimited ? (
-          <div className="text-lg font-serif text-gold">無限次（尊榮身份）</div>
+          <>
+            <div className="text-xs uppercase tracking-wider text-mist mb-2">目前額度</div>
+            <div className="text-lg font-serif text-gold">無限次（尊榮身份）</div>
+          </>
         ) : (
-          <div className="text-cream">
-            <span className="font-serif text-lg">個別問答</span>{" "}
-            <span className="font-serif text-xl text-gold">{data.quota.singleRemaining}</span>{" "}
-            <span className="text-mist">次</span>
-            <span className="mx-3 text-mist">·</span>
-            <span className="font-serif text-lg">三師論道</span>{" "}
-            <span className="font-serif text-xl text-gold">{data.quota.multiRemaining}</span>{" "}
-            <span className="text-mist">次</span>
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs uppercase tracking-wider text-mist mb-2">目前剩餘</div>
+              <div className="text-cream">
+                <span className="font-serif">個別問答</span>{" "}
+                <span className="font-serif text-2xl text-gold">{data.quota.singleRemaining}</span>{" "}
+                <span className="text-mist text-sm">次</span>
+                <span className="mx-3 text-mist">·</span>
+                <span className="font-serif">三師論道</span>{" "}
+                <span className="font-serif text-2xl text-gold">{data.quota.multiRemaining}</span>{" "}
+                <span className="text-mist text-sm">次</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gold/10 text-xs">
+              <div>
+                <div className="text-mist mb-1">累計獲得</div>
+                <div className="text-cream">
+                  個別 {data.quota.singleCredits} / 三師 {data.quota.multiCredits}
+                </div>
+                {(purchasedSingle > 0 || purchasedMulti > 0) && (
+                  <div className="text-mist/70 mt-0.5">
+                    其中 {purchasedSingle}/{purchasedMulti} 來自購買
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-mist mb-1">累計使用</div>
+                <div className="text-cream">
+                  個別 {data.quota.singleUsed} / 三師 {data.quota.multiUsed}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
