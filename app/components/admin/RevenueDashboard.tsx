@@ -148,59 +148,52 @@ export default function RevenueDashboard() {
     };
   }, []);
 
-  // Reconcile on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setReconcileLoading(true);
-      try {
-        const res = await fetch("/api/admin/payments/stripe-reconcile?days=7", {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        if (!cancelled && res.ok) setReconcile(data);
-      } catch {
-        // ignored
-      } finally {
-        if (!cancelled) setReconcileLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  // Reconcile — extracted so mutations can re-run it
+  const fetchReconcile = useCallback(async () => {
+    setReconcileLoading(true);
+    try {
+      const res = await fetch("/api/admin/payments/stripe-reconcile?days=7", {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (res.ok) setReconcile(data);
+    } catch {
+      // ignored
+    } finally {
+      setReconcileLoading(false);
+    }
   }, []);
 
-  // Stats on range change
-  const canQuery = Boolean(connection?.secretKey);
   useEffect(() => {
+    fetchReconcile();
+  }, [fetchReconcile]);
+
+  // Stats — extracted so mutations can re-run it
+  const canQuery = Boolean(connection?.secretKey);
+  const fetchStats = useCallback(async () => {
     if (!canQuery) return;
-    let cancelled = false;
-    (async () => {
-      setStatsLoading(true);
-      setStatsError(null);
-      try {
-        const res = await fetch(
-          `/api/admin/payments/stats?range=${range}`,
-          { cache: "no-store" },
-        );
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setStatsError(data.error ?? "載入失敗");
-          return;
-        }
-        setStats(data);
-      } catch (e) {
-        if (!cancelled)
-          setStatsError(e instanceof Error ? e.message : "載入失敗");
-      } finally {
-        if (!cancelled) setStatsLoading(false);
+    setStatsLoading(true);
+    setStatsError(null);
+    try {
+      const res = await fetch(`/api/admin/payments/stats?range=${range}`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatsError(data.error ?? "載入失敗");
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [range, canQuery]);
+      setStats(data);
+    } catch (e) {
+      setStatsError(e instanceof Error ? e.message : "載入失敗");
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [canQuery, range]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Debounce search input
   useEffect(() => {
@@ -243,6 +236,91 @@ export default function RevenueDashboard() {
     if (!canQuery) return;
     fetchTransactions();
   }, [fetchTransactions, canQuery]);
+
+  // Re-run all three queries after a mutation (delete/edit)
+  const refetchAll = useCallback(() => {
+    fetchTransactions();
+    fetchStats();
+    fetchReconcile();
+  }, [fetchTransactions, fetchStats, fetchReconcile]);
+
+  // Edit modal state
+  const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
+  const [editStatus, setEditStatus] = useState<"paid" | "refunded" | "failed">(
+    "paid",
+  );
+  const [mutating, setMutating] = useState(false);
+
+  async function handleDelete(row: TransactionRow) {
+    const warning =
+      row.status === "paid"
+        ? `確定要刪除這筆交易嗎？系統會同時從使用者帳戶扣回 ${row.amount ? formatHkd(row.amount) : "此"} 對應的額度。此動作無法復原。`
+        : "確定要刪除這筆交易嗎？此動作無法復原。";
+    if (!confirm(warning)) return;
+    setMutating(true);
+    try {
+      const res = await fetch(
+        `/api/admin/payments/transactions/${row.id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? "刪除失敗");
+        return;
+      }
+      refetchAll();
+    } finally {
+      setMutating(false);
+    }
+  }
+
+  function openEdit(row: TransactionRow) {
+    setEditingRow(row);
+    setEditStatus(
+      row.status === "paid" || row.status === "refunded" || row.status === "failed"
+        ? row.status
+        : "paid",
+    );
+  }
+
+  async function submitEdit() {
+    if (!editingRow) return;
+    const wasPaid = editingRow.status === "paid";
+    const willBePaid = editStatus === "paid";
+    if (editStatus === editingRow.status) {
+      setEditingRow(null);
+      return;
+    }
+    let warning: string;
+    if (wasPaid && !willBePaid) {
+      warning = `將此筆交易狀態改為「${editStatus}」會從使用者帳戶扣回對應額度。繼續？`;
+    } else if (!wasPaid && willBePaid) {
+      warning = `將此筆交易狀態改回「paid」會重新加回對應額度給使用者。繼續？`;
+    } else {
+      warning = `將此筆交易狀態改為「${editStatus}」？`;
+    }
+    if (!confirm(warning)) return;
+    setMutating(true);
+    try {
+      const res = await fetch(
+        `/api/admin/payments/transactions/${editingRow.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: editStatus }),
+        },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? "更新失敗");
+        return;
+      }
+      setEditingRow(null);
+      refetchAll();
+    } finally {
+      setMutating(false);
+    }
+  }
 
   function toggleSort(key: SortKey) {
     if (sort === key) {
@@ -543,12 +621,13 @@ export default function RevenueDashboard() {
                     </th>
                     <th className="py-2 pr-2">狀態</th>
                     <th className="py-2 pr-2">Stripe</th>
+                    <th className="py-2 pr-2 text-right">調整</th>
                   </tr>
                 </thead>
                 <tbody>
                   {txLoading && !transactions ? (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-mist">
+                      <td colSpan={7} className="py-6 text-center text-mist">
                         載入中…
                       </td>
                     </tr>
@@ -587,11 +666,39 @@ export default function RevenueDashboard() {
                             <span className="text-xs text-mist">—</span>
                           )}
                         </td>
+                        <td className="py-2 pr-2">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => openEdit(row)}
+                              disabled={mutating}
+                              aria-label="編輯狀態"
+                              title="編輯狀態"
+                              className="p-1 text-mist hover:text-gold transition-colors disabled:opacity-30"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(row)}
+                              disabled={mutating}
+                              aria-label="刪除交易"
+                              title="刪除交易"
+                              className="p-1 text-mist hover:text-red-400 transition-colors disabled:opacity-30"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-mist">
+                      <td colSpan={7} className="py-6 text-center text-mist">
                         尚無交易紀錄
                       </td>
                     </tr>
@@ -642,6 +749,64 @@ export default function RevenueDashboard() {
             )}
           </div>
         </>
+      )}
+
+      {/* Edit status modal */}
+      {editingRow && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => !mutating && setEditingRow(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border border-gold/25 bg-[var(--parchment)] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-serif text-lg text-gold mb-4">編輯交易狀態</h3>
+            <div className="mb-4 text-xs text-mist space-y-1">
+              <div>交易 #{editingRow.id} · {editingRow.userEmail ?? "—"}</div>
+              <div>{editingRow.packageName ?? "—"} · {formatHkd(editingRow.amount)}</div>
+              <div className="flex items-center gap-2">
+                目前狀態：<StatusBadge status={editingRow.status} />
+              </div>
+            </div>
+            <label className="block mb-2 text-xs text-mist">新狀態</label>
+            <select
+              value={editStatus}
+              onChange={(e) =>
+                setEditStatus(e.target.value as "paid" | "refunded" | "failed")
+              }
+              className="mb-5"
+              disabled={mutating}
+            >
+              <option value="paid">paid（已付款）</option>
+              <option value="refunded">refunded（已退款）</option>
+              <option value="failed">failed（失敗 / 無效）</option>
+            </select>
+            <div className="rounded border border-amber-500/30 bg-amber-500/5 p-3 mb-5 text-xs text-mist leading-relaxed">
+              ⚠ 若狀態在 paid 與非 paid 之間切換，系統會自動調整使用者的額度（refund-safe：不會讓剩餘變成負數）。
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingRow(null)}
+                disabled={mutating}
+                className="px-4 py-2 text-sm text-mist hover:text-gold transition-colors disabled:opacity-40"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={submitEdit}
+                disabled={mutating || editStatus === editingRow.status}
+                className="px-4 py-2 text-sm rounded border border-gold/40 text-gold hover:bg-gold/10 disabled:opacity-30 transition-colors"
+              >
+                {mutating ? "處理中..." : "確認"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
