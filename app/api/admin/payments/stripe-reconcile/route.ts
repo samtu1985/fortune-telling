@@ -28,14 +28,24 @@ export async function GET(req: Request) {
   let error: string | null = null;
   try {
     const stripe = requireStripe();
-    const txns = await stripe.balanceTransactions.list({
+    // Use charges.list, not balanceTransactions.list. Balance transactions
+    // only appear after funds actually move into the account's balance,
+    // which for delayed-payout accounts can be days after the charge. The
+    // local `purchases WHERE status='paid'` query matches "charge succeeded",
+    // so query succeeded charges to compare like-for-like.
+    const charges = await stripe.charges.list({
       created: { gte: sinceUnix },
-      type: "charge",
       limit: 100,
     });
+    // Exclude fully-refunded charges to match how the local table filters
+    // out purchases.status='refunded'. Partial refunds are intentionally
+    // ignored on both sides (spec §9.5).
+    const succeeded = charges.data.filter(
+      (c) => c.status === "succeeded" && !c.refunded,
+    );
     stripeSide = {
-      count: txns.data.length,
-      total: txns.data.reduce((sum, t) => sum + t.amount, 0),
+      count: succeeded.length,
+      total: succeeded.reduce((sum, c) => sum + c.amount, 0),
     };
   } catch (e) {
     error = e instanceof Error ? e.message : "unknown";
