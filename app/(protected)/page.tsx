@@ -17,6 +17,8 @@ import FeedbackModal from "@/app/components/FeedbackModal";
 import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
+import { useQuotaExhausted } from "@/app/components/QuotaExhaustedGate";
+import { callDivine } from "@/app/lib/divine-fetch";
 
 type DivinationType = "bazi" | "ziwei" | "zodiac" | "comprehensive";
 
@@ -105,6 +107,7 @@ const DIVINATION_TYPE_IDS: { id: DivinationType; symbol: string }[] = [
 
 export default function Home() {
   const { locale, t } = useLocale();
+  const { trigger: triggerQuotaExhausted } = useQuotaExhausted();
   const DIVINATION_TYPES = DIVINATION_TYPE_IDS.map(({ id, symbol }) => ({
     id,
     symbol,
@@ -258,11 +261,26 @@ export default function Home() {
       }));
 
       try {
-        const response = await fetch("/api/divine", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current, locale: localeRef.current }),
-        });
+        const response = await callDivine(
+          "/api/divine",
+          { type, messages: chatMessages, reasoningDepth: reasoningDepthRef.current, locale: localeRef.current },
+          triggerQuotaExhausted
+        );
+
+        if (response.status === 402) {
+          // Quota exhausted — QuotaExhaustedGate is showing the modal.
+          // Clear loading/streaming state so the UI doesn't hang.
+          conversationsRef.current[type] = {
+            ...conversationsRef.current[type],
+            loading: false,
+            streaming: false,
+          };
+          setConv((prev) => {
+            if (selectedTypeRef.current === type) return { ...conversationsRef.current[type] };
+            return prev;
+          });
+          return;
+        }
 
         if (!response.ok) {
           const error = await response.json();

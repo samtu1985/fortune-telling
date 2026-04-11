@@ -13,6 +13,8 @@ import SmokeParticles from "./SmokeParticles";
 import FeedbackModal from "./FeedbackModal";
 import { useLocale } from "./LocaleProvider";
 import { useAudioQueue, type AudioSegment } from "@/app/hooks/useAudioQueue";
+import { useQuotaExhausted } from "./QuotaExhaustedGate";
+import { callDivine } from "@/app/lib/divine-fetch";
 
 type Profile = {
   id: string;
@@ -56,6 +58,7 @@ export default function ComprehensiveMode({
   reasoningDepth,
 }: ComprehensiveModeProps) {
   const { locale, t } = useLocale();
+  const { trigger: triggerQuotaExhausted } = useQuotaExhausted();
 
   const MASTERS = MASTERS_BASE.map((m) => ({ ...m, label: t(m.labelKey) }));
 
@@ -164,17 +167,23 @@ export default function ComprehensiveMode({
       setStreamingMaster(master);
       setStreamingContent("");
 
-      const response = await fetch("/api/divine-multi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await callDivine(
+        "/api/divine-multi",
+        {
           master,
           charts,
           messages: conversationMessages,
           reasoningDepth: reasoningDepthRef.current,
           locale,
-        }),
-      });
+        },
+        triggerQuotaExhausted
+      );
+
+      if (response.status === 402) {
+        // Quota exhausted — QuotaExhaustedGate is showing the modal.
+        // Throw a sentinel error so callers can recognize and swallow it.
+        throw new Error("QUOTA_EXHAUSTED");
+      }
 
       if (!response.ok) {
         let errMsg = `${t("comprehensive.apiError")} ${response.status}`;
@@ -271,6 +280,14 @@ export default function ComprehensiveMode({
             break;
           }
         } catch (err) {
+          // Quota exhausted — the QuotaExhaustedGate modal is already open.
+          // Bail silently without appending a confusing error bubble.
+          if (err instanceof Error && err.message === "QUOTA_EXHAUSTED") {
+            setStreamingMaster(null);
+            setStreamingContent("");
+            setLoading(false);
+            return { messages: msgs, consensus: false };
+          }
           const errorMsg: MasterMessage = {
             role: "assistant",
             content: `${t("comprehensive.connectionError")}${err instanceof Error ? err.message : "未知錯誤"}`,
