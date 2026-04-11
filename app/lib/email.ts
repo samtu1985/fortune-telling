@@ -7,6 +7,10 @@ const resend = process.env.RESEND_API_KEY
 const FROM = process.env.RESEND_FROM_EMAIL || "noreply@fortunefor.me";
 const SITE_URL = process.env.NEXTAUTH_URL || "https://fortunefor.me";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 console.log("[email] Resend configured:", !!resend, "FROM:", FROM, "SITE_URL:", SITE_URL);
 
 export async function sendResetPasswordEmail(
@@ -232,7 +236,7 @@ export async function sendFeedbackReply(
   }
 }
 
-// ─── Payment Notifications (Task 12 will replace these stubs) ──────────────
+// ─── Payment Notifications ─────────────────────────────────────────────────
 
 type PurchaseNotificationArgs = {
   user: {
@@ -274,15 +278,84 @@ type RefundNotificationArgs = {
 };
 
 export async function sendPurchaseAdminNotification(
-  _args: PurchaseNotificationArgs
+  args: PurchaseNotificationArgs
 ): Promise<void> {
-  console.log("[email] (stub) sendPurchaseAdminNotification called");
+  const adminEmail = process.env.ADMIN_EMAIL || "geektu@gmail.com";
+  const { user, pkg, amount, currency, stripeSessionId } = args;
+  const amountStr = `${currency.toUpperCase()} ${(amount / 100).toFixed(2)}`;
+  const remainingSingle = user.singleCredits - user.singleUsed;
+  const remainingMulti = user.multiCredits - user.multiUsed;
+  const stripeUrl = `https://dashboard.stripe.com/payments/${stripeSessionId}`;
+  const userEmailEsc = esc(user.email);
+  const pkgNameEsc = esc(pkg.name);
+
+  const subject = `[收入通知] ${user.email} 購買了「${pkg.name}」- ${amountStr}`;
+  const html = `
+    <div style="font-family: serif; max-width: 520px; margin: 0 auto; padding: 32px; color: #1e1a14;">
+      <h2 style="color: #7a5c10; text-align: center;">天機 Fortune-For.me — 收入通知</h2>
+      <ul>
+        <li><strong>使用者：</strong>${userEmailEsc}</li>
+        <li><strong>方案：</strong>${pkgNameEsc}</li>
+        <li><strong>金額：</strong>${amountStr}</li>
+        <li><strong>新增額度：</strong>個別 +${pkg.singleCreditsGranted} / 三師 +${pkg.multiCreditsGranted}</li>
+        <li><strong>目前剩餘：</strong>個別 ${remainingSingle} / 三師 ${remainingMulti}</li>
+        <li><strong>Stripe：</strong><a href="${stripeUrl}">${stripeSessionId}</a></li>
+      </ul>
+    </div>
+  `;
+
+  if (!resend) {
+    console.log("[email] Resend not configured. Purchase notification for:", user.email);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to: adminEmail, subject, html });
+    console.log("[email] Purchase notification sent for:", user.email);
+  } catch (e) {
+    console.error("[email] Failed to send purchase notification:", e);
+  }
 }
 
 export async function sendRefundAdminNotification(
-  _args: RefundNotificationArgs
+  args: RefundNotificationArgs
 ): Promise<void> {
-  console.log("[email] (stub) sendRefundAdminNotification called");
+  const adminEmail = process.env.ADMIN_EMAIL || "geektu@gmail.com";
+  const { user, pkg, purchase } = args;
+  const amountStr = `${purchase.currency.toUpperCase()} ${(purchase.amount / 100).toFixed(2)}`;
+  const remainingSingle = user.singleCredits - user.singleUsed;
+  const remainingMulti = user.multiCredits - user.multiUsed;
+  const stripeUrl = purchase.stripePaymentIntentId
+    ? `https://dashboard.stripe.com/payments/${purchase.stripePaymentIntentId}`
+    : "";
+  const userEmailEsc = esc(user.email);
+  const pkgNameEsc = esc(pkg?.name ?? "（已刪除）");
+
+  const subject = `[退款警示] ${user.email} 的「${pkg?.name ?? "已下架方案"}」已退款 - ${amountStr}`;
+  const html = `
+    <div style="font-family: serif; max-width: 520px; margin: 0 auto; padding: 32px; color: #1e1a14;">
+      <h2 style="color: #c84700; text-align: center;">天機 Fortune-For.me — 退款警示</h2>
+      <ul>
+        <li><strong>使用者：</strong>${userEmailEsc}</li>
+        <li><strong>方案：</strong>${pkgNameEsc}</li>
+        <li><strong>原購買時間：</strong>${purchase.createdAt.toISOString()}</li>
+        <li><strong>金額：</strong>${amountStr}</li>
+        <li><strong>扣除額度：</strong>個別 -${purchase.singleGranted} / 三師 -${purchase.multiGranted}（保留已使用次數）</li>
+        <li><strong>使用者剩餘：</strong>個別 ${remainingSingle} / 三師 ${remainingMulti}</li>
+        ${stripeUrl ? `<li><strong>Stripe：</strong><a href="${stripeUrl}">查看</a></li>` : ""}
+      </ul>
+    </div>
+  `;
+
+  if (!resend) {
+    console.log("[email] Resend not configured. Refund notification for:", user.email);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to: adminEmail, subject, html });
+    console.log("[email] Refund notification sent for:", user.email);
+  } catch (e) {
+    console.error("[email] Failed to send refund notification:", e);
+  }
 }
 
 export async function sendTrialInvitation(
