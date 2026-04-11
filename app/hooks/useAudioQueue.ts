@@ -12,6 +12,7 @@ export interface AudioSegment {
 
 export function useAudioQueue() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [currentMaster, setCurrentMaster] = useState<MasterType | null>(null);
   const [waitingForTap, setWaitingForTap] = useState(false);
   const queueRef = useRef<AudioSegment[]>([]);
@@ -24,6 +25,7 @@ export function useAudioQueue() {
   const playNext = useCallback(() => {
     if (queueRef.current.length === 0) {
       setIsPlaying(false);
+      setIsPaused(false);
       setCurrentMaster(null);
       playingRef.current = false;
       return;
@@ -32,6 +34,7 @@ export function useAudioQueue() {
     const segment = queueRef.current.shift()!;
     setCurrentMaster(segment.masterKey);
     setIsPlaying(true);
+    setIsPaused(false);
     playingRef.current = true;
 
     const audio = new Audio(segment.audioUrl);
@@ -85,6 +88,7 @@ export function useAudioQueue() {
     if (audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
+      setIsPaused(true);
     }
   }, []);
 
@@ -92,6 +96,7 @@ export function useAudioQueue() {
     if (audioRef.current) {
       audioRef.current.play().catch(() => {});
       setIsPlaying(true);
+      setIsPaused(false);
     }
   }, []);
 
@@ -103,6 +108,7 @@ export function useAudioQueue() {
     queueRef.current = [];
     allSegmentsRef.current = [];
     setIsPlaying(false);
+    setIsPaused(false);
     setCurrentMaster(null);
     playingRef.current = false;
     startedRef.current = false;
@@ -192,6 +198,7 @@ export function useAudioQueue() {
   return {
     enqueue,
     isPlaying,
+    isPaused,
     currentMaster,
     waitingForTap,
     startPlayback,

@@ -1166,7 +1166,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       </div>
 
       {/* Floating TTS status bar — always visible at top */}
-      {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying || audioQueue.waitingForTap) && (
+      {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying || audioQueue.isPaused || audioQueue.waitingForTap) && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
           {audioQueue.waitingForTap ? (
             /* Ready to play — user needs to tap */
@@ -1182,15 +1182,48 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             </button>
           ) : (
             <div className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5" style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.06)" }}>
-              {audioQueue.isPlaying && audioQueue.currentMaster ? (
+              {(audioQueue.isPlaying || audioQueue.isPaused) && audioQueue.currentMaster ? (
                 <>
-                  <svg className="w-3.5 h-3.5 animate-pulse text-gold" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                  </svg>
+                  {audioQueue.isPaused ? (
+                    <svg className="w-3.5 h-3.5 text-gold/70" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 9v6h4l5 5V4L7 9H3z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 animate-pulse text-gold" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                    </svg>
+                  )}
                   <span className={`text-xs font-serif ${getMasterInfo(audioQueue.currentMaster)?.color}`}>
                     {getMasterInfo(audioQueue.currentMaster)?.label}
                   </span>
-                  <span className="text-[10px] text-stone/50">{t("podcast.playing")}</span>
+                  <span className="text-[10px] text-stone/50">
+                    {audioQueue.isPaused ? t("podcast.paused") : t("podcast.playing")}
+                  </span>
+                  {/* Pause / Resume control */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (audioQueue.isPaused) {
+                        keepScreenAwake();
+                        audioQueue.resume();
+                      } else {
+                        audioQueue.pause();
+                      }
+                    }}
+                    aria-label={audioQueue.isPaused ? t("podcast.resume") : t("podcast.pause")}
+                    title={audioQueue.isPaused ? t("podcast.resume") : t("podcast.pause")}
+                    className="ml-1 flex items-center justify-center w-7 h-7 rounded-full border border-gold/30 text-gold hover:bg-gold/10 transition-colors"
+                  >
+                    {audioQueue.isPaused ? (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                      </svg>
+                    )}
+                  </button>
                 </>
               ) : (
                 <>
