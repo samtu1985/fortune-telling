@@ -21,7 +21,6 @@ export async function POST(req: Request) {
   const required = [
     "name",
     "buyButtonId",
-    "publishableKey",
     "stripePriceId",
     "priceAmount",
     "currency",
@@ -38,7 +37,6 @@ export async function POST(req: Request) {
       name: body.name,
       description: body.description ?? null,
       buyButtonId: body.buyButtonId,
-      publishableKey: body.publishableKey,
       stripePriceId: body.stripePriceId,
       priceAmount: body.priceAmount,
       currency: body.currency,

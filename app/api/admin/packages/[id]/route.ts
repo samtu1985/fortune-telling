@@ -20,7 +20,6 @@ export async function PATCH(
     "name",
     "description",
     "buyButtonId",
-    "publishableKey",
     "stripePriceId",
     "priceAmount",
     "currency",

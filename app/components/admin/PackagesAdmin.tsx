@@ -7,7 +7,6 @@ interface PaymentPackage {
   name: string;
   description: string | null;
   buyButtonId: string;
-  publishableKey: string;
   stripePriceId: string | null;
   priceAmount: number | null;
   currency: string;
@@ -26,7 +25,6 @@ interface FormState {
   description: string;
   priceId: string;
   buyButtonId: string;
-  publishableKey: string;
   singleCreditsGranted: number;
   multiCreditsGranted: number;
   sortOrder: number;
@@ -43,7 +41,6 @@ const EMPTY_FORM: FormState = {
   description: "",
   priceId: "",
   buyButtonId: "",
-  publishableKey: "",
   singleCreditsGranted: 0,
   multiCreditsGranted: 0,
   sortOrder: 0,
@@ -123,7 +120,6 @@ export default function PackagesAdmin() {
       description: pkg.description ?? "",
       priceId: pkg.stripePriceId ?? "",
       buyButtonId: pkg.buyButtonId,
-      publishableKey: pkg.publishableKey,
       singleCreditsGranted: pkg.singleCreditsGranted,
       multiCreditsGranted: pkg.multiCreditsGranted,
       sortOrder: pkg.sortOrder,
@@ -187,7 +183,6 @@ export default function PackagesAdmin() {
     form.currency === "hkd" &&
     form.name.trim().length > 0 &&
     form.buyButtonId.trim().length > 0 &&
-    form.publishableKey.trim().length > 0 &&
     form.stripePriceId != null &&
     form.priceAmount != null;
 
@@ -201,7 +196,6 @@ export default function PackagesAdmin() {
         name: form.name.trim(),
         description: form.description.trim() || null,
         buyButtonId: form.buyButtonId.trim(),
-        publishableKey: form.publishableKey.trim(),
         stripePriceId: form.stripePriceId,
         priceAmount: form.priceAmount,
         currency: form.currency,
@@ -504,21 +498,6 @@ export default function PackagesAdmin() {
                   value={form.buyButtonId}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, buyButtonId: e.target.value }))
-                  }
-                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none font-mono text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-mist mb-1">
-                  Publishable Key *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={form.publishableKey}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, publishableKey: e.target.value }))
                   }
                   className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none font-mono text-xs"
                 />

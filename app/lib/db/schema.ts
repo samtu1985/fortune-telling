@@ -176,7 +176,9 @@ export const paymentPackages = pgTable("payment_packages", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   buyButtonId: text("buy_button_id").notNull(),
-  publishableKey: text("publishable_key").notNull(),
+  // Deprecated: publishable key is now read from NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  // at render time. Column kept nullable for backward compat with existing rows.
+  publishableKey: text("publishable_key"),
   stripePriceId: text("stripe_price_id"),
   priceAmount: integer("price_amount"),          // HKD cents
   currency: varchar("currency", { length: 10 }).notNull().default("hkd"),

@@ -15,7 +15,6 @@ export async function GET() {
       name: paymentPackages.name,
       description: paymentPackages.description,
       buyButtonId: paymentPackages.buyButtonId,
-      publishableKey: paymentPackages.publishableKey,
       priceAmount: paymentPackages.priceAmount,
       currency: paymentPackages.currency,
       singleCreditsGranted: paymentPackages.singleCreditsGranted,

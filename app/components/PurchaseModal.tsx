@@ -24,12 +24,15 @@ type Pkg = {
   name: string;
   description: string | null;
   buyButtonId: string;
-  publishableKey: string;
   priceAmount: number | null;
   currency: string;
   singleCreditsGranted: number;
   multiCreditsGranted: number;
 };
+
+// Shared across all packages — read from Vercel env var at build time.
+// Exposed to the client via NEXT_PUBLIC_ prefix.
+const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 interface PurchaseModalProps {
   userId: number;
@@ -296,7 +299,7 @@ function PackageCard({
           <div className="w-full flex justify-center">
             <stripe-buy-button
               buy-button-id={pkg.buyButtonId}
-              publishable-key={pkg.publishableKey}
+              publishable-key={PUBLISHABLE_KEY}
               client-reference-id={String(userId)}
             />
           </div>
