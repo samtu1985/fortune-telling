@@ -7,6 +7,7 @@ import ProfileModal from "./ProfileModal";
 import SendTrialModal from "./SendTrialModal";
 import { useLocale } from "./LocaleProvider";
 import { useFontSize } from "./FontSizeProvider";
+import { useQuotaExhausted } from "./QuotaExhaustedGate";
 
 const ADMIN_EMAIL = "geektu@gmail.com";
 
@@ -18,8 +19,12 @@ export default function UserMenu() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [trialOpen, setTrialOpen] = useState(false);
   const [isAmbassador, setIsAmbassador] = useState(false);
+  const [canPurchase, setCanPurchase] = useState(false);
+  const [ageVerified, setAgeVerified] = useState(false);
+  const [unlimited, setUnlimited] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [credits, setCredits] = useState<{ singleRemaining: number; multiRemaining: number; unlimited?: boolean } | null>(null);
+  const { trigger: triggerPurchaseModal } = useQuotaExhausted();
 
   useEffect(() => {
     if (dropdownOpen) {
@@ -32,6 +37,9 @@ export default function UserMenu() {
           if (data.isAmbassador) {
             setIsAmbassador(true);
           }
+          setUnlimited(Boolean(data.unlimited));
+          setCanPurchase(Boolean(data.canPurchase));
+          setAgeVerified(Boolean(data.ageVerified));
         })
         .catch(() => {});
     }
@@ -114,6 +122,25 @@ export default function UserMenu() {
               </svg>
               購買紀錄
             </a>
+            {/* Purchase more credits — only shown to non-exempt users who have
+                passed the age gate and are allowed to purchase (i.e. not minors). */}
+            {ageVerified && canPurchase && !unlimited && (
+              <>
+                <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    triggerPurchaseModal(true);
+                  }}
+                  className="w-full text-left px-4 py-3 min-h-[44px] text-sm text-gold hover:bg-gold/15 transition-colors flex items-center gap-2.5"
+                >
+                  <svg className="w-4 h-4 text-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v18m9-9H3" />
+                  </svg>
+                  續點明燈
+                </button>
+              </>
+            )}
             <div className="h-px" style={{ background: "rgba(var(--glass-rgb), 0.08)" }} />
             <button
               onClick={() => {

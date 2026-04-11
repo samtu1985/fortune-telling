@@ -12,12 +12,15 @@ export async function GET() {
 
   const row = await db
     .select({
+      id: users.id,
       singleCredits: users.singleCredits,
       multiCredits: users.multiCredits,
       singleUsed: users.singleUsed,
       multiUsed: users.multiUsed,
       isAmbassador: users.isAmbassador,
       isFriend: users.isFriend,
+      canPurchase: users.canPurchase,
+      ageVerifiedAt: users.ageVerifiedAt,
     })
     .from(users)
     .where(eq(users.email, session.user.email))
@@ -32,6 +35,7 @@ export async function GET() {
   const unlimited = isAdmin || u.isAmbassador || u.isFriend;
 
   return Response.json({
+    id: u.id,
     singleCredits: u.singleCredits,
     singleUsed: u.singleUsed,
     singleRemaining: unlimited ? -1 : u.singleCredits - u.singleUsed,
@@ -41,5 +45,7 @@ export async function GET() {
     isAmbassador: u.isAmbassador,
     isFriend: u.isFriend,
     unlimited,
+    canPurchase: u.canPurchase,
+    ageVerified: u.ageVerifiedAt !== null,
   });
 }
