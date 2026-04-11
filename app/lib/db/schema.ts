@@ -169,3 +169,44 @@ export const feedback = pgTable("feedback", {
   isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── Payment Packages ───────────────────────────────────
+export const paymentPackages = pgTable("payment_packages", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  buyButtonId: text("buy_button_id").notNull(),
+  publishableKey: text("publishable_key").notNull(),
+  stripePriceId: text("stripe_price_id"),
+  priceAmount: integer("price_amount"),          // HKD cents
+  currency: varchar("currency", { length: 10 }).notNull().default("hkd"),
+  singleCreditsGranted: integer("single_credits_granted").notNull().default(0),
+  multiCreditsGranted: integer("multi_credits_granted").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── Purchases ──────────────────────────────────────────
+export const purchases = pgTable("purchases", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  packageId: integer("package_id").references(() => paymentPackages.id),
+  stripeSessionId: text("stripe_session_id").notNull().unique(),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  amount: integer("amount").notNull(),           // HKD cents
+  currency: varchar("currency", { length: 10 }).notNull(),
+  singleGranted: integer("single_granted").notNull(),
+  multiGranted: integer("multi_granted").notNull(),
+  status: varchar("status", { length: 20 }).notNull(),  // paid | refunded | failed
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── Stripe Events (webhook idempotency) ────────────────
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),                   // Stripe event id: evt_xxx
+  type: text("type").notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+});
