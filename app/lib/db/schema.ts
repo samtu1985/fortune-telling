@@ -32,6 +32,10 @@ export const users = pgTable("users", {
   multiUsed: integer("multi_used").notNull().default(0),
   isAmbassador: boolean("is_ambassador").notNull().default(false),
   isFriend: boolean("is_friend").notNull().default(false),
+  // Age verification + purchase gate
+  birthDate: text("birth_date"),
+  ageVerifiedAt: timestamp("age_verified_at", { withTimezone: true }),
+  canPurchase: boolean("can_purchase").notNull().default(true),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
