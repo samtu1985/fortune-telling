@@ -160,6 +160,50 @@ export async function getUserWithQuota(email: string): Promise<UserForQuota | nu
   return row ?? null;
 }
 
+// Starter quota granted to every new regular user on first approval.
+// Exempt roles (admin / ambassador / friend) bypass quota via isExempt()
+// so this value is harmless for them.
+export const STARTER_SINGLE_CREDITS = 10;
+export const STARTER_MULTI_CREDITS = 2;
+
+/**
+ * Apply any pendingCredits rows (ambassador pre-gifts) to a user who just
+ * became approved. Idempotent — deletes the pending rows after applying.
+ */
+async function applyPendingCreditsFor(email: string): Promise<void> {
+  try {
+    const pending = await db
+      .select()
+      .from(pendingCredits)
+      .where(eq(pendingCredits.email, email));
+    if (pending.length === 0) return;
+
+    let totalSingle = 0;
+    let totalMulti = 0;
+    for (const p of pending) {
+      totalSingle += p.singleCredits;
+      totalMulti += p.multiCredits;
+    }
+
+    if (totalSingle > 0 || totalMulti > 0) {
+      await db
+        .update(users)
+        .set({
+          singleCredits: sql`${users.singleCredits} + ${totalSingle}`,
+          multiCredits: sql`${users.multiCredits} + ${totalMulti}`,
+        })
+        .where(eq(users.email, email));
+    }
+
+    await db.delete(pendingCredits).where(eq(pendingCredits.email, email));
+    console.log(
+      `[users] Applied pending credits for ${email}: single=${totalSingle}, multi=${totalMulti}`
+    );
+  } catch (e) {
+    console.error("[users] Failed to apply pending credits:", e);
+  }
+}
+
 export async function registerUser(
   email: string,
   name: string | null,
@@ -168,27 +212,29 @@ export async function registerUser(
   const isAdmin = email === ADMIN_EMAIL;
   const now = new Date();
 
+  // As of 2026-04: paid quota system is live. New users (Google OAuth) are
+  // auto-approved on first sign-in — no admin review — and get the starter
+  // 10/2 quota. Admin still bypasses quota via isExempt().
   await db
     .insert(users)
     .values({
       email,
       name,
       image,
-      status: isAdmin ? "approved" : "pending",
+      status: "approved",
       createdAt: now,
-      approvedAt: isAdmin ? now : null,
+      approvedAt: now,
+      singleCredits: STARTER_SINGLE_CREDITS,
+      multiCredits: STARTER_MULTI_CREDITS,
     })
     .onConflictDoUpdate({
       target: users.email,
       set: { name, image },
     });
 
-  // Auto-approve admin if not already
-  if (isAdmin) {
-    await db
-      .update(users)
-      .set({ status: "approved", approvedAt: now })
-      .where(and(eq(users.email, email), eq(users.status, "pending")));
+  // Apply any pending ambassador gifts on top of the starter quota.
+  if (!isAdmin) {
+    await applyPendingCreditsFor(email);
   }
 }
 
@@ -202,39 +248,9 @@ export async function updateUserStatus(
   }
   const result = await db.update(users).set(set).where(eq(users.email, email));
 
-  // When approving, apply any pending credits
+  // When approving, apply any pending credits (admin override path).
   if (status === "approved") {
-    try {
-      const pending = await db
-        .select()
-        .from(pendingCredits)
-        .where(eq(pendingCredits.email, email));
-
-      if (pending.length > 0) {
-        let totalSingle = 0;
-        let totalMulti = 0;
-        for (const p of pending) {
-          totalSingle += p.singleCredits;
-          totalMulti += p.multiCredits;
-        }
-
-        if (totalSingle > 0 || totalMulti > 0) {
-          await db
-            .update(users)
-            .set({
-              singleCredits: sql`${users.singleCredits} + ${totalSingle}`,
-              multiCredits: sql`${users.multiCredits} + ${totalMulti}`,
-            })
-            .where(eq(users.email, email));
-        }
-
-        // Delete applied pending credits
-        await db.delete(pendingCredits).where(eq(pendingCredits.email, email));
-        console.log(`[users] Applied pending credits for ${email}: single=${totalSingle}, multi=${totalMulti}`);
-      }
-    } catch (e) {
-      console.error("[users] Failed to apply pending credits:", e);
-    }
+    await applyPendingCreditsFor(email);
   }
 
   return (result.rowCount ?? 0) > 0;
@@ -310,10 +326,24 @@ export async function verifyEmail(token: string): Promise<{ email: string; name:
   if (!row[0]) return null;
   if (!row[0].resetTokenExpiry || row[0].resetTokenExpiry < new Date()) return null;
 
+  // Auto-approve on email verification + grant starter quota.
+  // (Previously this set status to "pending" and waited for admin review;
+  // with the paid quota system live, that friction is no longer needed.)
+  const now = new Date();
   await db
     .update(users)
-    .set({ status: "pending", resetToken: null, resetTokenExpiry: null })
+    .set({
+      status: "approved",
+      approvedAt: now,
+      resetToken: null,
+      resetTokenExpiry: null,
+      singleCredits: STARTER_SINGLE_CREDITS,
+      multiCredits: STARTER_MULTI_CREDITS,
+    })
     .where(eq(users.id, row[0].id));
+
+  // Apply any pending ambassador gifts on top of the starter quota.
+  await applyPendingCreditsFor(row[0].email);
 
   return { email: row[0].email, name: row[0].name };
 }

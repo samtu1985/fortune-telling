@@ -86,19 +86,19 @@ export async function sendAdminNotification(
   userName: string | null
 ): Promise<void> {
   const adminEmail = process.env.ADMIN_EMAIL || "geektu@gmail.com";
-  const subject = "Fortune-For.me — 新使用者待審核 / New User Pending Approval";
+  const subject = "Fortune-For.me — 新使用者註冊 / New User Registered";
   const html = `
     <div style="font-family: serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1e1a14;">
       <h2 style="color: #7a5c10; text-align: center;">天機 Fortune-For.me</h2>
-      <p>有新使用者註冊並通過信箱驗證，等待您的審核：</p>
-      <p>A new user has registered and verified their email, pending your approval:</p>
+      <p>有新使用者完成信箱驗證並自動開通帳號：</p>
+      <p>A new user has verified their email and was auto-approved:</p>
       <ul>
         <li><strong>Email:</strong> ${userEmail}</li>
         ${userName ? `<li><strong>Name:</strong> ${userName}</li>` : ""}
       </ul>
       <p style="text-align: center; margin: 24px 0;">
         <a href="${SITE_URL}/admin" style="display: inline-block; padding: 12px 32px; background: #7a5c10; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px;">
-          前往後台審核 / Go to Admin Panel
+          前往後台查看 / View in Admin Panel
         </a>
       </p>
     </div>

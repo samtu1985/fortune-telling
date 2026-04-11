@@ -53,9 +53,9 @@ function renderHTML(success: boolean): string {
     <h1>天機</h1>
     <div class="line"></div>
     ${success
-      ? `<p>信箱驗證成功！您的帳號正在等待管理員審核。</p>
-         <p>Email verified! Your account is pending admin approval.</p>
-         <a href="${siteUrl}/login">返回登入 / Back to Login</a>`
+      ? `<p>信箱驗證成功！您的帳號已開通，可立即登入使用。</p>
+         <p>Email verified! Your account is now active — you can log in immediately.</p>
+         <a href="${siteUrl}/login">立即登入 / Log In Now</a>`
       : `<p class="error">驗證連結無效或已過期。</p>
          <p class="error">Verification link is invalid or expired.</p>
          <a href="${siteUrl}/register">重新註冊 / Register Again</a>`
