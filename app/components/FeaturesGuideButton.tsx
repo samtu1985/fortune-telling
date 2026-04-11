@@ -7,7 +7,7 @@ import FeaturesGuideModal from "./FeaturesGuideModal";
 // Bump this when new features are added to the guide — any user whose stored
 // "seen" value doesn't match the current version will see the blinking icon
 // again, drawing their attention back to the updated content.
-export const FEATURES_GUIDE_VERSION = "2";
+export const FEATURES_GUIDE_VERSION = "3";
 const STORAGE_KEY = "features-guide-seen-v";
 
 export default function FeaturesGuideButton() {
