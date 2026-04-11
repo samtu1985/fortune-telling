@@ -31,6 +31,9 @@ export function isExempt(
 }
 
 export function checkQuota(user: UserForQuota, type: QuotaType): QuotaCheck {
+  if (type !== "single" && type !== "multi") {
+    throw new Error(`invalid quota type: ${type}`);
+  }
   if (isExempt(user)) return { ok: true, unlimited: true };
   const credits = type === "single" ? user.singleCredits : user.multiCredits;
   const used = type === "single" ? user.singleUsed : user.multiUsed;
@@ -50,6 +53,9 @@ export async function consumeQuota(
   user: UserForQuota,
   type: QuotaType
 ): Promise<boolean> {
+  if (type !== "single" && type !== "multi") {
+    throw new Error(`invalid quota type: ${type}`);
+  }
   const exempt = isExempt(user);
   const usedCol = type === "single" ? "single_used" : "multi_used";
   const creditsCol = type === "single" ? "single_credits" : "multi_credits";
@@ -67,10 +73,11 @@ export async function consumeQuota(
     RETURNING id
   `);
 
-  const rowCount = (result as { rowCount?: number }).rowCount;
-  if (typeof rowCount === "number") return rowCount > 0;
-  if (Array.isArray(result)) return result.length > 0;
-  const rows = (result as { rows?: unknown[] }).rows;
-  if (Array.isArray(rows)) return rows.length > 0;
-  return false;
+  // neon-http may return either an array or { rows: [...] }
+  const rows: unknown[] = Array.isArray(result)
+    ? result
+    : Array.isArray((result as { rows?: unknown[] }).rows)
+      ? (result as { rows: unknown[] }).rows
+      : [];
+  return rows.length > 0;
 }
