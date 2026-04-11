@@ -439,6 +439,13 @@ const translations: Record<Locale, TranslationSet> = {
     "admin.feedbackReplyPlaceholder": "輸入您要回覆給使用者的訊息...",
     "admin.feedbackSendReply": "送出回覆",
     "admin.feedbackRepliedAt": "回覆於",
+    "admin.feedbackSelectAll": "全選",
+    "admin.feedbackSelectOne": "選取此項",
+    "admin.feedbackSelectedN": "已選 {n} 筆",
+    "admin.feedbackDeleteSelected": "刪除選取",
+    "admin.feedbackDeleting": "刪除中...",
+    "admin.feedbackConfirmDelete": "確定要刪除這筆使用者意見嗎？此動作無法復原。",
+    "admin.feedbackConfirmDeleteBulk": "確定要刪除 {n} 筆使用者意見嗎？此動作無法復原。",
 
     // Terms of Service page
     "terms.title": "使用條款與免責聲明",
@@ -953,6 +960,13 @@ const translations: Record<Locale, TranslationSet> = {
     "admin.feedbackReplyPlaceholder": "输入您要回复给使用者的讯息...",
     "admin.feedbackSendReply": "送出回复",
     "admin.feedbackRepliedAt": "回复于",
+    "admin.feedbackSelectAll": "全选",
+    "admin.feedbackSelectOne": "选取此项",
+    "admin.feedbackSelectedN": "已选 {n} 笔",
+    "admin.feedbackDeleteSelected": "删除选取",
+    "admin.feedbackDeleting": "删除中...",
+    "admin.feedbackConfirmDelete": "确定要删除这笔使用者意见吗？此操作无法复原。",
+    "admin.feedbackConfirmDeleteBulk": "确定要删除 {n} 笔使用者意见吗？此操作无法复原。",
 
     // Terms of Service page
     "terms.title": "使用条款与免责声明",
@@ -1467,6 +1481,13 @@ const translations: Record<Locale, TranslationSet> = {
     "admin.feedbackReplyPlaceholder": "Type your reply to the user...",
     "admin.feedbackSendReply": "Send reply",
     "admin.feedbackRepliedAt": "Replied at",
+    "admin.feedbackSelectAll": "Select all",
+    "admin.feedbackSelectOne": "Select",
+    "admin.feedbackSelectedN": "{n} selected",
+    "admin.feedbackDeleteSelected": "Delete selected",
+    "admin.feedbackDeleting": "Deleting...",
+    "admin.feedbackConfirmDelete": "Delete this feedback entry? This cannot be undone.",
+    "admin.feedbackConfirmDeleteBulk": "Delete {n} feedback entries? This cannot be undone.",
 
     // Terms of Service page
     "terms.title": "Terms of Service & Disclaimers",
@@ -1981,6 +2002,13 @@ const translations: Record<Locale, TranslationSet> = {
     "admin.feedbackReplyPlaceholder": "ユーザーへの返信メッセージを入力してください...",
     "admin.feedbackSendReply": "返信を送信",
     "admin.feedbackRepliedAt": "返信日時",
+    "admin.feedbackSelectAll": "すべて選択",
+    "admin.feedbackSelectOne": "選択",
+    "admin.feedbackSelectedN": "{n} 件選択中",
+    "admin.feedbackDeleteSelected": "選択を削除",
+    "admin.feedbackDeleting": "削除中...",
+    "admin.feedbackConfirmDelete": "このご意見を削除しますか？この操作は取り消せません。",
+    "admin.feedbackConfirmDeleteBulk": "{n} 件のご意見を削除しますか？この操作は取り消せません。",
 
     // Terms of Service page
     "terms.title": "利用規約および免責事項",

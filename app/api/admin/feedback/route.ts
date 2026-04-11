@@ -3,7 +3,7 @@ import { auth } from "@/app/lib/auth";
 import { ADMIN_EMAIL } from "@/app/lib/users";
 import { db } from "@/app/lib/db";
 import { feedback } from "@/app/lib/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { sendFeedbackReply } from "@/app/lib/email";
 
 async function checkAdmin(): Promise<string | null> {
@@ -97,6 +97,38 @@ export async function PATCH(request: NextRequest) {
   } catch (e) {
     console.error("[admin/feedback] PATCH failed:", e);
     return Response.json({ error: "Failed to update feedback" }, { status: 500 });
+  }
+}
+
+// DELETE: remove one or more feedback entries
+// Body: { ids: number[] }  — accepts a single id as [id] as well
+export async function DELETE(request: NextRequest) {
+  if (!(await checkAdmin())) {
+    return Response.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  let body: { ids?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const raw = Array.isArray(body.ids) ? body.ids : [];
+  const ids = raw
+    .map((v) => (typeof v === "number" ? v : Number(v)))
+    .filter((n) => Number.isFinite(n) && n > 0);
+
+  if (ids.length === 0) {
+    return Response.json({ error: "No ids" }, { status: 400 });
+  }
+
+  try {
+    const result = await db.delete(feedback).where(inArray(feedback.id, ids));
+    return Response.json({ success: true, deleted: result.rowCount ?? ids.length });
+  } catch (e) {
+    console.error("[admin/feedback] DELETE failed:", e);
+    return Response.json({ error: "Failed to delete feedback" }, { status: 500 });
   }
 }
 

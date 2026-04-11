@@ -186,6 +186,8 @@ export default function AdminPage() {
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replySaving, setReplySaving] = useState(false);
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<number>>(new Set());
+  const [feedbackDeleting, setFeedbackDeleting] = useState(false);
 
   // --- User management filter/sort/pagination state ---
   const [userSearch, setUserSearch] = useState("");
@@ -374,6 +376,52 @@ export default function AdminPage() {
       setFeedbackUnread((prev) => Math.max(0, prev - 1));
     } catch {
       // ignore
+    }
+  };
+
+  const toggleFeedbackSelected = (id: number) => {
+    setSelectedFeedbackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleFeedbackSelectAll = () => {
+    setSelectedFeedbackIds((prev) => {
+      if (prev.size === feedbackList.length) return new Set();
+      return new Set(feedbackList.map((f) => f.id));
+    });
+  };
+
+  const deleteFeedback = async (ids: number[]) => {
+    if (ids.length === 0) return;
+    const msg =
+      ids.length === 1
+        ? t("admin.feedbackConfirmDelete")
+        : t("admin.feedbackConfirmDeleteBulk", { n: String(ids.length) });
+    if (!confirm(msg)) return;
+    setFeedbackDeleting(true);
+    try {
+      const res = await fetch("/api/admin/feedback", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || t("admin.saveFailed"));
+        return;
+      }
+      // Clear selection + refetch
+      setSelectedFeedbackIds(new Set());
+      if (selectedFeedbackId && ids.includes(selectedFeedbackId)) {
+        setSelectedFeedbackId(null);
+      }
+      await fetchFeedback();
+    } finally {
+      setFeedbackDeleting(false);
     }
   };
 
@@ -1816,47 +1864,119 @@ export default function AdminPage() {
             })() : feedbackList.length === 0 ? (
               <p className="text-center text-stone/60 py-12">{t("admin.feedbackEmpty")}</p>
             ) : (
-              <div className="space-y-3">
-                {feedbackList.map((fb) => (
-                  <button
-                    key={fb.id}
-                    onClick={() => {
-                      setSelectedFeedbackId(fb.id);
-                      setReplyText("");
-                      if (!fb.isRead) markFeedbackRead(fb.id);
-                    }}
-                    className={`w-full text-left rounded-lg border p-4 transition-colors ${
-                      !fb.isRead
-                        ? "border-red-400/30 bg-red-400/[0.03] hover:border-red-400/50"
-                        : "border-gold/10 hover:border-gold/25"
-                    }`}
-                    style={{ backgroundColor: fb.isRead ? "rgba(var(--glass-rgb), 0.02)" : undefined }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm text-cream font-medium truncate">{fb.name}</p>
-                          {!fb.isRead && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
-                              {t("admin.feedbackNew")}
-                            </span>
-                          )}
-                          {fb.reply && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-500">
-                              {t("admin.feedbackReplied")}
-                            </span>
-                          )}
+              <>
+                {/* Bulk action toolbar */}
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-gold/15 bg-black/20 px-3 py-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-mist">
+                    <input
+                      type="checkbox"
+                      checked={
+                        feedbackList.length > 0 &&
+                        selectedFeedbackIds.size === feedbackList.length
+                      }
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate =
+                            selectedFeedbackIds.size > 0 &&
+                            selectedFeedbackIds.size < feedbackList.length;
+                        }
+                      }}
+                      onChange={toggleFeedbackSelectAll}
+                      className="accent-gold"
+                    />
+                    {t("admin.feedbackSelectAll")}
+                  </label>
+                  <span className="text-xs text-mist/60">
+                    {t("admin.feedbackSelectedN", { n: String(selectedFeedbackIds.size) })}
+                  </span>
+                  <div className="ml-auto">
+                    <button
+                      type="button"
+                      disabled={selectedFeedbackIds.size === 0 || feedbackDeleting}
+                      onClick={() => deleteFeedback(Array.from(selectedFeedbackIds))}
+                      className="text-xs px-3 py-1.5 rounded border border-red-500/40 text-red-400 hover:bg-red-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {feedbackDeleting
+                        ? t("admin.feedbackDeleting")
+                        : t("admin.feedbackDeleteSelected")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {feedbackList.map((fb) => {
+                    const checked = selectedFeedbackIds.has(fb.id);
+                    return (
+                      <div
+                        key={fb.id}
+                        className={`rounded-lg border p-4 transition-colors ${
+                          !fb.isRead
+                            ? "border-red-400/30 bg-red-400/[0.03] hover:border-red-400/50"
+                            : "border-gold/10 hover:border-gold/25"
+                        }`}
+                        style={{ backgroundColor: fb.isRead ? "rgba(var(--glass-rgb), 0.02)" : undefined }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleFeedbackSelected(fb.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={t("admin.feedbackSelectOne")}
+                            className="mt-1 accent-gold shrink-0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedFeedbackId(fb.id);
+                              setReplyText("");
+                              if (!fb.isRead) markFeedbackRead(fb.id);
+                            }}
+                            className="flex-1 min-w-0 text-left"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm text-cream font-medium truncate">{fb.name}</p>
+                                  {!fb.isRead && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
+                                      {t("admin.feedbackNew")}
+                                    </span>
+                                  )}
+                                  {fb.reply && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-500">
+                                      {t("admin.feedbackReplied")}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-stone/60 truncate">{fb.email}</p>
+                                <p className="text-sm text-cream/80 line-clamp-2 mt-2">{fb.message}</p>
+                              </div>
+                              <p className="text-[10px] text-stone/40 shrink-0">
+                                {new Date(fb.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteFeedback([fb.id]);
+                            }}
+                            aria-label={t("admin.feedbackConfirmDelete")}
+                            className="shrink-0 text-stone/40 hover:text-red-400 transition-colors p-1"
+                            disabled={feedbackDeleting}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
-                        <p className="text-xs text-stone/60 truncate">{fb.email}</p>
-                        <p className="text-sm text-cream/80 line-clamp-2 mt-2">{fb.message}</p>
                       </div>
-                      <p className="text-[10px] text-stone/40 shrink-0">
-                        {new Date(fb.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </>
         )}
