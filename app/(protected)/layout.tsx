@@ -1,7 +1,13 @@
 import { auth } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
-import { getUser, registerUser, ADMIN_EMAIL } from "@/app/lib/users";
+import {
+  getUser,
+  getUserWithQuota,
+  registerUser,
+  ADMIN_EMAIL,
+} from "@/app/lib/users";
 import PendingScreen from "@/app/components/PendingScreen";
+import { QuotaExhaustedProvider } from "@/app/components/QuotaExhaustedGate";
 
 export default async function ProtectedLayout({
   children,
@@ -45,5 +51,29 @@ export default async function ProtectedLayout({
     return <PendingScreen type="disabled" />;
   }
 
-  return <>{children}</>;
+  // Fetch numeric user id for the quota provider (needed by PurchaseModal's
+  // Stripe `client-reference-id`). This row also carries quota fields but we
+  // only use `id` here — the API routes re-fetch for authority.
+  const quotaRow = await getUserWithQuota(email);
+  if (!quotaRow) {
+    // Should not happen after registerUser above, but fall back gracefully.
+    return <PendingScreen type="pending" />;
+  }
+
+  // Age verification gate — blocks approved users who haven't verified yet
+  if (!userData.ageVerifiedAt) {
+    const AgeVerificationModal = (await import("@/app/components/AgeVerificationModal")).default;
+    return (
+      <QuotaExhaustedProvider userId={quotaRow.id}>
+        {children}
+        <AgeVerificationModal />
+      </QuotaExhaustedProvider>
+    );
+  }
+
+  return (
+    <QuotaExhaustedProvider userId={quotaRow.id}>
+      {children}
+    </QuotaExhaustedProvider>
+  );
 }

@@ -4,6 +4,8 @@ import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
 import { auth } from "@/app/lib/auth";
 import { logUsage } from "@/app/lib/usage";
+import { getUserWithQuota } from "@/app/lib/users";
+import { checkQuota, consumeQuota } from "@/app/lib/quota";
 
 const MASTER_PROMPTS: Record<string, string> = {
   bazi: `你是「八字老師」，精通八字命理，正在跟紫微老師、星座老師一起聊天討論。
@@ -152,6 +154,26 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   const userEmail = session?.user?.email || "unknown";
 
+  // Load user for quota check. Uses getUserWithQuota (not getUser) because
+  // getUser returns a narrow UserData type that omits quota columns.
+  const quotaUser =
+    userEmail !== "unknown" ? await getUserWithQuota(userEmail) : null;
+
+  if (!quotaUser) {
+    return new Response(
+      JSON.stringify({ error: "未登入或使用者不存在" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const quota = checkQuota(quotaUser, "multi");
+  if (!quota.ok) {
+    return Response.json(
+      { error: "quota_exhausted", reason: quota.reason, canPurchase: quota.canPurchase },
+      { status: 402 }
+    );
+  }
+
   const systemPrompt = MASTER_PROMPTS[master];
   if (!systemPrompt) {
     return new Response(
@@ -281,6 +303,18 @@ export async function POST(request: NextRequest) {
       },
     });
   }
+
+  // AI call succeeded (HTTP 2xx). Consume one credit atomically before we
+  // start streaming so a false return (concurrent request burned the last
+  // credit between our check and consume) can still yield a 402.
+  const consumed = await consumeQuota(quotaUser, "multi");
+  if (!consumed) {
+    return Response.json(
+      { error: "quota_exhausted", reason: "exhausted", canPurchase: quotaUser.canPurchase },
+      { status: 402 }
+    );
+  }
+  console.log("[credits] multi credit consumed for:", userEmail);
 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();

@@ -3,6 +3,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { users, profiles, conversations, pendingCredits } from "./db/schema";
 import { encrypt, decrypt } from "./db/encryption";
+import type { UserForQuota } from "./quota";
 
 // ─── PII Encryption Helpers ─────────────────────────────
 
@@ -89,6 +90,7 @@ export interface UserData {
   savedConversations?: SavedConversation[];
   reasoningDepth?: ReasoningDepth;
   authProvider?: string;
+  ageVerifiedAt: Date | null;
 }
 
 export type UsersStore = Record<string, UserData>;
@@ -115,6 +117,7 @@ export async function readUsers(): Promise<UsersStore> {
       createdAt: row.createdAt.toISOString(),
       approvedAt: row.approvedAt?.toISOString() ?? null,
       authProvider: row.authProvider,
+      ageVerifiedAt: row.ageVerifiedAt ?? null,
     };
   }
   return store;
@@ -130,7 +133,31 @@ export async function getUser(email: string): Promise<UserData | null> {
     status: u.status as UserStatus,
     createdAt: u.createdAt.toISOString(),
     approvedAt: u.approvedAt?.toISOString() ?? null,
+    ageVerifiedAt: u.ageVerifiedAt ?? null,
   };
+}
+
+/**
+ * Fetch a user with all fields required by the quota system.
+ * Returns null if not found. Used by /api/divine and /api/divine-multi.
+ */
+export async function getUserWithQuota(email: string): Promise<UserForQuota | null> {
+  const [row] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      isAmbassador: users.isAmbassador,
+      isFriend: users.isFriend,
+      singleCredits: users.singleCredits,
+      multiCredits: users.multiCredits,
+      singleUsed: users.singleUsed,
+      multiUsed: users.multiUsed,
+      canPurchase: users.canPurchase,
+    })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function registerUser(

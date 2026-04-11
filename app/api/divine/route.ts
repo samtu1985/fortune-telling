@@ -7,9 +7,8 @@ import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
 import { auth } from "@/app/lib/auth";
 import { logUsage } from "@/app/lib/usage";
-import { db } from "@/app/lib/db";
-import { users } from "@/app/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { getUserWithQuota } from "@/app/lib/users";
+import { checkQuota, consumeQuota } from "@/app/lib/quota";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -256,6 +255,26 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   const userEmail = session?.user?.email || "unknown";
 
+  // Load user for quota check. Uses getUserWithQuota (not getUser) because
+  // getUser returns a narrow UserData type that omits quota columns.
+  const quotaUser =
+    userEmail !== "unknown" ? await getUserWithQuota(userEmail) : null;
+
+  if (!quotaUser) {
+    return new Response(
+      JSON.stringify({ error: "未登入或使用者不存在" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const quota = checkQuota(quotaUser, "single");
+  if (!quota.ok) {
+    return Response.json(
+      { error: "quota_exhausted", reason: quota.reason, canPurchase: quota.canPurchase },
+      { status: 402 }
+    );
+  }
+
   let systemPrompt = SYSTEM_PROMPTS[type];
   if (!systemPrompt) {
     return new Response(
@@ -386,6 +405,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // AI call succeeded (HTTP 2xx). Consume one credit atomically before we
+  // start streaming so a false return (concurrent request burned the last
+  // credit between our check and consume) can still yield a 402.
+  const consumed = await consumeQuota(quotaUser, "single");
+  if (!consumed) {
+    return Response.json(
+      { error: "quota_exhausted", reason: "exhausted", canPurchase: quotaUser.canPurchase },
+      { status: 402 }
+    );
+  }
+  console.log("[credits] single credit consumed for:", userEmail);
+
   // Stream the response back to the client
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -471,14 +502,6 @@ export async function POST(request: NextRequest) {
         inputTokens: totalInput,
         outputTokens: totalOutput,
       });
-
-      // Consume single credit
-      db.update(users)
-        .set({ singleUsed: sql`${users.singleUsed} + 1` })
-        .where(eq(users.email, userEmail))
-        .execute()
-        .then(() => console.log("[credits] single credit consumed for:", userEmail))
-        .catch((e) => console.error("[credits] consume failed:", e));
 
       controller.close();
     },
