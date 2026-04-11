@@ -7,6 +7,7 @@ import ThemeToggle from "@/app/components/ThemeToggle";
 import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
+import PaymentsTab from "@/app/components/admin/PaymentsTab";
 
 interface UserItem {
   email: string;
@@ -56,7 +57,7 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback";
+type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback" | "payments";
 
 interface FeedbackItem {
   id: number;
@@ -132,7 +133,7 @@ export default function AdminPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback") {
+      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback" || tab === "payments") {
         return tab;
       }
     }
@@ -876,6 +877,19 @@ export default function AdminPage() {
               </span>
             )}
             {activeTab === "feedback" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("payments")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "payments"
+                ? "text-gold"
+                : "text-stone/60 hover:text-stone"
+            }`}
+          >
+            付款管理
+            {activeTab === "payments" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
             )}
           </button>
@@ -1846,6 +1860,8 @@ export default function AdminPage() {
             )}
           </>
         )}
+
+        {activeTab === "payments" && <PaymentsTab />}
       </section>
 
       <SiteFooter />
