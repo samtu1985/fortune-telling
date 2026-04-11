@@ -38,9 +38,25 @@ export default async function ProtectedLayout({
     }
   }
 
-  // Admin always has access
+  // Fetch numeric user id for the quota provider (needed by PurchaseModal's
+  // Stripe `client-reference-id`). Runs before all branches so admin is also
+  // wrapped — admin is quota-exempt but child components still call
+  // useQuotaExhausted() unconditionally, which throws without a provider.
+  const quotaRow = await getUserWithQuota(email);
+
+  // Admin always has access. Wrap with a provider so useQuotaExhausted() works
+  // in child pages; admin never hits 402 because isExempt() short-circuits,
+  // so the provider is effectively inert for them.
   if (email === ADMIN_EMAIL) {
-    return <>{children}</>;
+    if (!quotaRow) {
+      // Admin row missing entirely — shouldn't happen, but don't crash.
+      return <>{children}</>;
+    }
+    return (
+      <QuotaExhaustedProvider userId={quotaRow.id}>
+        {children}
+      </QuotaExhaustedProvider>
+    );
   }
 
   if (!userData || userData.status === "pending" || userData.status === "unverified") {
@@ -51,10 +67,6 @@ export default async function ProtectedLayout({
     return <PendingScreen type="disabled" />;
   }
 
-  // Fetch numeric user id for the quota provider (needed by PurchaseModal's
-  // Stripe `client-reference-id`). This row also carries quota fields but we
-  // only use `id` here — the API routes re-fetch for authority.
-  const quotaRow = await getUserWithQuota(email);
   if (!quotaRow) {
     // Should not happen after registerUser above, but fall back gracefully.
     return <PendingScreen type="pending" />;
