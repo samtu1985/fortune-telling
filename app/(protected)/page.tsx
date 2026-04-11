@@ -17,6 +17,7 @@ import FeedbackModal from "@/app/components/FeedbackModal";
 import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
+import FeaturesGuideButton from "@/app/components/FeaturesGuideButton";
 import { useQuotaExhausted } from "@/app/components/QuotaExhaustedGate";
 import { callDivine } from "@/app/lib/divine-fetch";
 
@@ -880,6 +881,7 @@ ${t("birth.topic")}：${aiQuestion}`;
 
           <div className="flex items-center gap-2">
             <LocaleSwitcher />
+            <FeaturesGuideButton />
             <ThemeToggle />
             <UserMenu />
           </div>
