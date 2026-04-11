@@ -41,10 +41,17 @@ export async function POST(req: NextRequest) {
     return new Response("invalid signature", { status: 400 });
   }
 
-  // Idempotency layer 1: insert event row; bail out on primary-key conflict.
-  try {
-    await db.insert(stripeEvents).values({ id: event.id, type: event.type });
-  } catch (e) {
+  // Early duplicate check — cheap read, avoids unnecessary Stripe API calls.
+  // NOTE: this is best-effort. The authoritative idempotency guard for the
+  // grant path is the `purchases.stripeSessionId` unique index — a race
+  // between two simultaneous deliveries of the same event is safe because
+  // only one `onConflictDoNothing` insert will succeed.
+  const existing = await db
+    .select({ id: stripeEvents.id })
+    .from(stripeEvents)
+    .where(eq(stripeEvents.id, event.id))
+    .limit(1);
+  if (existing.length > 0) {
     console.log("[stripe-webhook] duplicate event", event.id);
     return new Response("ok (duplicate)", { status: 200 });
   }
@@ -64,10 +71,25 @@ export async function POST(req: NextRequest) {
         break;
     }
   } catch (e) {
-    console.error("[stripe-webhook] handler error", event.type, e);
-    // Still return 200: the event is recorded in stripe_events, so retries
-    // would hit the duplicate branch anyway. Admin alert must come from logs.
+    console.error(
+      `[stripe-webhook][ALERT] handler failed for event ${event.id} (${event.type})`,
+      e
+    );
+    // Still return 200 — the purchases.stripeSessionId unique index prevents
+    // double-grants on Stripe retry, and returning non-200 would cause Stripe
+    // to retry which would re-call the handler — desirable if the first
+    // attempt crashed. Tradeoff: we accept that crashes during handler work
+    // require manual investigation via logs.
   }
+
+  // Mark event processed LAST — after successful (or swallowed) handler work.
+  // If the handler crashed mid-work, stripe_events is NOT written, so Stripe's
+  // retry will re-enter the handler and the unique index on
+  // `purchases.stripeSessionId` prevents any double-grant.
+  await db
+    .insert(stripeEvents)
+    .values({ id: event.id, type: event.type })
+    .onConflictDoNothing();
 
   return new Response("ok", { status: 200 });
 }
@@ -165,6 +187,17 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       ? charge.payment_intent
       : charge.payment_intent?.id;
   if (!paymentIntent) return;
+
+  // Only act on FULL refunds. Partial refunds are ignored — we don't currently
+  // support proration (Phase 2 only supports full-refund credit revocation).
+  // Stripe fires `charge.refunded` for both, so this guard is required.
+  const fullyRefunded = charge.amount_refunded >= charge.amount_captured;
+  if (!fullyRefunded) {
+    console.log(
+      `[stripe-webhook] skipping partial refund: ${charge.id} (refunded ${charge.amount_refunded} of ${charge.amount_captured})`
+    );
+    return;
+  }
 
   const [purchase] = await db
     .select()

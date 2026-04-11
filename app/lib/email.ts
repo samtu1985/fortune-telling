@@ -232,16 +232,55 @@ export async function sendFeedbackReply(
   }
 }
 
-// STUB — real implementation in Task 12
+// ─── Payment Notifications (Task 12 will replace these stubs) ──────────────
+
+type PurchaseNotificationArgs = {
+  user: {
+    id: number;
+    email: string;
+    singleCredits: number;
+    multiCredits: number;
+    singleUsed: number;
+    multiUsed: number;
+  };
+  pkg: {
+    name: string;
+    singleCreditsGranted: number;
+    multiCreditsGranted: number;
+  };
+  amount: number;
+  currency: string;
+  stripeSessionId: string;
+};
+
+type RefundNotificationArgs = {
+  user: {
+    id: number;
+    email: string;
+    singleCredits: number;
+    multiCredits: number;
+    singleUsed: number;
+    multiUsed: number;
+  };
+  pkg: { name: string } | null;
+  purchase: {
+    amount: number;
+    currency: string;
+    singleGranted: number;
+    multiGranted: number;
+    stripePaymentIntentId: string | null;
+    createdAt: Date;
+  };
+};
+
 export async function sendPurchaseAdminNotification(
-  _args: unknown
+  _args: PurchaseNotificationArgs
 ): Promise<void> {
   console.log("[email] (stub) sendPurchaseAdminNotification called");
 }
 
-// STUB — real implementation in Task 12
 export async function sendRefundAdminNotification(
-  _args: unknown
+  _args: RefundNotificationArgs
 ): Promise<void> {
   console.log("[email] (stub) sendRefundAdminNotification called");
 }
