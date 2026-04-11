@@ -120,7 +120,7 @@ export default function UserMenu() {
               <svg className="w-4 h-4 text-gold-dim shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              購買紀錄
+              {t("menu.purchaseHistory")}
             </a>
             {/* Purchase more credits — only shown to non-exempt users who have
                 passed the age gate and are allowed to purchase (i.e. not minors). */}
@@ -137,7 +137,7 @@ export default function UserMenu() {
                   <svg className="w-4 h-4 text-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v18m9-9H3" />
                   </svg>
-                  續點明燈
+                  {t("menu.topUp")}
                 </button>
               </>
             )}

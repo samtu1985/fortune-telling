@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type PurchaseRow = {
   id: number;
@@ -25,6 +26,7 @@ type Data = {
 };
 
 export default function PurchaseHistory() {
+  const { t, locale } = useLocale();
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +40,23 @@ export default function PurchaseHistory() {
       .catch((e) => setError(e.message));
   }, []);
 
-  if (error) return <div className="text-red-400 text-sm">載入失敗：{error}</div>;
-  if (!data) return <div className="text-mist text-sm">載入中...</div>;
+  const dateLocale =
+    locale === "zh-Hans"
+      ? "zh-CN"
+      : locale === "en"
+        ? "en-US"
+        : locale === "ja"
+          ? "ja-JP"
+          : "zh-HK";
+
+  if (error)
+    return (
+      <div className="text-red-400 text-sm">
+        {t("account.history.loadFailed", { error })}
+      </div>
+    );
+  if (!data)
+    return <div className="text-mist text-sm">{t("account.history.loading")}</div>;
 
   // Sum credits granted from paid purchases (refunded purchases are already
   // reflected in the users.*Credits columns via webhook deduction, so we use
@@ -52,46 +69,75 @@ export default function PurchaseHistory() {
     .reduce((sum, p) => sum + p.multiGranted, 0);
 
   return (
-    <section className="mt-8 glass-card-premium p-6 rounded-2xl">
-      <h3 className="font-serif text-xl text-gold mb-6">購買紀錄</h3>
+    <section className="mt-8 glass-card-premium p-5 sm:p-6 rounded-2xl">
+      <h3 className="font-serif text-xl text-gold mb-6">
+        {t("account.history.title")}
+      </h3>
 
-      <div className="mb-6 rounded-xl border border-gold/20 bg-gold/5 p-5">
+      <div className="mb-6 rounded-xl border border-gold/20 bg-gold/5 p-4 sm:p-5">
         {data.quota.unlimited ? (
           <>
-            <div className="text-xs uppercase tracking-wider text-mist mb-2">目前額度</div>
-            <div className="text-lg font-serif text-gold">無限次（尊榮身份）</div>
+            <div className="text-xs uppercase tracking-wider text-mist mb-2">
+              {t("account.history.currentQuota")}
+            </div>
+            <div className="text-lg font-serif text-gold">
+              {t("account.history.unlimited")}
+            </div>
           </>
         ) : (
           <div className="space-y-4">
             <div>
-              <div className="text-xs uppercase tracking-wider text-mist mb-2">目前剩餘</div>
-              <div className="text-cream">
-                <span className="font-serif">個別問答</span>{" "}
-                <span className="font-serif text-2xl text-gold">{data.quota.singleRemaining}</span>{" "}
-                <span className="text-mist text-sm">次</span>
-                <span className="mx-3 text-mist">·</span>
-                <span className="font-serif">三師論道</span>{" "}
-                <span className="font-serif text-2xl text-gold">{data.quota.multiRemaining}</span>{" "}
-                <span className="text-mist text-sm">次</span>
+              <div className="text-xs uppercase tracking-wider text-mist mb-2">
+                {t("account.history.remaining")}
+              </div>
+              <div className="text-cream flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="font-serif">{t("account.history.single")}</span>
+                <span className="font-serif text-2xl text-gold">
+                  {data.quota.singleRemaining}
+                </span>
+                <span className="text-mist text-sm">
+                  {t("account.history.times")}
+                </span>
+                <span className="mx-1 sm:mx-3 text-mist">·</span>
+                <span className="font-serif">{t("account.history.multi")}</span>
+                <span className="font-serif text-2xl text-gold">
+                  {data.quota.multiRemaining}
+                </span>
+                <span className="text-mist text-sm">
+                  {t("account.history.times")}
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gold/10 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-gold/10 text-xs">
               <div>
-                <div className="text-mist mb-1">累計獲得</div>
+                <div className="text-mist mb-1">
+                  {t("account.history.totalGranted")}
+                </div>
                 <div className="text-cream">
-                  個別 {data.quota.singleCredits} / 三師 {data.quota.multiCredits}
+                  {t("account.history.singleMultiSplit", {
+                    single: String(data.quota.singleCredits),
+                    multi: String(data.quota.multiCredits),
+                  })}
                 </div>
                 {(purchasedSingle > 0 || purchasedMulti > 0) && (
                   <div className="text-mist/70 mt-0.5">
-                    其中 {purchasedSingle}/{purchasedMulti} 來自購買
+                    {t("account.history.fromPurchases", {
+                      single: String(purchasedSingle),
+                      multi: String(purchasedMulti),
+                    })}
                   </div>
                 )}
               </div>
               <div>
-                <div className="text-mist mb-1">累計使用</div>
+                <div className="text-mist mb-1">
+                  {t("account.history.totalUsed")}
+                </div>
                 <div className="text-cream">
-                  個別 {data.quota.singleUsed} / 三師 {data.quota.multiUsed}
+                  {t("account.history.singleMultiSplit", {
+                    single: String(data.quota.singleUsed),
+                    multi: String(data.quota.multiUsed),
+                  })}
                 </div>
               </div>
             </div>
@@ -100,33 +146,55 @@ export default function PurchaseHistory() {
       </div>
 
       {data.purchases.length === 0 ? (
-        <div className="text-center text-mist py-8">尚無購買紀錄</div>
+        <div className="text-center text-mist py-8">
+          {t("account.history.empty")}
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="-mx-5 sm:mx-0 overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="border-b border-gold/30 text-left text-mist">
-                <th className="py-3 font-serif">日期</th>
-                <th className="font-serif">方案</th>
-                <th className="font-serif">金額</th>
-                <th className="font-serif">新增額度</th>
-                <th className="font-serif">狀態</th>
+                <th className="py-3 px-5 sm:px-2 font-serif whitespace-nowrap">
+                  {t("account.history.col.date")}
+                </th>
+                <th className="font-serif whitespace-nowrap">
+                  {t("account.history.col.package")}
+                </th>
+                <th className="font-serif whitespace-nowrap">
+                  {t("account.history.col.amount")}
+                </th>
+                <th className="font-serif whitespace-nowrap">
+                  {t("account.history.col.credits")}
+                </th>
+                <th className="font-serif px-5 sm:px-2 whitespace-nowrap">
+                  {t("account.history.col.status")}
+                </th>
               </tr>
             </thead>
             <tbody>
               {data.purchases.map((p) => (
                 <tr key={p.id} className="border-b border-gold/10">
-                  <td className="py-3 text-cream">{new Date(p.createdAt).toLocaleDateString("zh-HK")}</td>
-                  <td className="text-cream">{p.packageName ?? "（已下架方案）"}</td>
+                  <td className="py-3 px-5 sm:px-2 text-cream whitespace-nowrap">
+                    {new Date(p.createdAt).toLocaleDateString(dateLocale)}
+                  </td>
                   <td className="text-cream">
+                    {p.packageName ?? t("account.history.removedPackage")}
+                  </td>
+                  <td className="text-cream whitespace-nowrap">
                     {p.currency.toUpperCase()} {(p.amount / 100).toFixed(2)}
                   </td>
                   <td className="text-cream">
-                    {p.singleGranted > 0 && `個別 +${p.singleGranted}`}
+                    {p.singleGranted > 0 &&
+                      t("account.history.creditsSingleAdd", {
+                        n: String(p.singleGranted),
+                      })}
                     {p.singleGranted > 0 && p.multiGranted > 0 && " / "}
-                    {p.multiGranted > 0 && `三師 +${p.multiGranted}`}
+                    {p.multiGranted > 0 &&
+                      t("account.history.creditsMultiAdd", {
+                        n: String(p.multiGranted),
+                      })}
                   </td>
-                  <td>
+                  <td className="px-5 sm:px-2">
                     <span
                       className={
                         p.status === "paid"
@@ -136,7 +204,11 @@ export default function PurchaseHistory() {
                             : "text-red-400"
                       }
                     >
-                      {p.status === "paid" ? "已付款" : p.status === "refunded" ? "已退款" : "失敗"}
+                      {p.status === "paid"
+                        ? t("account.history.status.paid")
+                        : p.status === "refunded"
+                          ? t("account.history.status.refunded")
+                          : t("account.history.status.failed")}
                     </span>
                   </td>
                 </tr>

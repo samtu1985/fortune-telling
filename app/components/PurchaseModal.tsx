@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
+import { useLocale } from "./LocaleProvider";
 
 // Allow the Stripe Buy Button custom element in JSX (React 19 uses React.JSX).
 declare module "react" {
@@ -48,6 +49,7 @@ function formatPrice(amount: number | null, currency: string): string {
 }
 
 export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
+  const { t } = useLocale();
   const [packages, setPackages] = useState<Pkg[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -64,7 +66,7 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
         const list: Pkg[] = Array.isArray(data) ? data : data.packages ?? [];
         setPackages(list);
       } catch {
-        if (!cancelled) setError("無法載入方案，請稍後再試。");
+        if (!cancelled) setError(t("purchase.loadError"));
       }
     })();
     return () => {
@@ -122,7 +124,7 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
           <button
             type="button"
             onClick={onClose}
-            aria-label="關閉"
+            aria-label={t("purchase.closeAria")}
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gold/25 text-gold/80 transition-colors hover:border-gold/60 hover:text-gold"
             style={{ background: "rgba(0,0,0,0.12)" }}
           >
@@ -143,23 +145,23 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
           </button>
 
           {/* Header */}
-          <div className="px-6 pt-10 pb-6 sm:px-12 sm:pt-14 sm:pb-8 text-center">
+          <div className="px-6 pt-12 pb-6 sm:px-12 sm:pt-14 sm:pb-8 text-center">
             <div
-              className="mx-auto mb-5 text-xs tracking-[0.4em] text-gold/70"
+              className="mx-auto mb-5 text-[10px] sm:text-xs tracking-[0.3em] sm:tracking-[0.4em] text-gold/70"
               style={{ fontFamily: "var(--font-serif)" }}
             >
-              · 添 置 問 數 ·
+              {t("purchase.header")}
             </div>
             <h2
               id="purchase-modal-title"
-              className="text-2xl sm:text-3xl font-medium tracking-[0.12em] text-gold"
+              className="text-xl sm:text-3xl font-medium tracking-[0.08em] sm:tracking-[0.12em] text-gold break-words"
               style={{ fontFamily: "var(--font-serif)" }}
             >
-              續 添 命 燈
+              {t("purchase.title")}
             </h2>
             <div className="gold-line mx-auto mt-5 w-24" />
             <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-mist">
-              付款成功後系統會自動加值，您可以直接回到本頁繼續使用。
+              {t("purchase.subtitle")}
             </p>
           </div>
 
@@ -170,9 +172,9 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
                 {error}
               </div>
             ) : packages === null ? (
-              <LoadingState />
+              <LoadingState t={t} />
             ) : packages.length === 0 ? (
-              <EmptyState />
+              <EmptyState t={t} />
             ) : (
               <div className="grid gap-6 sm:gap-7">
                 {packages.map((pkg, i) => (
@@ -181,6 +183,7 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
                     pkg={pkg}
                     userId={userId}
                     index={i}
+                    t={t}
                   />
                 ))}
               </div>
@@ -188,9 +191,9 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
           </div>
 
           {/* Footer note */}
-          <div className="border-t border-gold/10 px-6 py-5 sm:px-12 text-center">
-            <p className="text-[11px] tracking-[0.15em] text-stone/70">
-              付款由 Stripe 安全處理 · 可使用 Apple Pay / Google Pay / 信用卡
+          <div className="border-t border-gold/10 px-5 py-5 sm:px-12 text-center">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.1em] sm:tracking-[0.15em] text-stone/70 leading-relaxed">
+              {t("purchase.footer")}
             </p>
           </div>
         </div>
@@ -199,14 +202,18 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
   );
 }
 
+type TFn = (key: string, params?: Record<string, string>) => string;
+
 function PackageCard({
   pkg,
   userId,
   index,
+  t,
 }: {
   pkg: Pkg;
   userId: number;
   index: number;
+  t: TFn;
 }) {
   const price = formatPrice(pkg.priceAmount, pkg.currency);
 
@@ -264,11 +271,9 @@ function PackageCard({
               <li className="flex items-center gap-3 text-sm text-cream/90">
                 <CreditBullet />
                 <span>
-                  含{" "}
-                  <span className="text-gold">
-                    {pkg.singleCreditsGranted}
-                  </span>{" "}
-                  次個別問答
+                  {t("purchase.includesSingle", {
+                    n: String(pkg.singleCreditsGranted),
+                  })}
                 </span>
               </li>
             )}
@@ -276,9 +281,9 @@ function PackageCard({
               <li className="flex items-center gap-3 text-sm text-cream/90">
                 <CreditBullet />
                 <span>
-                  含{" "}
-                  <span className="text-gold">{pkg.multiCreditsGranted}</span>{" "}
-                  次三師論道
+                  {t("purchase.includesMulti", {
+                    n: String(pkg.multiCreditsGranted),
+                  })}
                 </span>
               </li>
             )}
@@ -319,7 +324,7 @@ function CreditBullet() {
   );
 }
 
-function LoadingState() {
+function LoadingState({ t }: { t: TFn }) {
   return (
     <div className="flex flex-col items-center justify-center py-16">
       <div
@@ -330,13 +335,13 @@ function LoadingState() {
         }}
       />
       <p className="mt-5 text-xs tracking-[0.3em] text-stone/70">
-        正 在 請 示 方 案
+        {t("purchase.loading")}
       </p>
     </div>
   );
 }
 
-function EmptyState() {
+function EmptyState({ t }: { t: TFn }) {
   return (
     <div className="py-14 text-center">
       <div className="gold-line mx-auto mb-6 w-16" />
@@ -344,10 +349,10 @@ function EmptyState() {
         className="text-base text-cream/85"
         style={{ fontFamily: "var(--font-serif)" }}
       >
-        目前暫無方案
+        {t("purchase.noPackages")}
       </p>
       <p className="mt-3 text-xs tracking-[0.15em] text-stone/70">
-        請稍候片刻再來查看
+        {t("purchase.noPackagesHint")}
       </p>
     </div>
   );

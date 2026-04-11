@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import MinorWelcomeModal from "./MinorWelcomeModal";
+import { useLocale } from "./LocaleProvider";
 
 function computeAge(birthDate: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
@@ -14,6 +15,7 @@ function computeAge(birthDate: string): number | null {
 }
 
 export default function AgeVerificationModal() {
+  const { t } = useLocale();
   const [birthDate, setBirthDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function AgeVerificationModal() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "驗證失敗");
+        setError(data.error || t("age.verifyFailed"));
         setSubmitting(false);
         return;
       }
@@ -44,8 +46,8 @@ export default function AgeVerificationModal() {
       } else {
         window.location.reload();
       }
-    } catch (e) {
-      setError("網路錯誤");
+    } catch {
+      setError(t("age.networkError"));
       setSubmitting(false);
     }
   }
@@ -58,14 +60,18 @@ export default function AgeVerificationModal() {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4"
     >
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-2xl">
-        <h2 className="mb-2 text-xl font-semibold text-[#7a5c10]">請先完成年齡驗證</h2>
-        <p className="mb-4 text-sm text-[#847b72]">
-          依站點政策，開始使用前需要確認您的年齡。您的生日資訊會用於日後的命理分析。
+      <div className="w-full max-w-md rounded-lg bg-white p-6 sm:p-8 shadow-2xl">
+        <h2 className="mb-2 text-lg sm:text-xl font-semibold text-[#7a5c10]">
+          {t("age.title")}
+        </h2>
+        <p className="mb-4 text-sm text-[#847b72] leading-relaxed">
+          {t("age.description")}
         </p>
-        <label className="mb-2 block text-sm text-[#1e1a14]">生日</label>
+        <label className="mb-2 block text-sm text-[#1e1a14]">
+          {t("age.birthdayLabel")}
+        </label>
         <input
           type="date"
           max={today}
@@ -74,15 +80,17 @@ export default function AgeVerificationModal() {
           className="w-full rounded border border-[#c8bfa8] px-3 py-2 text-base"
         />
         {age !== null && (
-          <p className="mt-2 text-sm text-[#847b72]">您現在 {age} 歲</p>
+          <p className="mt-2 text-sm text-[#847b72]">
+            {t("age.youAreN", { n: String(age) })}
+          </p>
         )}
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <button
           onClick={submit}
           disabled={!birthDate || age === null || submitting}
-          className="mt-6 w-full rounded bg-[#7a5c10] py-3 text-white disabled:opacity-40"
+          className="mt-6 w-full rounded bg-[#7a5c10] py-3 text-white disabled:opacity-40 min-h-[44px]"
         >
-          {submitting ? "驗證中..." : "確認"}
+          {submitting ? t("age.submitting") : t("age.confirm")}
         </button>
       </div>
     </div>

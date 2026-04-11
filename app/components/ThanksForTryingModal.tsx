@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { useLocale } from "./LocaleProvider";
 
 export default function ThanksForTryingModal({ onClose }: { onClose: () => void }) {
+  const { t } = useLocale();
   // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -42,31 +44,31 @@ export default function ThanksForTryingModal({ onClose }: { onClose: () => void 
             "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,173,74,0.18)",
         }}
       >
-        <div className="px-8 py-12 sm:px-12 sm:py-14">
+        <div className="px-6 py-10 sm:px-12 sm:py-14">
           <div
-            className="mx-auto mb-5 text-xs tracking-[0.4em] text-gold/70"
+            className="mx-auto mb-5 text-[10px] sm:text-xs tracking-[0.3em] sm:tracking-[0.4em] text-gold/70"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            · 惜 緣 ·
+            {t("thanks.header")}
           </div>
           <h2
             id="thanks-modal-title"
-            className="text-2xl sm:text-3xl font-medium tracking-[0.12em] text-gold"
+            className="text-xl sm:text-3xl font-medium tracking-[0.08em] sm:tracking-[0.12em] text-gold break-words"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            感 謝 您 的 體 驗
+            {t("thanks.title")}
           </h2>
           <div className="gold-line mx-auto mt-5 w-24" />
           <p className="mx-auto mt-6 max-w-sm text-sm leading-relaxed text-mist">
-            人生的路還很長，未來還有無限可能性，不要執著於先天命運。
+            {t("thanks.body")}
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="mt-10 rounded border border-gold/40 px-10 py-3 text-sm tracking-[0.2em] text-gold transition-colors hover:border-gold/70 hover:bg-gold/10"
+            className="mt-10 rounded border border-gold/40 px-8 sm:px-10 py-3 text-sm tracking-[0.15em] sm:tracking-[0.2em] text-gold transition-colors hover:border-gold/70 hover:bg-gold/10 min-h-[44px]"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            我 明 白 了
+            {t("thanks.confirm")}
           </button>
         </div>
       </div>
