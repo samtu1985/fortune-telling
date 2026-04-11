@@ -1199,6 +1199,7 @@ ${t("birth.topic")}：${aiQuestion}`;
       {/* Top bar */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <LocaleSwitcher />
+        <FeaturesGuideButton />
         <ThemeToggle />
         <UserMenu />
       </div>
