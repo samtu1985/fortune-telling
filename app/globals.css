@@ -262,8 +262,9 @@ body::before {
   margin-left: 2px;
 }
 
-/* Form inputs */
-input, select {
+/* Form inputs — text-like inputs only; checkbox/radio keep native sizing */
+input:not([type="checkbox"]):not([type="radio"]),
+select {
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: 4px;
@@ -275,13 +276,20 @@ input, select {
   transition: border-color 0.3s, box-shadow 0.3s;
   width: 100%;
 }
-input:focus, select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 1px var(--input-focus-shadow);
 }
 input::placeholder {
   color: var(--stone);
+}
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  min-height: 0;
+  padding: 0;
 }
 select option {
   background: var(--parchment);
