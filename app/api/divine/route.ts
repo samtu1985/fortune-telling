@@ -7,10 +7,8 @@ import { buildRequest, parseSSELine } from "@/app/lib/ai-client";
 import { AI_LANGUAGE_DIRECTIVES, type Locale } from "@/app/lib/i18n";
 import { auth } from "@/app/lib/auth";
 import { logUsage } from "@/app/lib/usage";
-import { db } from "@/app/lib/db";
-import { users } from "@/app/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { checkQuota, consumeQuota, type UserForQuota } from "@/app/lib/quota";
+import { getUserWithQuota } from "@/app/lib/users";
+import { checkQuota, consumeQuota } from "@/app/lib/quota";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -257,27 +255,10 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   const userEmail = session?.user?.email || "unknown";
 
-  // Load user for quota check. Re-fetched here (not via getUser) because
-  // getUser returns a narrow UserData type that omits quota columns, and
-  // widening it would ripple into many unrelated callers.
-  let quotaUser: UserForQuota | null = null;
-  if (userEmail !== "unknown") {
-    const rows = await db.select().from(users).where(eq(users.email, userEmail)).limit(1);
-    const u = rows[0];
-    if (u) {
-      quotaUser = {
-        id: u.id,
-        email: u.email,
-        isAmbassador: u.isAmbassador,
-        isFriend: u.isFriend,
-        singleCredits: u.singleCredits,
-        multiCredits: u.multiCredits,
-        singleUsed: u.singleUsed,
-        multiUsed: u.multiUsed,
-        canPurchase: u.canPurchase,
-      };
-    }
-  }
+  // Load user for quota check. Uses getUserWithQuota (not getUser) because
+  // getUser returns a narrow UserData type that omits quota columns.
+  const quotaUser =
+    userEmail !== "unknown" ? await getUserWithQuota(userEmail) : null;
 
   if (!quotaUser) {
     return new Response(
