@@ -263,8 +263,12 @@ export default function ComprehensiveMode({
         try {
           const content = await streamMaster(master, msgs);
 
-          // Check for consensus marker
-          const hasConsensus = content.includes("[CONSENSUS]");
+          // Check for consensus marker — but ONLY honor it during auto-rounds,
+          // never on the initial round. The system prompt already tells zodiac
+          // "第一輪絕對不能加 [CONSENSUS]" but AI instructions aren't 100%
+          // enforceable, so we gate it in code to ensure at least one round
+          // of inter-master debate always happens.
+          const hasConsensus = isAutoRound && content.includes("[CONSENSUS]");
           const cleanContent = content.replace(/\s*\[CONSENSUS\]\s*/g, "").trim();
 
           const newMsg: MasterMessage = { role: "assistant", content: cleanContent, master };

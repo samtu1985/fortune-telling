@@ -155,6 +155,21 @@ export const ttsVoices = pgTable("tts_voices", {
   voiceId: varchar("voice_id", { length: 100 }).notNull(),
 });
 
+// ─── TTS Pronunciation Rules ────────────────────────────
+// Admin-editable text replacements applied to the TTS input BEFORE it's
+// sent to ElevenLabs, so individual words that the model mispronounces
+// can be rewritten without changing what the user sees on screen.
+export const ttsPronunciationRules = pgTable("tts_pronunciation_rules", {
+  id: serial("id").primaryKey(),
+  pattern: text("pattern").notNull(),        // literal string to match (case-sensitive)
+  replacement: text("replacement").notNull(),// literal string to substitute in
+  note: text("note"),                        // optional admin memo
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── User Feedback ──────────────────────────────────────
 export const feedback = pgTable("feedback", {
   id: serial("id").primaryKey(),

@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { db } from "./db";
-import { ttsSettings, ttsVoices } from "./db/schema";
+import { ttsSettings, ttsVoices, ttsPronunciationRules } from "./db/schema";
 import { encrypt, decrypt } from "./db/encryption";
 
 export interface TTSConfig {
@@ -122,4 +122,115 @@ export async function saveVoice(masterKey: string, locale: string, voiceId: stri
   } else {
     await db.insert(ttsVoices).values({ masterKey, locale, voiceId });
   }
+}
+
+// ─── TTS pronunciation rules ─────────────────────────────
+
+export interface TTSPronunciationRule {
+  id: number;
+  pattern: string;
+  replacement: string;
+  note: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Active rules for the TTS pipeline to apply before sending text to
+ * ElevenLabs. Only returns the minimal data needed to run replacements.
+ */
+export async function getActiveTTSReplacements(): Promise<
+  Array<{ pattern: string; replacement: string }>
+> {
+  const rows = await db
+    .select({
+      pattern: ttsPronunciationRules.pattern,
+      replacement: ttsPronunciationRules.replacement,
+    })
+    .from(ttsPronunciationRules)
+    .where(eq(ttsPronunciationRules.isActive, true))
+    .orderBy(asc(ttsPronunciationRules.sortOrder));
+  return rows;
+}
+
+/**
+ * Full row set for the admin UI. Includes inactive rules and metadata.
+ */
+export async function listTTSPronunciationRules(): Promise<TTSPronunciationRule[]> {
+  const rows = await db
+    .select()
+    .from(ttsPronunciationRules)
+    .orderBy(asc(ttsPronunciationRules.sortOrder));
+  return rows.map((r) => ({
+    id: r.id,
+    pattern: r.pattern,
+    replacement: r.replacement,
+    note: r.note,
+    isActive: r.isActive,
+    sortOrder: r.sortOrder,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+}
+
+export async function createTTSPronunciationRule(input: {
+  pattern: string;
+  replacement: string;
+  note?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+}): Promise<TTSPronunciationRule> {
+  const [row] = await db
+    .insert(ttsPronunciationRules)
+    .values({
+      pattern: input.pattern,
+      replacement: input.replacement,
+      note: input.note ?? null,
+      isActive: input.isActive ?? true,
+      sortOrder: input.sortOrder ?? 0,
+    })
+    .returning();
+  return {
+    id: row.id,
+    pattern: row.pattern,
+    replacement: row.replacement,
+    note: row.note,
+    isActive: row.isActive,
+    sortOrder: row.sortOrder,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export async function updateTTSPronunciationRule(
+  id: number,
+  updates: Partial<{
+    pattern: string;
+    replacement: string;
+    note: string | null;
+    isActive: boolean;
+    sortOrder: number;
+  }>
+): Promise<boolean> {
+  const set: Record<string, unknown> = { updatedAt: new Date() };
+  if (updates.pattern !== undefined) set.pattern = updates.pattern;
+  if (updates.replacement !== undefined) set.replacement = updates.replacement;
+  if (updates.note !== undefined) set.note = updates.note;
+  if (updates.isActive !== undefined) set.isActive = updates.isActive;
+  if (updates.sortOrder !== undefined) set.sortOrder = updates.sortOrder;
+
+  const result = await db
+    .update(ttsPronunciationRules)
+    .set(set)
+    .where(eq(ttsPronunciationRules.id, id));
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function deleteTTSPronunciationRule(id: number): Promise<boolean> {
+  const result = await db
+    .delete(ttsPronunciationRules)
+    .where(eq(ttsPronunciationRules.id, id));
+  return (result.rowCount ?? 0) > 0;
 }

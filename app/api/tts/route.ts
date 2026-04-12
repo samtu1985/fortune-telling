@@ -1,26 +1,26 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/app/lib/auth";
-import { getTTSConfig, getVoiceId } from "@/app/lib/tts-settings";
+import {
+  getTTSConfig,
+  getVoiceId,
+  getActiveTTSReplacements,
+} from "@/app/lib/tts-settings";
 import { logUsage } from "@/app/lib/usage";
 
-// Known ElevenLabs (v3 and v2) Chinese pronunciation workarounds.
-// The TTS model sometimes picks the wrong reading for homographs or
-// rare characters. We rewrite the text before sending so the audio
-// comes out right, without touching what's displayed on screen.
-//
-// Each entry is [matcher, replacement]. The replacement is usually a
-// near-homophone with an unambiguous reading. Order matters — the
-// first replacement wins for a given span.
-const TTS_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
-  // 職位 (zhí wèi) gets read as 學位 (xué wèi). Writing it as 職務 (zhí wù)
-  // is the closest same-meaning alternative with an unambiguous reading.
-  [/職位/g, "職務"],
-];
-
-function applyTTSReplacements(text: string): string {
+/**
+ * Apply admin-managed pronunciation rules to TTS input text.
+ * Rules are literal string replacements (not regex) to keep the admin
+ * UI safe — admins can add new entries without worrying about regex
+ * metacharacters or injection.
+ */
+function applyTTSReplacements(
+  text: string,
+  rules: Array<{ pattern: string; replacement: string }>,
+): string {
   let out = text;
-  for (const [pattern, replacement] of TTS_TEXT_REPLACEMENTS) {
-    out = out.replace(pattern, replacement);
+  for (const { pattern, replacement } of rules) {
+    if (!pattern) continue;
+    out = out.split(pattern).join(replacement);
   }
   return out;
 }
@@ -42,7 +42,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Fix known TTS mispronunciations before sending to ElevenLabs.
-  const text = applyTTSReplacements(rawText);
+  // Rules are managed at runtime via the admin panel.
+  const replacementRules = await getActiveTTSReplacements();
+  const text = applyTTSReplacements(rawText, replacementRules);
 
   const config = await getTTSConfig();
   console.log("[tts] Config loaded:", { hasKey: !!config?.apiKey, modelId: config?.modelId, keyPrefix: config?.apiKey?.slice(0, 8) });

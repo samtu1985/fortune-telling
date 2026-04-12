@@ -208,6 +208,86 @@ export default function AdminPage() {
   });
   const [ttsSaving, setTtsSaving] = useState(false);
 
+  // --- TTS sub-tab ---
+  const [ttsSubTab, setTtsSubTab] = useState<"voice" | "pronunciation">("voice");
+
+  // --- TTS pronunciation rules state ---
+  type TTSRule = {
+    id: number;
+    pattern: string;
+    replacement: string;
+    note: string | null;
+    isActive: boolean;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  const [ttsRules, setTtsRules] = useState<TTSRule[]>([]);
+  const [ttsRulesLoading, setTtsRulesLoading] = useState(false);
+  const [newRulePattern, setNewRulePattern] = useState("");
+  const [newRuleReplacement, setNewRuleReplacement] = useState("");
+  const [newRuleNote, setNewRuleNote] = useState("");
+  const [newRuleSaving, setNewRuleSaving] = useState(false);
+
+  const fetchTTSRules = useCallback(async () => {
+    setTtsRulesLoading(true);
+    try {
+      const res = await fetch("/api/admin/tts-replacements");
+      if (res.ok) {
+        const data = await res.json();
+        setTtsRules(data.rules || []);
+      }
+    } finally {
+      setTtsRulesLoading(false);
+    }
+  }, []);
+
+  const createTTSRule = async () => {
+    const pattern = newRulePattern.trim();
+    const replacement = newRuleReplacement.trim();
+    if (!pattern || !replacement) return;
+    setNewRuleSaving(true);
+    try {
+      const res = await fetch("/api/admin/tts-replacements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pattern,
+          replacement,
+          note: newRuleNote.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || t("admin.saveFailed"));
+        return;
+      }
+      setNewRulePattern("");
+      setNewRuleReplacement("");
+      setNewRuleNote("");
+      await fetchTTSRules();
+    } finally {
+      setNewRuleSaving(false);
+    }
+  };
+
+  const toggleTTSRule = async (rule: TTSRule) => {
+    const res = await fetch(`/api/admin/tts-replacements/${rule.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !rule.isActive }),
+    });
+    if (res.ok) await fetchTTSRules();
+  };
+
+  const deleteTTSRule = async (rule: TTSRule) => {
+    if (!confirm(`確定要刪除「${rule.pattern} → ${rule.replacement}」嗎？`)) return;
+    const res = await fetch(`/api/admin/tts-replacements/${rule.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) await fetchTTSRules();
+  };
+
   const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/users");
@@ -456,6 +536,12 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === "tts") fetchTTSSettings();
   }, [activeTab, fetchTTSSettings]);
+
+  useEffect(() => {
+    if (activeTab === "tts" && ttsSubTab === "pronunciation") {
+      fetchTTSRules();
+    }
+  }, [activeTab, ttsSubTab, fetchTTSRules]);
 
   const updateStatus = async (
     email: string,
@@ -1485,6 +1571,32 @@ export default function AdminPage() {
 
         {activeTab === "tts" && (
           <>
+            {/* TTS sub-tab navigation */}
+            <div className="mb-6 flex gap-6 border-b border-gold/20">
+              <button
+                onClick={() => setTtsSubTab("voice")}
+                className={`pb-3 text-sm font-serif transition-colors ${
+                  ttsSubTab === "voice"
+                    ? "border-b-2 border-gold text-gold"
+                    : "text-stone/60 hover:text-stone"
+                }`}
+              >
+                語音參數
+              </button>
+              <button
+                onClick={() => setTtsSubTab("pronunciation")}
+                className={`pb-3 text-sm font-serif transition-colors ${
+                  ttsSubTab === "pronunciation"
+                    ? "border-b-2 border-gold text-gold"
+                    : "text-stone/60 hover:text-stone"
+                }`}
+              >
+                發音校正
+              </button>
+            </div>
+
+            {ttsSubTab === "voice" && (
+            <>
             {/* Global TTS Settings */}
             <div className="rounded-lg border border-gold/10 p-6 mb-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
               <h3 className="text-sm font-serif text-gold mb-4">ElevenLabs {t("admin.ttsTab")}</h3>
@@ -1641,6 +1753,108 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+            </>
+            )}
+
+            {ttsSubTab === "pronunciation" && (
+              <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                <h3 className="text-sm font-serif text-gold mb-2">發音校正對照表</h3>
+                <p className="text-[10px] text-stone/50 mb-5 leading-relaxed">
+                  ElevenLabs TTS 有時會念錯特定中文字詞。在這裡新增「原文 → 替換文字」規則後，系統在語音合成前會自動將原文替換成替換文字（畫面上的文字不受影響）。
+                </p>
+
+                {/* New rule form */}
+                <div className="flex flex-col sm:flex-row gap-2 mb-5 pb-5 border-b border-gold/10">
+                  <input
+                    type="text"
+                    placeholder="原文（會念錯的字詞）"
+                    value={newRulePattern}
+                    onChange={(e) => setNewRulePattern(e.target.value)}
+                    maxLength={200}
+                    className="flex-1 text-sm"
+                  />
+                  <span className="hidden sm:flex items-center text-mist text-xs">→</span>
+                  <input
+                    type="text"
+                    placeholder="替換為（正確讀音的同義詞）"
+                    value={newRuleReplacement}
+                    onChange={(e) => setNewRuleReplacement(e.target.value)}
+                    maxLength={200}
+                    className="flex-1 text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="備註（選填）"
+                    value={newRuleNote}
+                    onChange={(e) => setNewRuleNote(e.target.value)}
+                    className="flex-1 text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={!newRulePattern.trim() || !newRuleReplacement.trim() || newRuleSaving}
+                    onClick={createTTSRule}
+                    className="px-4 py-2 rounded border border-gold/30 text-gold text-xs hover:bg-gold/10 disabled:opacity-30 transition-colors whitespace-nowrap"
+                  >
+                    {newRuleSaving ? "..." : "＋ 新增"}
+                  </button>
+                </div>
+
+                {/* Rules table */}
+                {ttsRulesLoading ? (
+                  <p className="text-xs text-mist py-6 text-center">載入中...</p>
+                ) : ttsRules.length === 0 ? (
+                  <p className="text-xs text-stone/60 py-6 text-center">目前沒有發音校正規則</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gold/20 text-left text-mist text-xs">
+                          <th className="py-2 pr-2">原文</th>
+                          <th className="py-2 pr-2">替換為</th>
+                          <th className="py-2 pr-2">備註</th>
+                          <th className="py-2 pr-2 text-center">啟用</th>
+                          <th className="py-2 pr-2 text-right">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ttsRules.map((rule) => (
+                          <tr
+                            key={rule.id}
+                            className={`border-b border-gold/10 ${!rule.isActive ? "opacity-40" : ""}`}
+                          >
+                            <td className="py-2 pr-2 font-mono text-cream">{rule.pattern}</td>
+                            <td className="py-2 pr-2 font-mono text-gold">{rule.replacement}</td>
+                            <td className="py-2 pr-2 text-xs text-stone/60 max-w-[200px] truncate">{rule.note ?? "—"}</td>
+                            <td className="py-2 pr-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => toggleTTSRule(rule)}
+                                className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                                  rule.isActive
+                                    ? "border-green-500/40 text-green-400 hover:bg-green-500/10"
+                                    : "border-stone/30 text-stone/50 hover:bg-stone/10"
+                                }`}
+                              >
+                                {rule.isActive ? "ON" : "OFF"}
+                              </button>
+                            </td>
+                            <td className="py-2 pr-2 text-right">
+                              <button
+                                type="button"
+                                onClick={() => deleteTTSRule(rule)}
+                                className="text-xs text-stone/40 hover:text-red-400 transition-colors"
+                              >
+                                刪除
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 
