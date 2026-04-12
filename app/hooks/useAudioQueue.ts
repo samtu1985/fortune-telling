@@ -43,23 +43,61 @@ export function useAudioQueue() {
 
     const audio = new Audio(segment.audioUrl);
     audioRef.current = audio;
+    const startedAt = performance.now();
+
+    audio.onloadedmetadata = () => {
+      console.log(
+        "[audio] metadata loaded",
+        segment.masterKey,
+        "duration:",
+        audio.duration,
+        "buffer bytes:",
+        segment.audioBuffer.byteLength
+      );
+    };
 
     audio.onended = () => {
+      const playedMs = Math.round(performance.now() - startedAt);
+      console.log("[audio] ended", segment.masterKey, "playedMs:", playedMs);
       URL.revokeObjectURL(segment.audioUrl);
       playNext();
     };
 
     audio.onerror = () => {
-      console.warn("[audio] Playback error, skipping segment");
+      const mediaErr = audio.error;
+      const playedMs = Math.round(performance.now() - startedAt);
+      console.error(
+        "[audio] PLAYBACK ERROR",
+        segment.masterKey,
+        "code:",
+        mediaErr?.code,
+        "message:",
+        mediaErr?.message,
+        "src:",
+        segment.audioUrl,
+        "bufferBytes:",
+        segment.audioBuffer.byteLength,
+        "playedMs:",
+        playedMs
+      );
       URL.revokeObjectURL(segment.audioUrl);
       playNext();
     };
 
-    audio.play().catch((err) => {
-      console.warn("[audio] Play failed:", err);
-      URL.revokeObjectURL(segment.audioUrl);
-      playNext();
-    });
+    audio.play()
+      .then(() => {
+        console.log("[audio] playing", segment.masterKey);
+      })
+      .catch((err) => {
+        console.error(
+          "[audio] play() rejected for",
+          segment.masterKey,
+          err?.name,
+          err?.message
+        );
+        URL.revokeObjectURL(segment.audioUrl);
+        playNext();
+      });
   }, []);
 
   // User taps to start playback — this is a direct user gesture, always works

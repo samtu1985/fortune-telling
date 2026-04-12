@@ -636,7 +636,11 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
   // Fetch TTS audio for a master's response
   const fetchTTS = useCallback(
     async (master: MasterType, text: string): Promise<void> => {
-      console.log("[tts] fetchTTS called for", master, "locale:", locale, "text:", text.slice(0, 50));
+      console.log("[tts] fetchTTS called for", master, "locale:", locale, "textLen:", text.length, "preview:", text.slice(0, 50));
+      if (!text || text.trim().length === 0) {
+        console.warn("[tts] skipping", master, "— empty text after strip");
+        return;
+      }
       setTtsGeneratingCount((c) => c + 1);
       try {
         const res = await fetch("/api/tts", {
@@ -645,15 +649,37 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           body: JSON.stringify({ text, masterKey: master, locale }),
         });
         if (!res.ok) {
-          console.warn("[tts] Failed for", master, res.status);
+          const errBody = await res.text().catch(() => "");
+          console.warn("[tts] Failed for", master, res.status, errBody.slice(0, 200));
           return;
         }
         const buffer = await res.arrayBuffer();
+        console.log(
+          "[tts] received",
+          master,
+          "bytes:",
+          buffer.byteLength,
+          "contentType:",
+          res.headers.get("content-type")
+        );
+        // Sanity check: MP3 audio for a multi-paragraph master reading should
+        // be tens of kB minimum. Anything under 1 kB is suspicious — either a
+        // malformed response from ElevenLabs or an empty synthesis. Don't
+        // enqueue garbage; it would cause silent audio skips on playback.
+        if (buffer.byteLength < 1024) {
+          console.warn(
+            "[tts] suspiciously small audio for",
+            master,
+            `(${buffer.byteLength} bytes) — dropping`
+          );
+          return;
+        }
         const blob = new Blob([buffer], { type: "audio/mpeg" });
         const audioUrl = URL.createObjectURL(blob);
         audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
+        console.log("[tts] enqueued", master);
       } catch (e) {
-        console.warn("[tts] Error:", e);
+        console.warn("[tts] Error:", master, e);
       } finally {
         setTtsGeneratingCount((c) => Math.max(0, c - 1));
       }
