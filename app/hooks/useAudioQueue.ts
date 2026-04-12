@@ -121,10 +121,18 @@ export function useAudioQueue() {
     setWaitingForTap(false);
   }, []);
 
-  // Download all segments as M4A podcast
-  // 1. Decode MP3 segments → PCM via AudioContext
-  // 2. Encode as WAV (intermediate)
-  // 3. Convert WAV → M4A via ffmpeg.wasm for smaller file size
+  // Download all segments as a single WAV podcast.
+  //
+  // Pipeline:
+  //   1. Decode each MP3 segment to PCM via AudioContext.decodeAudioData
+  //   2. Concatenate the PCM frames in order into a single AudioBuffer
+  //   3. Encode that buffer as a 16-bit WAV blob
+  //
+  // We used to try an ffmpeg.wasm WAV→M4A conversion for smaller files, but
+  // it produced malformed M4A containers that some players (macOS Music,
+  // QuickTime) refused to open — and the 26 MB ffmpeg WASM binary was a
+  // heavy price for a conversion that could fail silently. WAV is ~10× larger
+  // than M4A for the same audio but it plays everywhere, every time.
   const [podcastDownloading, setPodcastDownloading] = useState(false);
 
   const downloadPodcast = useCallback(async () => {
@@ -157,31 +165,13 @@ export function useAudioQueue() {
         writeOffset += buf.length;
       }
 
-      // Encode as WAV first
       const wavBlob = encodeWAV(merged);
       audioCtx.close();
 
-      // Convert WAV → M4A via ffmpeg.wasm
-      try {
-        const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-        const { fetchFile } = await import("@ffmpeg/util");
-
-        const ffmpeg = new FFmpeg();
-        await ffmpeg.load();
-
-        const wavData = await fetchFile(wavBlob);
-        await ffmpeg.writeFile("input.wav", wavData);
-        await ffmpeg.exec(["-i", "input.wav", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "output.m4a"]);
-        const outputData = await ffmpeg.readFile("output.m4a");
-        ffmpeg.terminate();
-
-        const m4aBlob = new Blob([outputData as BlobPart], { type: "audio/mp4" });
-        triggerDownload(m4aBlob, `fortunefor-me-podcast-${new Date().toISOString().slice(0, 10)}.m4a`);
-      } catch (ffmpegErr) {
-        // Fallback to WAV if ffmpeg.wasm fails (e.g., on some mobile browsers)
-        console.warn("[audio] ffmpeg.wasm failed, falling back to WAV:", ffmpegErr);
-        triggerDownload(wavBlob, `fortunefor-me-podcast-${new Date().toISOString().slice(0, 10)}.wav`);
-      }
+      triggerDownload(
+        wavBlob,
+        `fortunefor-me-podcast-${new Date().toISOString().slice(0, 10)}.wav`,
+      );
     } catch (e) {
       console.error("[audio] Failed to generate podcast:", e);
     } finally {
