@@ -107,12 +107,19 @@ export default function ComprehensiveMode({
 
   const MAX_ROUNDS = 3;
 
+  // Tracks whether the scroll container has moved at all. Used to toggle the
+  // floating TTS status bar from translucent (at top) to opaque (scrolled)
+  // so message text never shows through the glassy pill.
+  const [hasScrolled, setHasScrolled] = useState(false);
+
   // Auto-scroll + collapse mobile controls on scroll
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const threshold = window.innerWidth < 640 ? 200 : 80;
     isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < threshold;
+    // Flip opaque background once the container has scrolled at all.
+    setHasScrolled(scrollTop > 0);
     // On mobile, collapse controls when user scrolls up
     if (window.innerWidth < 640 && !isNearBottomRef.current) {
       setMobileControlsOpen(false);
@@ -1173,7 +1180,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             <button
               onClick={() => { keepScreenAwake(); audioQueue.startPlayback(); }}
               className="px-5 py-2.5 rounded-full border border-gold/40 shadow-lg flex items-center gap-2.5 active:scale-95 transition-transform"
-              style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.08)", animation: "tap-to-play-pulse 2s ease-in-out infinite" }}
+              style={{
+                backdropFilter: hasScrolled ? undefined : "blur(16px)",
+                WebkitBackdropFilter: hasScrolled ? undefined : "blur(16px)",
+                background: hasScrolled
+                  ? "var(--parchment)"
+                  : "rgba(var(--glass-rgb), 0.08)",
+                animation: "tap-to-play-pulse 2s ease-in-out infinite",
+              }}
             >
               <svg className="w-4 h-4 text-gold" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
@@ -1181,7 +1195,16 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               <span className="text-sm text-gold font-serif">{t("podcast.tapToPlay")}</span>
             </button>
           ) : (
-            <div className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5" style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", background: "rgba(var(--glass-rgb), 0.06)" }}>
+            <div
+              className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5 transition-[background]"
+              style={{
+                backdropFilter: hasScrolled ? undefined : "blur(16px)",
+                WebkitBackdropFilter: hasScrolled ? undefined : "blur(16px)",
+                background: hasScrolled
+                  ? "var(--parchment)"
+                  : "rgba(var(--glass-rgb), 0.06)",
+              }}
+            >
               {(audioQueue.isPlaying || audioQueue.isPaused) && audioQueue.currentMaster ? (
                 <>
                   {audioQueue.isPaused ? (
