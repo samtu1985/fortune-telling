@@ -204,7 +204,7 @@ export default function AdminPage() {
   const [availableVoices, setAvailableVoices] = useState<{ voice_id: string; name: string; language: string; accent: string; description: string; gender: string; category: string }[]>([]);
   const [ttsApiKey, setTtsApiKey] = useState("");
   const [ttsEditConfig, setTtsEditConfig] = useState({
-    modelId: "eleven_flash_v2_5", stability: 0.7, similarityBoost: 0.75, style: 0.0, speed: 1.0,
+    modelId: "eleven_v3", stability: 0.7, similarityBoost: 0.75, style: 0.0, speed: 1.0,
   });
   const [ttsSaving, setTtsSaving] = useState(false);
 
@@ -1510,11 +1510,13 @@ export default function AdminPage() {
                     onChange={(e) => setTtsEditConfig((p) => ({ ...p, modelId: e.target.value }))}
                     className="w-full"
                   >
-                    <option value="eleven_flash_v2_5">Flash v2.5 (fast, low cost)</option>
-                    <option value="eleven_multilingual_v2">Multilingual v2 (29 languages)</option>
-                    <option value="eleven_turbo_v2_5">Turbo v2.5 (balanced)</option>
-                    <option value="eleven_v3">v3 (latest)</option>
+                    <option value="eleven_v3">v3 — 最富表達力 (70+ 語言 / 5K 字限制)</option>
+                    <option value="eleven_flash_v2_5">Flash v2.5 — 即時低延遲 (~75ms, 32 語言 / 40K 字)</option>
+                    <option value="eleven_multilingual_v2">Multilingual v2 — 情感豐富 (29 語言 / 10K 字)</option>
                   </select>
+                  <p className="mt-1.5 text-[10px] text-stone/50 leading-relaxed">
+                    此處僅影響**未來**的 TTS 呼叫；使用量統計中列出的歷史模型是過去曾使用過的紀錄，非目前設定。
+                  </p>
                 </div>
 
                 {/* Voice Settings */}
@@ -1683,7 +1685,9 @@ export default function AdminPage() {
                     <div className="flex gap-6 text-xs text-stone/70">
                       <span>Calls: <span className="text-cream font-medium">{usageData.tts.calls}</span></span>
                       <span>Characters: <span className="text-cream font-medium">{formatTokens(usageData.tts.characters)}</span></span>
-                      <span>Models: <span className="text-cream">{usageData.tts.models.join(", ") || "-"}</span></span>
+                      <span title="此區間內曾使用過的所有模型，並非當前設定">
+                        此區間用過: <span className="text-cream">{usageData.tts.models.join(", ") || "-"}</span>
+                      </span>
                     </div>
                   </div>
                 )}

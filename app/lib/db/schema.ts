@@ -139,7 +139,7 @@ export const pendingCredits = pgTable("pending_credits", {
 export const ttsSettings = pgTable("tts_settings", {
   id: serial("id").primaryKey(),
   apiKeyEncrypted: text("api_key_encrypted").notNull().default(""),
-  modelId: varchar("model_id", { length: 50 }).notNull().default("eleven_flash_v2_5"),
+  modelId: varchar("model_id", { length: 50 }).notNull().default("eleven_v3"),
   stability: real("stability").notNull().default(0.7),
   similarityBoost: real("similarity_boost").notNull().default(0.75),
   style: real("style").notNull().default(0.0),
