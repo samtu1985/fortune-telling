@@ -15,6 +15,10 @@ export function useAudioQueue() {
   const [isPaused, setIsPaused] = useState(false);
   const [currentMaster, setCurrentMaster] = useState<MasterType | null>(null);
   const [waitingForTap, setWaitingForTap] = useState(false);
+  // Reactive count of fully enqueued segments. Callers use this to know when
+  // every expected segment has arrived (e.g. to only expose the download
+  // button after all three masters' audio is ready).
+  const [segmentCount, setSegmentCount] = useState(0);
   const queueRef = useRef<AudioSegment[]>([]);
   const allSegmentsRef = useRef<AudioSegment[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -70,6 +74,7 @@ export function useAudioQueue() {
     (segment: AudioSegment) => {
       allSegmentsRef.current.push(segment);
       queueRef.current.push(segment);
+      setSegmentCount(allSegmentsRef.current.length);
 
       if (startedRef.current) {
         // User already tapped — auto-play subsequent segments
@@ -107,6 +112,7 @@ export function useAudioQueue() {
     }
     queueRef.current = [];
     allSegmentsRef.current = [];
+    setSegmentCount(0);
     setIsPlaying(false);
     setIsPaused(false);
     setCurrentMaster(null);
@@ -206,7 +212,8 @@ export function useAudioQueue() {
     resume,
     stop,
     allSegments: allSegmentsRef.current,
-    hasSegments: allSegmentsRef.current.length > 0,
+    hasSegments: segmentCount > 0,
+    segmentCount,
     downloadPodcast,
     podcastDownloading,
   };
