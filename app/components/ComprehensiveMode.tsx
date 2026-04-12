@@ -1410,8 +1410,12 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             </button>
           </p>
 
-          {/* PDF Download — shown after discussion ends */}
-          {discussionEnded && !loading && !isAutoDiscussing && (
+          {/* PDF Download — shown whenever the user is in a stable, idle state
+              with at least one master reply. We used to gate this on
+              discussionEnded, but that flag stays false if the user manually
+              stops auto-discussion mid-round or if consensus triggers on the
+              very first round, so the button would disappear unexpectedly. */}
+          {!loading && !isAutoDiscussing && messages.some((m) => m.role === "assistant") && (
             <button
               onClick={handleDownloadPdf}
               disabled={pdfGenerating}
@@ -1433,11 +1437,12 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             </button>
           )}
 
-          {/* Podcast download — only after every assistant message has an audio
-              segment AND no TTS is still generating, so the downloaded file is
-              guaranteed complete. */}
+          {/* Podcast download — only when the user is idle AND every assistant
+              message has an audio segment AND no TTS is still generating, so
+              the downloaded file is guaranteed complete. Does not rely on
+              discussionEnded (which can stay false in several stop paths). */}
           {(() => {
-            if (!(discussionEnded && !loading && !isAutoDiscussing && podcastMode)) return null;
+            if (loading || isAutoDiscussing || !podcastMode) return null;
             const expectedSegments = messages.filter(
               (m) => m.role === "assistant" && !m.content.startsWith(t("comprehensive.connectionError"))
             ).length;

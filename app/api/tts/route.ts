@@ -3,21 +3,46 @@ import { auth } from "@/app/lib/auth";
 import { getTTSConfig, getVoiceId } from "@/app/lib/tts-settings";
 import { logUsage } from "@/app/lib/usage";
 
+// Known ElevenLabs (v3 and v2) Chinese pronunciation workarounds.
+// The TTS model sometimes picks the wrong reading for homographs or
+// rare characters. We rewrite the text before sending so the audio
+// comes out right, without touching what's displayed on screen.
+//
+// Each entry is [matcher, replacement]. The replacement is usually a
+// near-homophone with an unambiguous reading. Order matters — the
+// first replacement wins for a given span.
+const TTS_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
+  // 職位 (zhí wèi) gets read as 學位 (xué wèi). Writing it as 職務 (zhí wù)
+  // is the closest same-meaning alternative with an unambiguous reading.
+  [/職位/g, "職務"],
+];
+
+function applyTTSReplacements(text: string): string {
+  let out = text;
+  for (const [pattern, replacement] of TTS_TEXT_REPLACEMENTS) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { text, masterKey, locale } = (await request.json()) as {
+  const { text: rawText, masterKey, locale } = (await request.json()) as {
     text: string;
     masterKey: string;
     locale: string;
   };
 
-  if (!text || !masterKey) {
+  if (!rawText || !masterKey) {
     return Response.json({ error: "Missing text or masterKey" }, { status: 400 });
   }
+
+  // Fix known TTS mispronunciations before sending to ElevenLabs.
+  const text = applyTTSReplacements(rawText);
 
   const config = await getTTSConfig();
   console.log("[tts] Config loaded:", { hasKey: !!config?.apiKey, modelId: config?.modelId, keyPrefix: config?.apiKey?.slice(0, 8) });
