@@ -646,44 +646,59 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         return;
       }
       setTtsGeneratingCount((c) => c + 1);
+      const MAX_ATTEMPTS = 2;
       try {
-        const res = await fetch("/api/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, masterKey: master, locale }),
-        });
-        if (!res.ok) {
-          const errBody = await res.text().catch(() => "");
-          console.warn("[tts] Failed for", master, res.status, errBody.slice(0, 200));
-          return;
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          try {
+            const res = await fetch("/api/tts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, masterKey: master, locale }),
+            });
+            if (!res.ok) {
+              const errBody = await res.text().catch(() => "");
+              console.warn("[tts] Failed for", master, `attempt ${attempt}/${MAX_ATTEMPTS}`, res.status, errBody.slice(0, 200));
+              if (attempt < MAX_ATTEMPTS) {
+                await new Promise((r) => setTimeout(r, 1500));
+                continue;
+              }
+              return;
+            }
+            const buffer = await res.arrayBuffer();
+            console.log(
+              "[tts] received",
+              master,
+              `attempt ${attempt}`,
+              "bytes:",
+              buffer.byteLength,
+              "contentType:",
+              res.headers.get("content-type")
+            );
+            if (buffer.byteLength < 1024) {
+              console.warn(
+                "[tts] suspiciously small audio for",
+                master,
+                `(${buffer.byteLength} bytes, attempt ${attempt}/${MAX_ATTEMPTS})`
+              );
+              if (attempt < MAX_ATTEMPTS) {
+                await new Promise((r) => setTimeout(r, 1500));
+                continue;
+              }
+              console.warn("[tts] dropping", master, "after all retries");
+              return;
+            }
+            const blob = new Blob([buffer], { type: "audio/mpeg" });
+            const audioUrl = URL.createObjectURL(blob);
+            audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
+            console.log("[tts] enqueued", master);
+            break; // success — exit retry loop
+          } catch (e) {
+            console.warn("[tts] Error:", master, `attempt ${attempt}/${MAX_ATTEMPTS}`, e);
+            if (attempt < MAX_ATTEMPTS) {
+              await new Promise((r) => setTimeout(r, 1500));
+            }
+          }
         }
-        const buffer = await res.arrayBuffer();
-        console.log(
-          "[tts] received",
-          master,
-          "bytes:",
-          buffer.byteLength,
-          "contentType:",
-          res.headers.get("content-type")
-        );
-        // Sanity check: MP3 audio for a multi-paragraph master reading should
-        // be tens of kB minimum. Anything under 1 kB is suspicious — either a
-        // malformed response from ElevenLabs or an empty synthesis. Don't
-        // enqueue garbage; it would cause silent audio skips on playback.
-        if (buffer.byteLength < 1024) {
-          console.warn(
-            "[tts] suspiciously small audio for",
-            master,
-            `(${buffer.byteLength} bytes) — dropping`
-          );
-          return;
-        }
-        const blob = new Blob([buffer], { type: "audio/mpeg" });
-        const audioUrl = URL.createObjectURL(blob);
-        audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
-        console.log("[tts] enqueued", master);
-      } catch (e) {
-        console.warn("[tts] Error:", master, e);
       } finally {
         setTtsGeneratingCount((c) => Math.max(0, c - 1));
       }
