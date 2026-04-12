@@ -1520,30 +1520,42 @@ export default function AdminPage() {
                 </div>
 
                 {/* Voice Settings */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsStability")}: {ttsEditConfig.stability.toFixed(2)}</label>
                     <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.stability}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, stability: parseFloat(e.target.value) }))}
                       className="w-full" />
+                    <p className="mt-1 text-[10px] text-stone/50 leading-snug">
+                      越高越穩、每次生成越一致（太低會亂念字、語速失控）。建議 <span className="text-gold/70">0.75 – 1.00</span>。
+                    </p>
                   </div>
                   <div>
                     <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsSimilarity")}: {ttsEditConfig.similarityBoost.toFixed(2)}</label>
                     <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.similarityBoost}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, similarityBoost: parseFloat(e.target.value) }))}
                       className="w-full" />
+                    <p className="mt-1 text-[10px] text-stone/50 leading-snug">
+                      越高越貼近聲源。聲源若有雜音，過高反而會一起放大。建議 <span className="text-gold/70">0.75</span>。
+                    </p>
                   </div>
                   <div>
                     <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsSpeed")}: {ttsEditConfig.speed.toFixed(2)}</label>
-                    <input type="range" min="0.5" max="2" step="0.05" value={ttsEditConfig.speed}
+                    <input type="range" min="0.7" max="1.2" step="0.05" value={ttsEditConfig.speed}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, speed: parseFloat(e.target.value) }))}
                       className="w-full" />
+                    <p className="mt-1 text-[10px] text-stone/50 leading-snug">
+                      1.0 = 原速。&gt; 1.1 會吞音、字音糊掉；&lt; 0.8 會拖慢。ElevenLabs 上限 <span className="text-gold/70">0.7 – 1.2</span>。
+                    </p>
                   </div>
                   <div>
                     <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsStyle")}: {ttsEditConfig.style.toFixed(2)}</label>
                     <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.style}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, style: parseFloat(e.target.value) }))}
                       className="w-full" />
+                    <p className="mt-1 text-[10px] text-amber-400/70 leading-snug">
+                      ⚠ 官方建議保持 <span className="font-bold">0</span>。設得越高，模型越容易自由發揮、念錯字。若聽到字音不對，優先把這個歸零。
+                    </p>
                   </div>
                 </div>
 
