@@ -3,6 +3,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { users, profiles, conversations, pendingCredits } from "./db/schema";
 import { encrypt, decrypt } from "./db/encryption";
+import { sendAdminNotification } from "./email";
 import type { UserForQuota } from "./quota";
 
 // ─── PII Encryption Helpers ─────────────────────────────
@@ -212,29 +213,49 @@ export async function registerUser(
   const isAdmin = email === ADMIN_EMAIL;
   const now = new Date();
 
+  // Check whether this is a genuinely new user or a returning sign-in.
+  // Returning sign-ins should NOT re-fire the admin notification nor
+  // reset starter credits — they should just refresh name/image.
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (existing.length > 0) {
+    // Returning user — just sync profile fields from the OAuth provider.
+    await db
+      .update(users)
+      .set({ name, image })
+      .where(eq(users.email, email));
+    return;
+  }
+
   // As of 2026-04: paid quota system is live. New users (Google OAuth) are
   // auto-approved on first sign-in — no admin review — and get the starter
   // 10/2 quota. Admin still bypasses quota via isExempt().
-  await db
-    .insert(users)
-    .values({
-      email,
-      name,
-      image,
-      status: "approved",
-      createdAt: now,
-      approvedAt: now,
-      singleCredits: STARTER_SINGLE_CREDITS,
-      multiCredits: STARTER_MULTI_CREDITS,
-    })
-    .onConflictDoUpdate({
-      target: users.email,
-      set: { name, image },
-    });
+  await db.insert(users).values({
+    email,
+    name,
+    image,
+    status: "approved",
+    createdAt: now,
+    approvedAt: now,
+    singleCredits: STARTER_SINGLE_CREDITS,
+    multiCredits: STARTER_MULTI_CREDITS,
+  });
 
-  // Apply any pending ambassador gifts on top of the starter quota.
   if (!isAdmin) {
+    // Apply any pending ambassador gifts on top of the starter quota.
     await applyPendingCreditsFor(email);
+
+    // Fire-and-forget admin notification. This covers the Google OAuth path
+    // — the credentials flow still fires its own notification from
+    // /api/auth/verify-email since that's where "verification complete"
+    // semantically happens for that flow.
+    sendAdminNotification(email, name).catch((e) =>
+      console.error("[users] admin notification failed:", e)
+    );
   }
 }
 
