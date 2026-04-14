@@ -734,9 +734,21 @@ export default function AdminPage() {
                 {user.name || t("admin.unnamed")}
               </span>
               <span className={`text-xs ${status.color}`}>{status.text}</span>
-              {user.authProvider === "credentials" && (
-                <span className="text-[10px] px-1.5 py-0.5 border border-stone/20 rounded text-stone/50">ID</span>
-              )}
+              {user.authProvider === "google" ? (
+                <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-400/30 bg-sky-400/5 text-sky-300/80 flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21.35 11.1H12v3.2h5.35c-.5 2.4-2.55 3.6-5.35 3.6-3.25 0-5.9-2.65-5.9-5.9s2.65-5.9 5.9-5.9c1.45 0 2.75.5 3.75 1.45l2.4-2.4C16.55 3.75 14.45 3 12 3 7.05 3 3 7.05 3 12s4.05 9 9 9c5.2 0 8.6-3.65 8.6-8.8 0-.4-.05-.7-.1-1.1z" />
+                  </svg>
+                  Google 登入
+                </span>
+              ) : user.authProvider === "credentials" ? (
+                <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-400/30 bg-amber-400/5 text-amber-300/80 flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Email 註冊
+                </span>
+              ) : null}
               {user.username && (
                 <span className="text-[10px] text-stone/50">@{user.username}</span>
               )}
