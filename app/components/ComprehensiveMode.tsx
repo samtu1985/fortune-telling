@@ -928,6 +928,40 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
     : null;
 
   // ── Input Phase ──
+  // Top-level archive view: accessible from any phase before a discussion
+  // has started. Renders SavedConversations full-page with its own back
+  // button that returns the user to whichever phase they were in.
+  if (view === "saved" && phase !== "discussion") {
+    return (
+      <main className="relative z-10 flex-1 flex flex-col h-dvh">
+        <SmokeParticles />
+        <div className="relative z-20 flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
+          <button
+            onClick={() => setView("discussion")}
+            className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+            </svg>
+            返回
+          </button>
+          <h1 className="text-base font-serif text-gold tracking-widest">
+            {t("main.savedConversations")}
+          </h1>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <UserMenu />
+          </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-6">
+          <div className="max-w-3xl mx-auto">
+            <SavedConversations type="multi" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (phase === "input") {
     return (
       <main className="relative z-10 flex-1">
@@ -944,6 +978,16 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           </button>
         </div>
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setView("saved")}
+            className="text-xs sm:text-sm text-stone hover:text-gold transition-colors min-h-[44px] font-serif px-2 flex items-center gap-1.5"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 12h14M5 16h10" />
+            </svg>
+            {t("main.savedConversations")}
+          </button>
           <ThemeToggle />
           <UserMenu />
         </div>
@@ -986,6 +1030,16 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           </button>
         </div>
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setView("saved")}
+            className="text-xs sm:text-sm text-stone hover:text-gold transition-colors min-h-[44px] font-serif px-2 flex items-center gap-1.5"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 12h14M5 16h10" />
+            </svg>
+            {t("main.savedConversations")}
+          </button>
           <ThemeToggle />
           <UserMenu />
         </div>
