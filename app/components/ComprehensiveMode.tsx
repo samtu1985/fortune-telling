@@ -321,8 +321,59 @@ export default function ComprehensiveMode({
       }
 
       setLoading(false);
+
+      // Auto-save the completed round so the user can come back to the
+      // discussion later. Stores the most recent user question + a merged
+      // text dump of this round's three master responses. Content is AES-
+      // 256-GCM encrypted by the backend — admins/DBAs cannot read it.
+      // Rotates to the 3 most recent auto rows per user, keyed by type="multi".
+      (() => {
+        // Find the most recent user message
+        let lastUserQ = "";
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].role === "user") {
+            const raw = msgs[i].content;
+            // Strip the auto-discussion prompts we inject
+            if (
+              raw.startsWith("請針對前面其他老師") ||
+              raw.startsWith("這是最後一輪")
+            ) continue;
+            // Strip injected chart data from the display content
+            lastUserQ = raw.replace(/\n\n【(以下是|系統提示)[\s\S]*$/, "").trim();
+            break;
+          }
+        }
+        if (!lastUserQ) return;
+
+        // Merge this round's master responses into a single readable block
+        const thisRoundResponses = msgs
+          .slice(-MASTER_ORDER.length)
+          .filter((m) => m.role === "assistant" && m.content)
+          .map((m) => {
+            const master = m.master ? MASTERS.find((x) => x.id === m.master) : undefined;
+            const label = master?.label ?? m.master ?? "";
+            return `【${label}】\n${m.content}`;
+          })
+          .join("\n\n");
+        if (!thisRoundResponses) return;
+
+        fetch("/api/saved-conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "multi",
+            userQuestion: lastUserQ,
+            aiResponse: thisRoundResponses,
+            origin: "auto",
+          }),
+        }).catch(() => {
+          // Auto-save failures are non-critical.
+        });
+      })();
+
       return { messages: msgs, consensus: consensusReached };
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [streamMaster]
   );
 

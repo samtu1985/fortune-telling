@@ -67,11 +67,15 @@ export const profilesRelations = relations(profiles, ({ one }) => ({
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  type: varchar("type", { length: 10 }).notNull(),
-  userQuestion: text("user_question").notNull(),
-  aiResponse: text("ai_response").notNull(),
-  aiReasoning: text("ai_reasoning"),
+  type: varchar("type", { length: 10 }).notNull(), // bazi | ziwei | zodiac | multi
+  userQuestion: text("user_question").notNull(),   // AES-256-GCM encrypted
+  aiResponse: text("ai_response").notNull(),       // AES-256-GCM encrypted
+  aiReasoning: text("ai_reasoning"),               // AES-256-GCM encrypted (nullable)
   profileLabel: varchar("profile_label", { length: 255 }),
+  // "manual" = user clicked the save button. "auto" = system auto-saved
+  // the last round to prevent data loss; rotated to keep only the 3 most
+  // recent auto rows per (user, type).
+  origin: varchar("origin", { length: 10 }).notNull().default("manual"),
   savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

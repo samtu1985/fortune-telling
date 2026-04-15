@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { users, profiles, conversations, pendingCredits } from "./db/schema";
 import { encrypt, decrypt } from "./db/encryption";
@@ -69,13 +69,17 @@ export interface SavedProfile {
   updatedAt: string;
 }
 
+export type ConversationType = "bazi" | "ziwei" | "zodiac" | "multi";
+export type ConversationOrigin = "manual" | "auto";
+
 export interface SavedConversation {
   id: string;
-  type: "bazi" | "ziwei" | "zodiac";
+  type: ConversationType;
   userQuestion: string;
   aiResponse: string;
   aiReasoning?: string;
   profileLabel?: string;
+  origin: ConversationOrigin;
   savedAt: string;
 }
 
@@ -519,22 +523,27 @@ function mapProfile(row: typeof profiles.$inferSelect): SavedProfile {
 
 export async function getSavedConversations(
   email: string,
-  type?: "bazi" | "ziwei" | "zodiac"
+  type?: ConversationType,
+  origin?: ConversationOrigin
 ): Promise<SavedConversation[]> {
   const userId = await getUserId(email);
   if (!userId) return [];
 
-  const where = type
-    ? and(eq(conversations.userId, userId), eq(conversations.type, type))
-    : eq(conversations.userId, userId);
+  const clauses = [eq(conversations.userId, userId)];
+  if (type) clauses.push(eq(conversations.type, type));
+  if (origin) clauses.push(eq(conversations.origin, origin));
 
-  const rows = await db.select().from(conversations).where(where);
+  const rows = await db
+    .select()
+    .from(conversations)
+    .where(and(...clauses))
+    .orderBy(desc(conversations.savedAt));
   return rows.map(mapConversation);
 }
 
 export async function createSavedConversation(
   email: string,
-  conv: Omit<SavedConversation, "id" | "savedAt">
+  conv: Omit<SavedConversation, "id" | "savedAt" | "origin"> & { origin?: ConversationOrigin }
 ): Promise<SavedConversation | null> {
   const userId = await getUserId(email);
   if (!userId) return null;
@@ -548,11 +557,52 @@ export async function createSavedConversation(
       aiResponse: encryptField(conv.aiResponse),
       aiReasoning: conv.aiReasoning ? encryptField(conv.aiReasoning) : null,
       profileLabel: conv.profileLabel ?? null,
+      origin: conv.origin ?? "manual",
       savedAt: new Date(),
     })
     .returning();
 
   return result[0] ? mapConversation(result[0]) : null;
+}
+
+/**
+ * Auto-save the latest round and rotate to keep only the last 3 auto rows
+ * per (user, type). Encryption is handled by createSavedConversation — the
+ * stored bytes are AES-256-GCM ciphertext, not readable by any DBA.
+ */
+export async function autoSaveConversation(
+  email: string,
+  conv: Omit<SavedConversation, "id" | "savedAt" | "origin">
+): Promise<SavedConversation | null> {
+  const userId = await getUserId(email);
+  if (!userId) return null;
+
+  // 1. Insert the new auto row
+  const inserted = await createSavedConversation(email, { ...conv, origin: "auto" });
+  if (!inserted) return null;
+
+  // 2. Rotation: find all auto rows for this user+type, ordered newest first,
+  //    and delete everything beyond the 3rd.
+  const allAutoRows = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.userId, userId),
+        eq(conversations.type, conv.type),
+        eq(conversations.origin, "auto"),
+      )
+    )
+    .orderBy(desc(conversations.savedAt));
+
+  const idsToDelete = allAutoRows.slice(3).map((r) => r.id);
+  if (idsToDelete.length > 0) {
+    await db
+      .delete(conversations)
+      .where(inArray(conversations.id, idsToDelete));
+  }
+
+  return inserted;
 }
 
 export async function deleteSavedConversation(
@@ -568,11 +618,12 @@ export async function deleteSavedConversation(
 function mapConversation(row: typeof conversations.$inferSelect): SavedConversation {
   return {
     id: row.id,
-    type: row.type as "bazi" | "ziwei" | "zodiac",
+    type: row.type as ConversationType,
     userQuestion: decryptField(row.userQuestion),
     aiResponse: decryptField(row.aiResponse),
     aiReasoning: row.aiReasoning ? decryptField(row.aiReasoning) : undefined,
     profileLabel: row.profileLabel ?? undefined,
+    origin: (row.origin === "auto" ? "auto" : "manual") as ConversationOrigin,
     savedAt: row.savedAt.toISOString(),
   };
 }

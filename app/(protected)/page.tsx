@@ -381,6 +381,37 @@ export default function Home() {
           if (selectedTypeRef.current === type) return { ...conversationsRef.current[type] };
           return prev;
         });
+
+        // Auto-save the latest user question + AI response so the user can
+        // come back to it later if they close the tab before finishing.
+        // Rotates to keep only the 3 most recent auto rows per (user, type).
+        // Content is AES-256-GCM encrypted by the backend; admins/DBAs cannot
+        // read it in plain text.
+        (() => {
+          const msgs = conversationsRef.current[type].messages;
+          let lastUserQ = "";
+          for (let i = msgs.length - 2; i >= 0; i--) {
+            if (msgs[i].role === "user") {
+              lastUserQ = msgs[i].content;
+              break;
+            }
+          }
+          if (!lastUserQ || !fullContent) return;
+          fetch("/api/saved-conversations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type,
+              userQuestion: lastUserQ,
+              aiResponse: fullContent,
+              aiReasoning: fullReasoning || undefined,
+              profileLabel: conversationsRef.current[type].profileLabel,
+              origin: "auto",
+            }),
+          }).catch(() => {
+            // Auto-save failures are non-critical; user can still save manually.
+          });
+        })();
       } catch (err) {
         // If we already received partial content, preserve it instead of showing an error
         // This handles mobile background tab suspension breaking the SSE connection
