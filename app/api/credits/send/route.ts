@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { ADMIN_EMAIL } from "@/app/lib/users";
 import { db } from "@/app/lib/db";
-import { users, pendingCredits } from "@/app/lib/db/schema";
+import { users, pendingCredits, creditGrants } from "@/app/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { sendTrialNotification, sendTrialInvitation } from "@/app/lib/email";
 
@@ -57,6 +57,15 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(users.email, email));
 
+    // Write audit row — append-only, survives everything
+    await db.insert(creditGrants).values({
+      senderEmail,
+      recipientEmail: email,
+      singleCredits,
+      multiCredits,
+      deliveryMode: "direct",
+    });
+
     // Send notification email
     await sendTrialNotification(email, singleCredits, multiCredits);
 
@@ -68,6 +77,15 @@ export async function POST(request: NextRequest) {
       singleCredits,
       multiCredits,
       sentBy: senderEmail,
+    });
+
+    // Write audit row
+    await db.insert(creditGrants).values({
+      senderEmail,
+      recipientEmail: email,
+      singleCredits,
+      multiCredits,
+      deliveryMode: "pending",
     });
 
     // Send invitation email

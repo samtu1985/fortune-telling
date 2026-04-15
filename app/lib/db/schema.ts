@@ -135,6 +135,25 @@ export const pendingCredits = pgTable("pending_credits", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ─── Credit Grants Audit Log ────────────────────────────
+// Write-once record of every credit gift sent via /api/credits/send.
+// pending_credits rows get deleted on apply, so the audit trail of who
+// sent what to whom would otherwise be lost. This table is append-only
+// and survives everything, so admins can always trace credit grants.
+export const creditGrants = pgTable("credit_grants", {
+  id: serial("id").primaryKey(),
+  senderEmail: varchar("sender_email", { length: 255 }).notNull(),
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  singleCredits: integer("single_credits").notNull().default(0),
+  multiCredits: integer("multi_credits").notNull().default(0),
+  // "direct": recipient existed at send time, credits added immediately.
+  // "pending": recipient did not exist; stored in pending_credits, will
+  //            be applied at their first verification/registration.
+  deliveryMode: varchar("delivery_mode", { length: 10 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── TTS Settings ───────────────────────────────────────
 export const ttsSettings = pgTable("tts_settings", {
   id: serial("id").primaryKey(),
