@@ -11,6 +11,7 @@ import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import SmokeParticles from "./SmokeParticles";
 import FeedbackModal from "./FeedbackModal";
+import SavedConversations from "./SavedConversations";
 import { useLocale } from "./LocaleProvider";
 import { useAudioQueue, type AudioSegment } from "@/app/hooks/useAudioQueue";
 import { useQuotaExhausted } from "./QuotaExhaustedGate";
@@ -111,6 +112,10 @@ export default function ComprehensiveMode({
   // floating TTS status bar from translucent (at top) to opaque (scrolled)
   // so message text never shows through the glassy pill.
   const [hasScrolled, setHasScrolled] = useState(false);
+
+  // Tab inside the three-masters discussion view: the live conversation vs
+  // the saved-conversations archive (manual + auto).
+  const [view, setView] = useState<"discussion" | "saved">("discussion");
 
   // Auto-scroll + collapse mobile controls on scroll
   const handleScroll = useCallback(() => {
@@ -1097,6 +1102,43 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </div>
       </div>
 
+      {/* In-view tabs: live discussion vs saved archive */}
+      <div className="flex justify-center gap-6 px-4 pb-1 shrink-0 border-b border-gold/10">
+        <button
+          type="button"
+          onClick={() => setView("discussion")}
+          className={`pb-2 text-xs font-serif tracking-widest transition-colors ${
+            view === "discussion"
+              ? "text-gold border-b-2 border-gold"
+              : "text-stone/60 hover:text-stone"
+          }`}
+        >
+          {t("comprehensive.tabDiscussion")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("saved")}
+          className={`pb-2 text-xs font-serif tracking-widest transition-colors ${
+            view === "saved"
+              ? "text-gold border-b-2 border-gold"
+              : "text-stone/60 hover:text-stone"
+          }`}
+        >
+          {t("main.savedConversations")}
+        </button>
+      </div>
+
+      {view === "saved" && (
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-6">
+          <div className="max-w-3xl mx-auto">
+            <SavedConversations type="multi" />
+          </div>
+        </div>
+      )}
+
+      {view === "discussion" && (
+      <>
+
       {/* Master indicators */}
       <div className="flex justify-center gap-3 px-4 pb-2 shrink-0">
         {MASTERS.map((m) => (
@@ -1267,9 +1309,11 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Floating TTS status bar — always visible at top */}
-      {podcastMode && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying || audioQueue.isPaused || audioQueue.waitingForTap) && (
+      {podcastMode && view === "discussion" && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying || audioQueue.isPaused || audioQueue.waitingForTap) && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
           {audioQueue.waitingForTap ? (
             /* Ready to play — user needs to tap */
@@ -1362,7 +1406,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       )}
 
       {/* Mobile FAB — collapsed state with spinning gradient ring */}
-      {phase === "discussion" && (
+      {phase === "discussion" && view === "discussion" && (
         <button
           onClick={() => setMobileControlsOpen(true)}
           className={`sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-[var(--parchment)] shadow-lg flex items-center justify-center text-gold/70 active:scale-95 transition-all duration-300 ease-in-out ${
@@ -1387,12 +1431,15 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </button>
       )}
 
-      {/* Bottom controls — slides down on mobile when collapsed, always visible on desktop */}
+      {/* Bottom controls — slides down on mobile when collapsed, always visible on desktop.
+          Hidden entirely when viewing the saved-conversations archive. */}
       <div
         className={`relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0 transition-all duration-300 ease-in-out sm:!translate-y-0 sm:!opacity-100 sm:!pointer-events-auto sm:!max-h-none ${
-          !mobileControlsOpen && phase === "discussion"
-            ? "max-sm:translate-y-full max-sm:opacity-0 max-sm:pointer-events-none max-sm:max-h-0 max-sm:py-0 max-sm:overflow-hidden"
-            : ""
+          view === "saved"
+            ? "hidden"
+            : !mobileControlsOpen && phase === "discussion"
+              ? "max-sm:translate-y-full max-sm:opacity-0 max-sm:pointer-events-none max-sm:max-h-0 max-sm:py-0 max-sm:overflow-hidden"
+              : ""
         }`}
         style={{ background: "var(--parchment)" }}
       >
