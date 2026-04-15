@@ -1236,7 +1236,12 @@ export default function AdminPage() {
                                       : `${config.thinkingBudget || 5000}t`}
                                   </span>
                                 )}
-                                {config.reasoningDepth && (
+                                {/* 深度 is only meaningful for OpenAI (reasoning_effort param).
+                                    Anthropic uses `effort` (shown above via adaptive/effort),
+                                    Google also uses `effort`, BytePlus has its own thinkingMode.
+                                    Showing it for non-OpenAI providers surfaces a stale default
+                                    that doesn't correspond to what the backend actually sends. */}
+                                {config.provider === "openai" && config.reasoningDepth && (
                                   <span className="ml-1.5 text-blue-400">
                                     {t("admin.depth")}:{config.reasoningDepth}
                                   </span>
