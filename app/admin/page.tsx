@@ -156,6 +156,33 @@ export default function AdminPage() {
   } | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
 
+  // --- Credit grants audit log ---
+  type CreditGrant = {
+    id: number;
+    senderEmail: string;
+    recipientEmail: string;
+    singleCredits: number;
+    multiCredits: number;
+    deliveryMode: "direct" | "pending";
+    note: string | null;
+    createdAt: string;
+  };
+  const [creditGrants, setCreditGrants] = useState<CreditGrant[]>([]);
+  const [creditGrantsLoading, setCreditGrantsLoading] = useState(false);
+
+  const fetchCreditGrants = useCallback(async () => {
+    setCreditGrantsLoading(true);
+    try {
+      const res = await fetch("/api/admin/credit-grants?limit=50");
+      if (res.ok) {
+        const data = await res.json();
+        setCreditGrants(data.grants || []);
+      }
+    } finally {
+      setCreditGrantsLoading(false);
+    }
+  }, []);
+
   const [cases, setCases] = useState<{ id: string; summary: string; masterTypes: string; createdAt: string }[]>([]);
   const [casesLoading, setCasesLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState<{ id: string; summary: string; fullContent: string; originalQuestion: string; masterTypes: string; createdAt: string } | null>(null);
@@ -542,6 +569,12 @@ export default function AdminPage() {
       fetchTTSRules();
     }
   }, [activeTab, ttsSubTab, fetchTTSRules]);
+
+  useEffect(() => {
+    if (activeTab === "usage") {
+      fetchCreditGrants();
+    }
+  }, [activeTab, fetchCreditGrants]);
 
   const updateStatus = async (
     email: string,
@@ -1929,6 +1962,86 @@ export default function AdminPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Credit grants audit log */}
+                <div className="mb-6 rounded-lg border border-gold/15 p-4" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-serif text-gold">額度紀錄（最近 50 筆）</span>
+                    </div>
+                    <span className="text-[10px] text-stone/50">
+                      記錄由 /api/credits/send 透過「送額度」功能發出的每一次贈送
+                    </span>
+                  </div>
+
+                  {creditGrantsLoading ? (
+                    <p className="text-xs text-mist py-4 text-center">載入中...</p>
+                  ) : creditGrants.length === 0 ? (
+                    <p className="text-xs text-stone/60 py-4 text-center">尚無額度贈送紀錄</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-gold/20 text-left text-mist">
+                            <th className="py-2 pr-3 whitespace-nowrap">時間</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">贈送者</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">接收者</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">個別</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">三師</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">模式</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creditGrants.map((g) => (
+                            <tr key={g.id} className="border-b border-gold/10 text-cream">
+                              <td className="py-2 pr-3 whitespace-nowrap text-stone/70">
+                                {new Date(g.createdAt).toLocaleString("zh-HK", {
+                                  year: "numeric", month: "2-digit", day: "2-digit",
+                                  hour: "2-digit", minute: "2-digit",
+                                })}
+                              </td>
+                              <td className="py-2 pr-3 truncate max-w-[180px]">{g.senderEmail}</td>
+                              <td className="py-2 pr-3 truncate max-w-[180px]">{g.recipientEmail}</td>
+                              <td className="py-2 pr-3 whitespace-nowrap">
+                                {g.singleCredits > 0 ? (
+                                  <span className="text-gold">+{g.singleCredits}</span>
+                                ) : (
+                                  <span className="text-stone/40">—</span>
+                                )}
+                              </td>
+                              <td className="py-2 pr-3 whitespace-nowrap">
+                                {g.multiCredits > 0 ? (
+                                  <span className="text-gold">+{g.multiCredits}</span>
+                                ) : (
+                                  <span className="text-stone/40">—</span>
+                                )}
+                              </td>
+                              <td className="py-2 pr-3 whitespace-nowrap">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] border ${
+                                    g.deliveryMode === "direct"
+                                      ? "border-green-500/30 text-green-400"
+                                      : "border-amber-400/30 text-amber-300"
+                                  }`}
+                                  title={
+                                    g.deliveryMode === "direct"
+                                      ? "接收者當下已註冊，直接加到帳戶"
+                                      : "接收者當下未註冊，存入 pending_credits，註冊時自動套用"
+                                  }
+                                >
+                                  {g.deliveryMode === "direct" ? "直接贈送" : "待領取"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
 
                 {/* User detail table */}
                 {usageData.byUser.length === 0 ? (
