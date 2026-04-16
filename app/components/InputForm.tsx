@@ -222,10 +222,9 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
   return (
     <form
       onSubmit={handleSubmit}
-      className="animate-fade-in-up space-y-5"
-      style={{ animationDelay: "400ms", opacity: 0 }}
+      className="animate-fade-in space-y-5"
     >
-      <div className="gold-line mb-6" />
+      <div className="tesla-divider mb-6" />
 
       {/* Profile Selector */}
       <div className="space-y-1.5">
@@ -249,7 +248,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             <button
               type="button"
               onClick={() => setShowSavedChart(!showSavedChart)}
-              className="text-sm text-gold-dim hover:text-gold transition-colors flex items-center gap-1.5"
+              className="text-sm text-text-tertiary hover:text-accent transition-colors flex items-center gap-1.5"
             >
               <svg className={`w-3.5 h-3.5 transition-transform ${showSavedChart ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -257,7 +256,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
               {t("form.viewSavedChart")}
             </button>
             {showSavedChart && (
-              <div className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap pl-4 border-l-2 border-gold/15 max-h-48 overflow-y-auto">
+              <div className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap pl-4 border-l-2 border-border-light max-h-48 overflow-y-auto">
                 {savedChart.replace(/<[^>]+>/g, "").trim()}
               </div>
             )}
@@ -289,17 +288,17 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             className="w-full min-w-0"
           />
           {isChineseType && birthTime && (
-            <p className="text-xs text-gold-dim mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               {t("form.shichen")}{timeToShichenKey(birthTime) ? t(timeToShichenKey(birthTime)) : ""}
             </p>
           )}
           {type === "zodiac" && (
-            <p className="text-xs text-stone/60 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               {t("form.ascendantNote")}
             </p>
           )}
           {isChineseType && (
-            <p className="text-xs text-stone/60 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               {t("form.shichenBoundary")}
             </p>
           )}
@@ -314,12 +313,12 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
               <option value="lunar">{t("form.lunar")}</option>
             </select>
             {calendarType === "lunar" && (
-              <label className="flex items-center gap-2 mt-1.5 text-xs text-stone/70 cursor-pointer">
+              <label className="flex items-center gap-2 mt-1.5 text-xs text-text-tertiary cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isLeapMonth}
                   onChange={(e) => setIsLeapMonth(e.target.checked)}
-                  className="accent-gold"
+                  className="accent-accent"
                 />
                 {t("form.leapMonth")}
               </label>
@@ -351,7 +350,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
               )}
             </select>
             {type === "ziwei" && (
-              <p className="text-xs text-stone/60 mt-1">
+              <p className="text-xs text-text-tertiary mt-1">
                 {t("form.ziweiGenderNote")}
               </p>
             )}
@@ -369,12 +368,12 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             required
           />
           {isChineseType && (
-            <p className="text-xs text-stone/60 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               {t("form.birthPlaceNote")}
             </p>
           )}
           {type === "zodiac" && (
-            <p className="text-xs text-stone/60 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               {t("form.zodiacPlaceNote")}
             </p>
           )}
@@ -409,15 +408,15 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
           type="button"
           onClick={handleSaveProfile}
           disabled={savingProfile || !saveLabel.trim() || (!selectedProfileId && profiles.length >= 10)}
-          className="shrink-0 px-4 py-2.5 min-h-[44px] rounded-sm text-sm text-gold-dim border border-gold/15 hover:bg-gold/10 transition-colors font-serif tracking-widest disabled:opacity-40"
+          className="shrink-0 px-4 py-2.5 min-h-[44px] rounded-sm text-sm text-text-secondary border border-border-light hover:bg-bg-secondary transition-colors disabled:opacity-40"
         >
           {savingProfile ? "..." : selectedProfileId ? t("form.update") : t("form.save")}
         </button>
       </div>
       {!selectedProfileId && profiles.length >= 10 && (
-        <p className="text-xs text-stone/50">{t("form.profileLimitReached")}</p>
+        <p className="text-xs text-text-placeholder">{t("form.profileLimitReached")}</p>
       )}
-      <p className="text-xs text-stone/40">
+      <p className="text-xs text-text-placeholder">
         {t("form.profileCount", { count: String(profiles.length) })}
       </p>
 
@@ -426,18 +425,17 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
         type="submit"
         disabled={loading || !birthDate || !birthTime || !birthPlace || (type === "ziwei" && !gender)}
         className={`
-          w-full py-3.5 rounded-sm text-base tracking-widest font-serif transition-all duration-500
+          w-full py-3.5 rounded text-base transition-all duration-500
           ${
             loading || !birthDate || !birthTime
-              ? "bg-gold/10 text-gold-dim/50 cursor-not-allowed"
-              : "bg-gold/15 text-gold hover:bg-gold/25 active:scale-[0.99]"
+              ? "bg-accent/10 text-text-tertiary cursor-not-allowed"
+              : "bg-accent text-white hover:bg-accent/90 active:scale-[0.99]"
           }
-          border border-gold/20
         `}
       >
         {loading ? (
           <span className="flex items-center justify-center gap-3">
-            <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+            <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
             {t("form.generating")}
           </span>
         ) : (

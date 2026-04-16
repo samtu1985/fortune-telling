@@ -938,14 +938,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <div className="relative z-20 flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
           <button
             onClick={() => setView("discussion")}
-            className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+            className="flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px] "
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
             </svg>
             返回
           </button>
-          <h1 className="text-base font-serif text-gold tracking-widest">
+          <h1 className="text-base text-accent">
             {t("main.savedConversations")}
           </h1>
           <div className="flex items-center gap-2">
@@ -969,7 +969,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <div className="absolute top-4 left-4 z-20">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+            className="flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px] "
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
@@ -981,7 +981,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           <button
             type="button"
             onClick={() => setView("saved")}
-            className="text-xs sm:text-sm text-stone hover:text-gold transition-colors min-h-[44px] font-serif px-2 flex items-center gap-1.5"
+            className="text-xs sm:text-sm text-text-tertiary hover:text-accent transition-colors min-h-[44px] px-2 flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 12h14M5 16h10" />
@@ -993,11 +993,11 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </div>
 
         <header className="pt-16 pb-8 px-6 text-center">
-          <h1 className="text-3xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+          <h1 className="text-3xl font-bold tracking-[0.15em] text-accent">
             三師論道
           </h1>
-          <p className="mt-2 text-sm text-stone italic font-display">Comprehensive Analysis</p>
-          <div className="mx-auto mt-4 w-24 gold-line" />
+          <p className="mt-2 text-sm text-text-tertiary">Comprehensive Analysis</p>
+          <div className="mx-auto mt-4 w-24 tesla-divider" />
         </header>
 
         <section className="max-w-2xl mx-auto px-6 pb-8">
@@ -1021,7 +1021,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <div className="absolute top-4 left-4 z-20">
           <button
             onClick={() => setPhase("input")}
-            className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+            className="flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px] "
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
@@ -1033,7 +1033,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           <button
             type="button"
             onClick={() => setView("saved")}
-            className="text-xs sm:text-sm text-stone hover:text-gold transition-colors min-h-[44px] font-serif px-2 flex items-center gap-1.5"
+            className="text-xs sm:text-sm text-text-tertiary hover:text-accent transition-colors min-h-[44px] px-2 flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 12h14M5 16h10" />
@@ -1045,10 +1045,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </div>
 
         <header className="pt-16 pb-6 px-6 text-center">
-          <h1 className="text-2xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+          <h1 className="text-2xl font-bold tracking-[0.15em] text-accent">
             三師論道 — 命盤總覽
           </h1>
-          <div className="mx-auto mt-4 w-24 gold-line" />
+          <div className="mx-auto mt-4 w-24 tesla-divider" />
         </header>
 
         <section className="max-w-6xl mx-auto px-4 pb-6">
@@ -1070,14 +1070,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`text-xl ${m.color}`}>{m.symbol}</span>
-                    <span className={`text-sm font-serif font-semibold ${m.color}`}>{m.label}</span>
+                    <span className={`text-sm font-semibold ${m.color}`}>{m.label}</span>
                   </div>
                   {chart ? (
-                    <pre className="text-xs text-stone leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+                    <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
                       {chart.replace(/<[^>]+>/g, "").trim()}
                     </pre>
                   ) : (
-                    <p className="text-xs text-stone/50">{t("comprehensive.chartGenFailed")}</p>
+                    <p className="text-xs text-text-placeholder">{t("comprehensive.chartGenFailed")}</p>
                   )}
                 </div>
               );
@@ -1087,8 +1087,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
         {/* Start discussion */}
         <section className="max-w-2xl mx-auto px-6 pb-12">
-          <div className="border-t border-gold/10 pt-5 space-y-3">
-            <label className="text-sm font-serif text-gold">{t("birth.topic")}</label>
+          <div className="border-t border-border-light pt-5 space-y-3">
+            <label className="text-sm text-accent">{t("birth.topic")}</label>
             <input
               type="text"
               value={aiQuestion}
@@ -1101,7 +1101,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     type="button"
                     onClick={() => setPodcastMode(!podcastMode)}
                     className={`relative w-11 h-6 rounded-full transition-colors ${
-                      podcastMode ? "bg-gold/40" : "bg-stone/20"
+                      podcastMode ? "bg-accent/40" : "bg-bg-secondary"
                     }`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-cream transition-transform ${
@@ -1109,14 +1109,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     }`} />
                   </button>
                   <div>
-                    <span className="text-sm text-cream">{t("podcast.toggle")}</span>
-                    <p className="text-[10px] text-stone/50">{t("podcast.toggleHint")}</p>
+                    <span className="text-sm text-text-primary">{t("podcast.toggle")}</span>
+                    <p className="text-[10px] text-text-placeholder">{t("podcast.toggleHint")}</p>
                   </div>
                 </div>
             <button
               onClick={handleStartDiscussion}
               disabled={!aiQuestion.trim() || !charts.bazi}
-              className="w-full py-3.5 rounded-sm text-base text-gold border border-gold/20 bg-gold/15 hover:bg-gold/25 transition-colors font-serif tracking-widest disabled:opacity-40"
+              className="w-full py-3.5 rounded text-base text-white bg-accent hover:bg-accent/90 transition-colors disabled:opacity-40"
             >
               進入討論
             </button>
@@ -1135,7 +1135,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       <div className="relative z-20 grid grid-cols-[auto_1fr_auto] items-center px-4 pt-4 pb-2 shrink-0 gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif justify-self-start"
+          className="flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px] justify-self-start"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
@@ -1144,8 +1144,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         </button>
 
         <h1
-          className="text-xl font-bold tracking-[0.15em] text-gold justify-self-center text-center truncate"
-          style={{ fontFamily: "var(--font-calligraphy)" }}
+          className="text-xl font-bold tracking-[0.15em] text-accent justify-self-center text-center truncate"
         >
           三師論道
         </h1>
@@ -1157,14 +1156,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       </div>
 
       {/* In-view tabs: live discussion vs saved archive */}
-      <div className="flex justify-center gap-6 px-4 pb-1 shrink-0 border-b border-gold/10">
+      <div className="flex justify-center gap-6 px-4 pb-1 shrink-0 border-b border-border-light">
         <button
           type="button"
           onClick={() => setView("discussion")}
-          className={`pb-2 text-xs font-serif tracking-widest transition-colors ${
+          className={`pb-2 text-xs transition-colors ${
             view === "discussion"
-              ? "text-gold border-b-2 border-gold"
-              : "text-stone/60 hover:text-stone"
+              ? "text-accent border-b-2 border-accent"
+              : "text-text-tertiary hover:text-text-secondary"
           }`}
         >
           {t("comprehensive.tabDiscussion")}
@@ -1172,10 +1171,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <button
           type="button"
           onClick={() => setView("saved")}
-          className={`pb-2 text-xs font-serif tracking-widest transition-colors ${
+          className={`pb-2 text-xs transition-colors ${
             view === "saved"
-              ? "text-gold border-b-2 border-gold"
-              : "text-stone/60 hover:text-stone"
+              ? "text-accent border-b-2 border-accent"
+              : "text-text-tertiary hover:text-text-secondary"
           }`}
         >
           {t("main.savedConversations")}
@@ -1198,7 +1197,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         {MASTERS.map((m) => (
           <div key={m.id} className="flex items-center gap-1.5">
             <span className={`text-sm ${m.color}`}>{m.symbol}</span>
-            <span className={`text-xs font-serif ${m.color}`}>{m.label}</span>
+            <span className={`text-xs ${m.color}`}>{m.label}</span>
             {streamingMaster === m.id && (
               <span className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${m.color === "text-amber-400" ? "bg-amber-400" : m.color === "text-violet-400" ? "bg-violet-400" : "bg-cyan-400"}`} />
             )}
@@ -1207,7 +1206,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       </div>
 
       <div className="text-center pb-2 shrink-0">
-        <div className="mx-auto mt-1 w-24 gold-line" />
+        <div className="mx-auto mt-1 w-24 tesla-divider" />
       </div>
 
       {/* Messages */}
@@ -1223,15 +1222,15 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   key={m.id}
                   className={`rounded-lg border overflow-hidden ${m.bgClass}`}
                 >
-                  <summary className="px-3 py-2 cursor-pointer hover:bg-gold/5 transition-colors flex items-center gap-1.5 text-xs">
+                  <summary className="px-3 py-2 cursor-pointer hover:bg-bg-secondary transition-colors flex items-center gap-1.5 text-xs">
                     <span className={m.color}>{m.symbol}</span>
-                    <span className={`font-serif ${m.color}`}>{m.label}命盤</span>
-                    <svg className="w-3 h-3 text-stone/30 ml-auto transition-transform details-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className={`${m.color}`}>{m.label}命盤</span>
+                    <svg className="w-3 h-3 text-text-placeholder ml-auto transition-transform details-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </summary>
-                  <div className="px-3 pb-3 border-t border-gold/5">
-                    <pre className="text-[10px] text-stone/70 leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
+                  <div className="px-3 pb-3 border-t border-border-light">
+                    <pre className="text-[10px] text-text-tertiary leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
                       {chart.replace(/<[^>]+>/g, "").trim()}
                     </pre>
                   </div>
@@ -1261,7 +1260,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               if (!displayContent) return null;
               return (
                 <div key={i} className="flex justify-end">
-                  <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 leading-relaxed">
+                  <div className="bg-accent/8 border border-border-light rounded-lg px-4 py-3 max-w-[85%] text-sm text-text-primary leading-relaxed">
                     <div className="whitespace-pre-wrap">{displayContent}</div>
                   </div>
                 </div>
@@ -1269,7 +1268,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             }
 
             const masterInfo = getMasterInfo(msg.master);
-            const masterColor = masterInfo?.color || "text-cream";
+            const masterColor = masterInfo?.color || "text-text-primary";
             const masterBg = masterInfo?.bgClass || "";
 
             return (
@@ -1278,10 +1277,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   {/* Master badge */}
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className={`text-base ${masterColor}`}>{masterInfo?.symbol}</span>
-                    <span className={`text-xs font-serif font-semibold ${masterColor}`}>{masterInfo?.label}</span>
+                    <span className={`text-xs font-semibold ${masterColor}`}>{masterInfo?.label}</span>
                   </div>
                   <div
-                    className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap prose-sm"
+                    className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap prose-sm"
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(msg.content)) }}
                   />
                   {/* Save button */}
@@ -1290,7 +1289,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                       onClick={() => handleSaveConversation(i)}
                       disabled={savedMessageIds.has(i)}
                       className={`text-xs flex items-center gap-1 min-h-[28px] px-1.5 transition-colors ${
-                        savedMessageIds.has(i) ? "text-gold-dim/50" : "text-stone/40 hover:text-gold-dim"
+                        savedMessageIds.has(i) ? "text-text-tertiary" : "text-text-placeholder hover:text-text-tertiary"
                       }`}
                     >
                       {savedMessageIds.has(i) ? (
@@ -1324,13 +1323,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterInfo?.bgClass || ""}`}>
                     <div className="flex items-center gap-1.5 mb-2">
                       <span className={`text-base ${masterInfo?.color}`}>{masterInfo?.symbol}</span>
-                      <span className={`text-xs font-serif font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
+                      <span className={`text-xs font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-sm text-stone/60">
+                    <div className="flex items-center gap-1.5 text-sm text-text-tertiary">
                       <span className="inline-flex gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold/50 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold/50 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-bounce" style={{ animationDelay: "300ms" }} />
                       </span>
                       <span className="text-xs animate-pulse">{t("comprehensive.thinking")}</span>
                     </div>
@@ -1349,11 +1348,11 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterInfo?.bgClass || ""}`}>
                     <div className="flex items-center gap-1.5 mb-2">
                       <span className={`text-base ${masterInfo?.color}`}>{masterInfo?.symbol}</span>
-                      <span className={`text-xs font-serif font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-gold/60 animate-pulse" />
+                      <span className={`text-xs font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
                     </div>
                     <div
-                      className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap streaming-cursor prose-sm"
+                      className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap streaming-cursor prose-sm"
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(streamingContent)) }}
                     />
                   </div>
@@ -1368,52 +1367,52 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
       {/* Floating TTS status bar — always visible at top */}
       {podcastMode && view === "discussion" && phase === "discussion" && (ttsGeneratingCount > 0 || audioQueue.isPlaying || audioQueue.isPaused || audioQueue.waitingForTap) && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up" style={{ opacity: 0, animationDuration: "300ms", animationFillMode: "forwards" }}>
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-30 animate-fade-in">
           {audioQueue.waitingForTap ? (
             /* Ready to play — user needs to tap */
             <button
               onClick={() => { keepScreenAwake(); audioQueue.startPlayback(); }}
-              className="px-5 py-2.5 rounded-full border border-gold/40 shadow-lg flex items-center gap-2.5 active:scale-95 transition-transform"
+              className="px-5 py-2.5 rounded-full border border-accent/40 shadow-lg flex items-center gap-2.5 active:scale-95 transition-transform"
               style={{
                 backdropFilter: hasScrolled ? undefined : "blur(16px)",
                 WebkitBackdropFilter: hasScrolled ? undefined : "blur(16px)",
                 background: hasScrolled
-                  ? "var(--parchment)"
-                  : "rgba(var(--glass-rgb), 0.08)",
+                  ? "var(--bg-primary)"
+                  : "var(--border-light)",
                 animation: "tap-to-play-pulse 2s ease-in-out infinite",
               }}
             >
-              <svg className="w-4 h-4 text-gold" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
               </svg>
-              <span className="text-sm text-gold font-serif">{t("podcast.tapToPlay")}</span>
+              <span className="text-sm text-accent ">{t("podcast.tapToPlay")}</span>
             </button>
           ) : (
             <div
-              className="px-4 py-2 rounded-full border border-gold/20 shadow-lg flex items-center gap-2.5 transition-[background]"
+              className="px-4 py-2 rounded-full border border-border-light shadow-lg flex items-center gap-2.5 transition-[background]"
               style={{
                 backdropFilter: hasScrolled ? undefined : "blur(16px)",
                 WebkitBackdropFilter: hasScrolled ? undefined : "blur(16px)",
                 background: hasScrolled
-                  ? "var(--parchment)"
-                  : "rgba(var(--glass-rgb), 0.06)",
+                  ? "var(--bg-primary)"
+                  : "var(--border-light)",
               }}
             >
               {(audioQueue.isPlaying || audioQueue.isPaused) && audioQueue.currentMaster ? (
                 <>
                   {audioQueue.isPaused ? (
-                    <svg className="w-3.5 h-3.5 text-gold/70" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-accent/70" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M3 9v6h4l5 5V4L7 9H3z" />
                     </svg>
                   ) : (
-                    <svg className="w-3.5 h-3.5 animate-pulse text-gold" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 animate-pulse text-accent" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
                     </svg>
                   )}
-                  <span className={`text-xs font-serif ${getMasterInfo(audioQueue.currentMaster)?.color}`}>
+                  <span className={`text-xs ${getMasterInfo(audioQueue.currentMaster)?.color}`}>
                     {getMasterInfo(audioQueue.currentMaster)?.label}
                   </span>
-                  <span className="text-[10px] text-stone/50">
+                  <span className="text-[10px] text-text-placeholder">
                     {audioQueue.isPaused ? t("podcast.paused") : t("podcast.playing")}
                   </span>
                   {/* Pause / Resume control */}
@@ -1429,7 +1428,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     }}
                     aria-label={audioQueue.isPaused ? t("podcast.resume") : t("podcast.pause")}
                     title={audioQueue.isPaused ? t("podcast.resume") : t("podcast.pause")}
-                    className="ml-1 flex items-center justify-center w-7 h-7 rounded-full border border-gold/30 text-gold hover:bg-gold/10 transition-colors"
+                    className="ml-1 flex items-center justify-center w-7 h-7 rounded-full border border-accent/30 text-accent hover:bg-accent/10 transition-colors"
                   >
                     {audioQueue.isPaused ? (
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -1445,13 +1444,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               ) : (
                 <>
                   <span className="flex gap-0.5 items-end">
-                    <span className="w-0.5 h-2 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="w-0.5 h-3 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="w-0.5 h-1.5 bg-gold/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                    <span className="w-0.5 h-4 bg-gold/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
-                    <span className="w-0.5 h-2.5 bg-gold/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
+                    <span className="w-0.5 h-2 bg-accent/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-0.5 h-3 bg-accent/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-0.5 h-1.5 bg-accent/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="w-0.5 h-4 bg-accent/60 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
+                    <span className="w-0.5 h-2.5 bg-accent/40 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
                   </span>
-                  <span className="text-xs text-gold-dim">{t("podcast.generating")}...</span>
+                  <span className="text-xs text-text-tertiary">{t("podcast.generating")}...</span>
                 </>
               )}
             </div>
@@ -1463,7 +1462,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       {phase === "discussion" && view === "discussion" && (
         <button
           onClick={() => setMobileControlsOpen(true)}
-          className={`sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-[var(--parchment)] shadow-lg flex items-center justify-center text-gold/70 active:scale-95 transition-all duration-300 ease-in-out ${
+          className={`sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-[var(--bg-primary)] shadow-lg flex items-center justify-center text-accent/70 active:scale-95 transition-all duration-300 ease-in-out ${
             mobileControlsOpen ? "opacity-0 scale-75 pointer-events-none" : "opacity-100 scale-100"
           }`}
         >
@@ -1472,7 +1471,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             className="absolute inset-0 rounded-full"
             style={{
               padding: "1.5px",
-              background: "conic-gradient(from 0deg, transparent 40%, var(--gold) 70%, transparent 100%)",
+              background: "conic-gradient(from 0deg, transparent 40%, var(--accent) 70%, transparent 100%)",
               WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
               WebkitMaskComposite: "xor",
               maskComposite: "exclude",
@@ -1488,14 +1487,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       {/* Bottom controls — slides down on mobile when collapsed, always visible on desktop.
           Hidden entirely when viewing the saved-conversations archive. */}
       <div
-        className={`relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0 transition-all duration-300 ease-in-out sm:!translate-y-0 sm:!opacity-100 sm:!pointer-events-auto sm:!max-h-none ${
+        className={`relative z-20 border-t border-border-light px-4 sm:px-6 py-4 shrink-0 transition-all duration-300 ease-in-out sm:!translate-y-0 sm:!opacity-100 sm:!pointer-events-auto sm:!max-h-none ${
           view === "saved"
             ? "hidden"
             : !mobileControlsOpen && phase === "discussion"
               ? "max-sm:translate-y-full max-sm:opacity-0 max-sm:pointer-events-none max-sm:max-h-0 max-sm:py-0 max-sm:overflow-hidden"
               : ""
         }`}
-        style={{ background: "var(--parchment)" }}
+        style={{ background: "var(--bg-primary)" }}
       >
         <div className="max-w-2xl mx-auto">
           {/* Auto-discuss controls */}
@@ -1504,7 +1503,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               <button
                 onClick={handleStartAutoDiscuss}
                 disabled={messages.length === 0}
-                className="px-4 py-2 text-xs text-gold-dim border border-gold/15 rounded-full hover:bg-gold/10 transition-colors disabled:opacity-40"
+                className="px-4 py-2 text-xs text-text-tertiary border border-border-light rounded-full hover:bg-accent/10 transition-colors disabled:opacity-40"
               >
                 {loading ? "等待發言完成後開始..." : "開始 AI 自動對話"}
               </button>
@@ -1551,31 +1550,31 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             <button
               type="submit"
               disabled={loading || isAutoDiscussing || !followUp.trim()}
-              className={`px-5 py-2.5 rounded-sm text-sm tracking-widest font-serif transition-all duration-500 border border-gold/20 ${
+              className={`px-5 py-2.5 rounded-sm text-sm transition-all duration-500 border border-border-light ${
                 loading || isAutoDiscussing || !followUp.trim()
-                  ? "text-gold-dim/50 cursor-not-allowed"
-                  : "text-gold hover:bg-gold/15 active:scale-[0.98]"
+                  ? "text-text-tertiary cursor-not-allowed"
+                  : "text-accent hover:bg-accent/10 active:scale-[0.98]"
               }`}
             >
               {loading ? (
-                <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
               ) : (
                 "送出"
               )}
             </button>
           </form>
 
-          <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
+          <p className="text-center text-xs text-text-placeholder mt-2">
             {t("main.aiDisclaimer")}
             {" · "}
-            <a href="/terms" className="hover:text-gold transition-colors underline-offset-2 hover:underline">
+            <a href="/terms" className="hover:text-accent transition-colors underline-offset-2 hover:underline">
               {t("footer.terms")}
             </a>
             {" · "}
             <button
               type="button"
               onClick={() => setFeedbackOpen(true)}
-              className="hover:text-gold transition-colors underline-offset-2 hover:underline"
+              className="hover:text-accent transition-colors underline-offset-2 hover:underline"
             >
               {t("footer.feedback")}
             </button>
@@ -1590,11 +1589,11 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             <button
               onClick={handleDownloadPdf}
               disabled={pdfGenerating}
-              className="w-full mt-4 py-3 text-sm border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-all duration-500 font-serif tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+              className="w-full mt-4 py-3 text-sm border border-accent/30 rounded-sm text-accent hover:bg-accent/10 transition-all duration-500 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {pdfGenerating ? (
                 <>
-                  <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
                   {t("comprehensive.generatingPdf")}
                 </>
               ) : (
@@ -1626,7 +1625,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               <button
                 onClick={audioQueue.downloadPodcast}
                 disabled={audioQueue.podcastDownloading}
-                className="w-full mt-2 py-3 text-sm border border-violet-400/30 rounded-sm text-violet-400 hover:bg-violet-400/10 transition-all duration-500 font-serif tracking-widest flex items-center justify-center gap-2 disabled:opacity-40"
+                className="w-full mt-2 py-3 text-sm border border-violet-400/30 rounded-sm text-violet-400 hover:bg-violet-400/10 transition-all duration-500 flex items-center justify-center gap-2 disabled:opacity-40"
               >
                 {audioQueue.podcastDownloading ? (
                   <>
@@ -1647,18 +1646,18 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
           {/* Case study consent flow */}
           {casePhase === "consent" && (
-            <div className="mt-4 p-4 rounded-lg border border-gold/20" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.03)" }}>
-              <p className="text-sm text-cream mb-3">{t("case.consent")}</p>
+            <div className="mt-4 p-4 rounded-lg border border-border-light" >
+              <p className="text-sm text-text-primary mb-3">{t("case.consent")}</p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setCasePhase("idle")}
-                  className="px-4 py-2 text-xs text-stone hover:text-cream transition-colors"
+                  className="px-4 py-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
                 >
                   {t("case.consentNo")}
                 </button>
                 <button
                   onClick={handleCaseStudySubmit}
-                  className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors"
+                  className="px-4 py-2 text-xs border border-accent/30 rounded-sm text-accent hover:bg-accent/10 transition-colors"
                 >
                   {t("case.consentYes")}
                 </button>
@@ -1667,26 +1666,26 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           )}
 
           {casePhase === "processing" && (
-            <div className="mt-4 p-4 rounded-lg border border-gold/20 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.03)" }}>
-              <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin mr-2" />
-              <span className="text-sm text-stone">{t("case.processing")}</span>
+            <div className="mt-4 p-4 rounded-lg border border-border-light text-center" >
+              <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin mr-2" />
+              <span className="text-sm text-text-tertiary">{t("case.processing")}</span>
             </div>
           )}
 
           {casePhase === "preview" && (
-            <div className="mt-4 p-4 rounded-lg border border-gold/20 space-y-3" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.03)" }}>
-              <p className="text-xs text-stone font-medium">{t("case.preview")}</p>
-              <p className="text-sm text-cream leading-relaxed">{caseSummary}</p>
+            <div className="mt-4 p-4 rounded-lg border border-border-light space-y-3" >
+              <p className="text-xs text-text-tertiary font-medium">{t("case.preview")}</p>
+              <p className="text-sm text-text-primary leading-relaxed">{caseSummary}</p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setCasePhase("idle")}
-                  className="px-4 py-2 text-xs text-stone hover:text-cream transition-colors"
+                  className="px-4 py-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
                 >
                   {t("case.cancelSubmit")}
                 </button>
                 <button
                   onClick={() => setCasePhase("done")}
-                  className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors"
+                  className="px-4 py-2 text-xs border border-accent/30 rounded-sm text-accent hover:bg-accent/10 transition-colors"
                 >
                   {t("case.confirmSubmit")}
                 </button>
@@ -1702,7 +1701,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
           <button
             onClick={() => setNewDiscussionConfirm(true)}
-            className="w-full mt-3 py-2 text-xs text-stone/40 hover:text-stone/60 transition-colors tracking-wide"
+            className="w-full mt-3 py-2 text-xs text-text-placeholder hover:text-text-secondary/60 transition-colors"
           >
             {t("main.newDiscussion")}
           </button>

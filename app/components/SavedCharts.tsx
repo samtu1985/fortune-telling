@@ -39,10 +39,10 @@ export default function SavedCharts({ type, profiles, onStartChat }: SavedCharts
   if (withCharts.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-sm text-stone/50">
+        <p className="text-sm text-text-placeholder">
           {t("charts.noCharts", { label })}
         </p>
-        <p className="text-xs text-stone/30 mt-2">
+        <p className="text-xs text-text-placeholder mt-2">
           {t("charts.howToSave")}
         </p>
       </div>
@@ -54,25 +54,24 @@ export default function SavedCharts({ type, profiles, onStartChat }: SavedCharts
       {withCharts.map((p) => (
         <details
           key={p.id}
-          className="border border-gold/10 rounded-lg overflow-hidden"
-          style={{ background: "rgba(var(--glass-rgb), 0.02)" }}
-        >
-          <summary className="px-4 py-3 cursor-pointer hover:bg-gold/5 transition-colors flex items-center justify-between">
+          className="border border-border-light rounded-lg overflow-hidden"
+                  >
+          <summary className="px-4 py-3 cursor-pointer hover:bg-bg-secondary transition-colors flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gold font-serif">{p.label}</span>
+              <span className="text-sm text-accent">{p.label}</span>
               {p.birthDate && (
-                <span className="text-xs text-stone/40">{p.birthDate}</span>
+                <span className="text-xs text-text-placeholder">{p.birthDate}</span>
               )}
               {p.gender && (
-                <span className="text-xs text-stone/40">{p.gender}</span>
+                <span className="text-xs text-text-placeholder">{p.gender}</span>
               )}
             </div>
-            <svg className="w-4 h-4 text-stone/30 transition-transform details-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-text-placeholder transition-transform details-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </summary>
-          <div className="px-4 pb-4 border-t border-gold/5">
-            <pre className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap mt-3 max-h-96 overflow-y-auto">
+          <div className="px-4 pb-4 border-t border-border-light">
+            <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap mt-3 max-h-96 overflow-y-auto">
               {p.savedCharts![chartKey]!
                 .replace(/<[^>]+>/g, "")
                 .trim()}
@@ -83,7 +82,7 @@ export default function SavedCharts({ type, profiles, onStartChat }: SavedCharts
                   e.preventDefault();
                   onStartChat(p, p.savedCharts![chartKey]!);
                 }}
-                className="mt-3 w-full py-2.5 rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest"
+                className="mt-3 w-full py-2.5 rounded text-sm text-accent border border-accent/20 bg-accent/10 hover:bg-accent/20 transition-colors"
               >
                 {t("charts.startAnalysis")}
               </button>
