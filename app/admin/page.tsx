@@ -636,7 +636,10 @@ export default function AdminPage() {
       provider,
       apiUrl: info?.defaultUrl || prev.apiUrl,
       modelId: info?.defaultModel || prev.modelId,
-      thinkingMode: provider === "anthropic" ? "disabled" : prev.thinkingMode,
+      // "adaptive" and "enabled" are Anthropic-specific concepts. When
+      // switching away from Anthropic, force to "disabled" so stale values
+      // don't leak into the summary badges of Google/OpenAI/BytePlus.
+      thinkingMode: provider === "anthropic" ? prev.thinkingMode : "disabled",
     }));
   };
 
@@ -1229,7 +1232,10 @@ export default function AdminPage() {
                             {config ? (
                               <>
                                 {providerLabel} / {config.modelId}
-                                {config.thinkingMode && config.thinkingMode !== "disabled" && (
+                                {/* Adaptive/enabled thinking is Anthropic-only; don't show
+                                    for Google/OpenAI/BytePlus where thinkingMode can be a
+                                    stale leftover from a prior Anthropic config. */}
+                                {config.provider === "anthropic" && config.thinkingMode && config.thinkingMode !== "disabled" && (
                                   <span className="ml-1.5 text-blue-400">
                                     {t("admin.thinking")}:{config.thinkingMode === "adaptive"
                                       ? `${t("admin.adaptive")}/${config.effort || "medium"}`
