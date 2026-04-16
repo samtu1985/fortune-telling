@@ -61,8 +61,8 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
   return (
     <div
       className={`
-        border border-gold/15 p-1.5 sm:p-2 flex flex-col justify-between min-h-[100px] sm:min-h-[130px] transition-colors
-        ${isActive ? "bg-gold/10 border-gold/40" : "bg-gold/[0.02]"}
+        border border-border-light p-1.5 sm:p-2 flex flex-col justify-between min-h-[100px] sm:min-h-[130px] transition-colors
+        ${isActive ? "bg-accent/10 border-accent/40" : "bg-accent/[0.02]"}
       `}
     >
       {/* Major stars */}
@@ -71,30 +71,30 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
           majors.map((s, i) => (
             <div key={i} className="flex items-center gap-0.5 flex-wrap">
               <span
-                className={`text-[10px] sm:text-xs font-bold text-cream/90 ${
+                className={`text-[10px] sm:text-xs font-bold text-text-primary/90 ${
                   s.brightness ? BRIGHTNESS_OPACITY[s.brightness] || "" : ""
                 }`}
               >
                 {s.name}
               </span>
               {s.brightness && (
-                <span className="text-[8px] sm:text-[10px] text-stone/50">{s.brightness}</span>
+                <span className="text-[8px] sm:text-[10px] text-text-tertiary/50">{s.brightness}</span>
               )}
               {s.mutagen && (
-                <span className={`text-[8px] sm:text-[10px] font-bold ${MUTAGEN_COLORS[s.mutagen] || "text-gold"}`}>
+                <span className={`text-[8px] sm:text-[10px] font-bold ${MUTAGEN_COLORS[s.mutagen] || "text-accent"}`}>
                   {s.mutagen}
                 </span>
               )}
             </div>
           ))
         ) : (
-          <span className="text-[10px] text-stone/30">—</span>
+          <span className="text-[10px] text-text-tertiary/30">—</span>
         )}
         {/* Minor stars (compact) */}
         {minors.length > 0 && (
           <div className="flex flex-wrap gap-x-1 mt-0.5">
             {minors.slice(0, 4).map((s, i) => (
-              <span key={i} className="text-[8px] sm:text-[9px] text-stone/50">
+              <span key={i} className="text-[8px] sm:text-[9px] text-text-tertiary/50">
                 {s.name}
                 {s.mutagen && (
                   <span className={`${MUTAGEN_COLORS[s.mutagen] || ""}`}>{s.mutagen}</span>
@@ -102,7 +102,7 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
               </span>
             ))}
             {minors.length > 4 && (
-              <span className="text-[8px] text-stone/30">+{minors.length - 4}</span>
+              <span className="text-[8px] text-text-tertiary/30">+{minors.length - 4}</span>
             )}
           </div>
         )}
@@ -111,19 +111,19 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
       {/* Footer: palace name + branch */}
       <div className="flex items-end justify-between mt-1">
         <div className="flex items-center gap-0.5">
-          <span className={`text-[10px] sm:text-xs font-serif tracking-wide ${isActive ? "text-gold font-bold" : "text-gold/70"}`}>
+          <span className={`text-[10px] sm:text-xs ${isActive ? "text-accent font-bold" : "text-accent/70"}`}>
             {palace.name}
           </span>
           {palace.isBodyPalace && (
-            <span className="text-[7px] sm:text-[8px] px-0.5 bg-gold/20 text-gold rounded">身</span>
+            <span className="text-[7px] sm:text-[8px] px-0.5 bg-accent/20 text-accent rounded">身</span>
           )}
         </div>
         <div className="text-right">
-          <span className="text-[8px] sm:text-[9px] text-stone/40">
+          <span className="text-[8px] sm:text-[9px] text-text-tertiary/40">
             {palace.heavenlyStem}{palace.earthlyBranch}
           </span>
           {palace.decadal?.range && (
-            <div className="text-[7px] sm:text-[8px] text-stone/30">
+            <div className="text-[7px] sm:text-[8px] text-text-tertiary/30">
               {palace.decadal.range[0]}-{palace.decadal.range[1]}
             </div>
           )}
@@ -151,22 +151,22 @@ function CenterCell({
   zodiac: string;
 }) {
   return (
-    <div className="col-span-2 row-span-2 border border-gold/15 bg-gold/[0.03] p-3 sm:p-4 flex flex-col items-center justify-center gap-1.5 text-center">
-      <div className="text-base sm:text-lg font-serif font-bold text-gold tracking-wider">紫微斗數</div>
-      <div className="w-12 h-px bg-gold/20" />
-      <div className="space-y-0.5 text-[10px] sm:text-xs text-cream/70">
+    <div className="col-span-2 row-span-2 border border-border-light bg-accent/[0.03] p-3 sm:p-4 flex flex-col items-center justify-center gap-1.5 text-center">
+      <div className="text-base sm:text-lg font-bold text-accent">紫微斗數</div>
+      <div className="w-12 h-px bg-accent/20" />
+      <div className="space-y-0.5 text-[10px] sm:text-xs text-text-primary/70">
         <div>{solarDate}</div>
-        <div className="text-stone/50">{lunarDate}</div>
+        <div className="text-text-tertiary/50">{lunarDate}</div>
         <div>{gender} · {zodiac}</div>
       </div>
-      <div className="w-12 h-px bg-gold/20" />
+      <div className="w-12 h-px bg-accent/20" />
       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] sm:text-xs">
-        <span className="text-stone/50 text-right">五行局</span>
-        <span className="text-cream/80">{fiveElements}</span>
-        <span className="text-stone/50 text-right">命主</span>
-        <span className="text-cream/80">{soul}</span>
-        <span className="text-stone/50 text-right">身主</span>
-        <span className="text-cream/80">{body}</span>
+        <span className="text-text-tertiary/50 text-right">五行局</span>
+        <span className="text-text-primary/80">{fiveElements}</span>
+        <span className="text-text-tertiary/50 text-right">命主</span>
+        <span className="text-text-primary/80">{soul}</span>
+        <span className="text-text-tertiary/50 text-right">身主</span>
+        <span className="text-text-primary/80">{body}</span>
       </div>
     </div>
   );
@@ -192,7 +192,7 @@ class ZiweiChartErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="my-4 rounded-lg border border-gold/20 p-6 text-center text-sm text-stone/60">
+        <div className="my-4 rounded-lg border border-border-light p-6 text-center text-sm text-text-tertiary/60">
           命盤圖表載入失敗，但不影響 AI 解讀結果。
         </div>
       );
@@ -284,14 +284,14 @@ function ZiweiChartInner({ birthday, birthTime, gender, birthdayType }: ZiweiCha
 
   if (!chartData || !grid) {
     return (
-      <div className="my-4 rounded-lg border border-gold/20 p-6 text-center text-sm text-stone/40">
+      <div className="my-4 rounded-lg border border-border-light p-6 text-center text-sm text-text-tertiary/40">
         命盤計算中...
       </div>
     );
   }
 
   return (
-    <div className="my-4 rounded-lg border border-gold/20 overflow-hidden">
+    <div className="my-4 rounded-lg border border-border-light overflow-hidden">
       <div className="grid grid-cols-4 grid-rows-4">
         {grid.flatMap((row, r) =>
           row.map((cell, c) => {
