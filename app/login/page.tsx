@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -68,46 +67,44 @@ function LoginContent() {
 
   return (
     <main className="relative z-10 flex-1 flex flex-col items-center justify-center min-h-screen px-6">
-      <SmokeParticles />
-
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <LocaleSwitcher />
         <ThemeToggle />
       </div>
 
-      <div className="text-center space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+      <div className="text-center space-y-6 animate-fade-in">
+        <h1 className="text-[40px] font-medium text-text-primary">
           {t("app.title")}
         </h1>
-        <p className="font-display text-lg text-stone italic tracking-wide">
+        <p className="text-sm text-text-tertiary">
           {t("app.subtitle")}
         </p>
 
-        <div className="mx-auto w-32 gold-line" />
+        <div className="mx-auto w-32 tesla-divider" />
 
         {inApp ? (
-          <div className="mx-auto max-w-xs space-y-4 text-sm text-mist/80">
-            <p className="text-gold font-semibold">{t("login.openExternal")}</p>
+          <div className="mx-auto max-w-xs space-y-4 text-sm text-text-secondary">
+            <p className="text-accent font-semibold">{t("login.openExternal")}</p>
             <p>{t("login.inAppWarning")}</p>
-            <p className="text-mist/60 text-xs leading-relaxed">{t("login.openExternalHint")}</p>
-            <button onClick={handleOpenExternal} className="mx-auto px-8 py-3.5 min-h-[44px] border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-all duration-500 font-serif tracking-widest">
+            <p className="text-text-tertiary text-xs leading-relaxed">{t("login.openExternalHint")}</p>
+            <button onClick={handleOpenExternal} className="mx-auto px-8 py-3.5 min-h-[44px] border border-border-light rounded-sm text-text-primary hover:border-border-subtle transition-all duration-500">
               {t("login.openExternalBtn")}
             </button>
             <button
               onClick={() => { navigator.clipboard.writeText(currentUrl); alert(t("login.urlCopied")); }}
-              className="mx-auto px-6 py-2.5 min-h-[44px] text-mist/60 hover:text-gold transition-all duration-300 text-xs tracking-widest flex items-center gap-2"
+              className="mx-auto px-6 py-2.5 min-h-[44px] text-text-tertiary hover:text-accent transition-all duration-300 text-xs flex items-center gap-2"
             >
               📋 {t("login.copyUrl")}
             </button>
           </div>
         ) : (
           <div className="mx-auto max-w-xs space-y-4">
-            <p className="text-sm text-mist/60 tracking-wide">{t("login.hint")}</p>
+            <p className="text-sm text-text-tertiary">{t("login.hint")}</p>
 
             {/* Google Sign In */}
             <button
               onClick={() => signIn("google", { callbackUrl: "/" })}
-              className="mx-auto px-8 py-3.5 min-h-[44px] border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-all duration-500 font-serif tracking-widest flex items-center gap-3"
+              className="mx-auto px-8 py-3.5 min-h-[44px] border border-border-light rounded-sm text-text-secondary hover:border-border-subtle transition-all duration-500 flex items-center gap-3"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -120,9 +117,9 @@ function LoginContent() {
 
             {/* Divider */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gold/15" />
-              <span className="text-xs text-stone/50 font-serif">{t("login.or")}</span>
-              <div className="flex-1 h-px bg-gold/15" />
+              <div className="flex-1 h-px bg-border-light" />
+              <span className="text-xs text-text-placeholder">{t("login.or")}</span>
+              <div className="flex-1 h-px bg-border-light" />
             </div>
 
             {/* Credentials Login */}
@@ -149,10 +146,10 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading || !username.trim() || !password}
-                className="w-full py-3 min-h-[44px] border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-all duration-500 font-serif tracking-widest disabled:opacity-40"
+                className="w-full py-3 min-h-[44px] bg-accent text-white rounded hover:bg-accent/90 transition-all duration-500 disabled:opacity-40"
               >
                 {loading ? (
-                  <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
                 ) : (
                   t("login.loginBtn")
                 )}
@@ -160,10 +157,10 @@ function LoginContent() {
             </form>
 
             <div className="flex justify-between text-xs">
-              <a href="/forgot-password" className="text-stone/60 hover:text-gold transition-colors">
+              <a href="/forgot-password" className="text-text-tertiary hover:text-accent transition-colors">
                 {t("login.forgotPassword")}
               </a>
-              <a href="/register" className="text-gold/70 hover:text-gold transition-colors">
+              <a href="/register" className="text-accent hover:text-accent/80 transition-colors">
                 {t("login.registerLink")}
               </a>
             </div>
