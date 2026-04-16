@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -32,32 +31,31 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="relative z-10 flex-1 flex flex-col items-center justify-center min-h-screen px-6">
-      <SmokeParticles />
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <LocaleSwitcher />
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-sm space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
+      <div className="w-full max-w-sm space-y-6 animate-fade-in">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+          <h1 className="text-[40px] font-medium text-text-primary">
             {t("app.title")}
           </h1>
-          <p className="mt-2 text-sm text-stone">{t("forgot.title")}</p>
-          <div className="mx-auto mt-4 w-24 gold-line" />
+          <p className="mt-2 text-sm text-text-tertiary">{t("forgot.title")}</p>
+          <div className="mx-auto mt-4 w-24 tesla-divider" />
         </div>
 
         {sent ? (
           <div className="text-center space-y-4">
-            <p className="text-sm text-cream leading-relaxed">{t("forgot.success")}</p>
-            <a href="/login" className="inline-block text-sm text-gold/70 hover:text-gold transition-colors">
+            <p className="text-sm text-text-secondary leading-relaxed">{t("forgot.success")}</p>
+            <a href="/login" className="inline-block text-sm text-accent hover:text-accent/80 transition-colors">
               {t("forgot.backToLogin")}
             </a>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-stone mb-1 block">{t("forgot.email")}</label>
+              <label className="text-xs text-text-tertiary mb-1 block">{t("forgot.email")}</label>
               <input
                 type="email"
                 value={email}
@@ -70,16 +68,16 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading || !email.trim()}
-              className="w-full py-3 min-h-[44px] border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-all duration-500 font-serif tracking-widest disabled:opacity-40"
+              className="w-full py-3 min-h-[44px] bg-accent text-white rounded hover:bg-accent/90 transition-all duration-[330ms] disabled:opacity-40"
             >
               {loading ? (
-                <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
               ) : (
                 t("forgot.submit")
               )}
             </button>
             <p className="text-center">
-              <a href="/login" className="text-xs text-stone/60 hover:text-gold transition-colors">
+              <a href="/login" className="text-xs text-text-tertiary hover:text-accent transition-colors">
                 {t("forgot.backToLogin")}
               </a>
             </p>

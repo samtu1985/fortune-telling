@@ -13,8 +13,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0f0e0c" },
-    { media: "(prefers-color-scheme: light)", color: "#f8f4ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#171A20" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
   ],
 };
 
@@ -46,8 +46,8 @@ try {
   var t = localStorage.getItem('theme');
   if (t === 'light' || t === 'dark') {
     document.documentElement.dataset.theme = t;
-  } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-    document.documentElement.dataset.theme = 'light';
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.dataset.theme = 'dark';
   }
   var l = localStorage.getItem('locale');
   if (l) document.documentElement.lang = l;

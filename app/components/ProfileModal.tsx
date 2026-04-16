@@ -146,14 +146,14 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
-        className="relative w-full max-w-md max-h-[85dvh] flex flex-col rounded-lg border border-gold/20 animate-fade-in-up"
-        style={{ background: "var(--parchment)", animationDuration: "0.3s" }}
+        className="relative w-full max-w-md max-h-[85dvh] flex flex-col rounded-lg border border-border-light animate-fade-in"
+        style={{ background: "var(--bg-primary)", animationDuration: "0.3s" }}
       >
         <div className="p-6 pb-3 shrink-0">
-          <h2 className="font-serif text-lg text-gold tracking-wide mb-1">
+          <h2 className="text-lg text-accent mb-1">
             管理出生資料檔案
           </h2>
-          <p className="text-xs text-stone/60">
+          <p className="text-xs text-text-tertiary">
             已保存 {profiles.length}/10 筆
           </p>
         </div>
@@ -161,7 +161,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
         <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
           {loading ? (
             <div className="flex justify-center py-8">
-              <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              <span className="inline-block w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
             </div>
           ) : showForm ? (
             <div className="space-y-4">
@@ -202,7 +202,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                       );
                     })}
                   </select>
-                  <span className="text-mist">:</span>
+                  <span className="text-text-secondary">:</span>
                   <select
                     aria-label="分"
                     value={birthTime.split(":")[1] ?? ""}
@@ -223,7 +223,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                       );
                     })}
                   </select>
-                  <span className="text-xs text-mist/70 whitespace-nowrap">24h</span>
+                  <span className="text-xs text-text-secondary whitespace-nowrap">24h</span>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -245,8 +245,8 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                   <option value="lunar">農曆（陰曆）</option>
                 </select>
                 {calendarType === "lunar" && (
-                  <label className="flex items-center gap-2 mt-1.5 text-xs text-stone/70 cursor-pointer">
-                    <input type="checkbox" checked={isLeapMonth} onChange={(e) => setIsLeapMonth(e.target.checked)} className="accent-gold" />
+                  <label className="flex items-center gap-2 mt-1.5 text-xs text-text-tertiary cursor-pointer">
+                    <input type="checkbox" checked={isLeapMonth} onChange={(e) => setIsLeapMonth(e.target.checked)} className="accent-accent" />
                     該月為閏月
                   </label>
                 )}
@@ -255,14 +255,14 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={resetForm}
-                  className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
+                  className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-text-tertiary border border-border-light hover:bg-bg-secondary transition-colors"
                 >
                   返回
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving || !label.trim()}
-                  className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-gold border border-gold/20 bg-gold/10 hover:bg-gold/20 transition-colors font-serif tracking-widest disabled:opacity-50"
+                  className="flex-1 py-2.5 min-h-[44px] rounded-sm text-sm text-accent border border-accent/20 bg-accent/10 hover:bg-accent/20 transition-colors disabled:opacity-50"
                 >
                   {saving ? "儲存中..." : "儲存"}
                 </button>
@@ -273,25 +273,24 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
               {profiles.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between px-3 py-2.5 rounded border border-gold/10"
-                  style={{ background: "rgba(var(--glass-rgb), 0.02)" }}
+                  className="flex items-center justify-between px-3 py-2.5 rounded border border-border-light"
                 >
                   <div>
-                    <span className="text-sm text-cream font-serif">{p.label}</span>
+                    <span className="text-sm text-text-primary">{p.label}</span>
                     {p.birthDate && (
-                      <span className="text-xs text-stone/50 ml-2">{p.birthDate}</span>
+                      <span className="text-xs text-text-placeholder ml-2">{p.birthDate}</span>
                     )}
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => startEdit(p)}
-                      className="text-xs text-gold-dim hover:text-gold transition-colors px-2 py-1 min-h-[32px]"
+                      className="text-xs text-text-tertiary hover:text-accent transition-colors px-2 py-1 min-h-[32px]"
                     >
                       編輯
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(p.id)}
-                      className="text-xs text-stone/40 hover:text-red-seal transition-colors px-2 py-1 min-h-[32px]"
+                      className="text-xs text-text-placeholder hover:text-red-400 transition-colors px-2 py-1 min-h-[32px]"
                     >
                       刪除
                     </button>
@@ -302,7 +301,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
               {profiles.length < 10 && (
                 <button
                   onClick={startAdd}
-                  className="w-full py-2.5 min-h-[44px] rounded-sm text-sm text-gold-dim border border-dashed border-gold/15 hover:border-gold/30 hover:text-gold transition-colors font-serif tracking-widest"
+                  className="w-full py-2.5 min-h-[44px] rounded-sm text-sm text-text-tertiary border border-dashed border-border-light hover:border-accent/30 hover:text-accent transition-colors"
                 >
                   + 新增檔案
                 </button>
@@ -311,7 +310,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
               <div className="pt-3">
                 <button
                   onClick={onClose}
-                  className="w-full py-2.5 min-h-[44px] rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
+                  className="w-full py-2.5 min-h-[44px] rounded-sm text-sm text-text-tertiary border border-border-light hover:bg-bg-secondary transition-colors"
                 >
                   關閉
                 </button>

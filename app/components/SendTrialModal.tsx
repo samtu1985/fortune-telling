@@ -68,10 +68,10 @@ export default function SendTrialModal({ open, onClose }: SendTrialModalProps) {
 
       {/* Modal */}
       <div
-        className="relative z-10 w-full max-w-sm mx-4 rounded-lg border border-gold/20 p-6 shadow-xl"
-        style={{ background: "var(--parchment-light)" }}
+        className="relative z-10 w-full max-w-sm mx-4 rounded-lg border border-border-light p-6"
+        style={{ background: "var(--bg-secondary)" }}
       >
-        <h3 className="text-sm font-serif text-gold mb-4">{t("trial.title")}</h3>
+        <h3 className="text-sm text-accent mb-4">{t("trial.title")}</h3>
 
         {result ? (
           <div className="space-y-4">
@@ -84,7 +84,7 @@ export default function SendTrialModal({ open, onClose }: SendTrialModalProps) {
             </p>
             <button
               onClick={handleClose}
-              className="w-full py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors"
+              className="w-full py-2 text-xs border border-accent/30 rounded-sm text-accent hover:bg-accent/10 transition-colors"
             >
               {t("trial.close")}
             </button>
@@ -92,7 +92,7 @@ export default function SendTrialModal({ open, onClose }: SendTrialModalProps) {
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-stone mb-1 block">{t("trial.email")}</label>
+              <label className="text-xs text-text-tertiary mb-1 block">{t("trial.email")}</label>
               <input
                 type="email"
                 value={email}
@@ -103,7 +103,7 @@ export default function SendTrialModal({ open, onClose }: SendTrialModalProps) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-stone mb-1 block">{t("trial.singleCredits")}</label>
+                <label className="text-xs text-text-tertiary mb-1 block">{t("trial.singleCredits")}</label>
                 <input
                   type="number"
                   min={0}
@@ -113,7 +113,7 @@ export default function SendTrialModal({ open, onClose }: SendTrialModalProps) {
                 />
               </div>
               <div>
-                <label className="text-xs text-stone mb-1 block">{t("trial.multiCredits")}</label>
+                <label className="text-xs text-text-tertiary mb-1 block">{t("trial.multiCredits")}</label>
                 <input
                   type="number"
                   min={0}
@@ -126,14 +126,14 @@ export default function SendTrialModal({ open, onClose }: SendTrialModalProps) {
             <div className="flex gap-2">
               <button
                 onClick={handleClose}
-                className="flex-1 py-2 text-xs text-stone hover:text-cream transition-colors"
+                className="flex-1 py-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
               >
                 {t("trial.close")}
               </button>
               <button
                 onClick={handleSend}
                 disabled={loading || !email.trim()}
-                className="flex-1 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors disabled:opacity-40"
+                className="flex-1 py-2 text-xs border border-accent/30 rounded-sm text-accent hover:bg-accent/10 transition-colors disabled:opacity-40"
               >
                 {loading ? t("trial.sending") : t("trial.send")}
               </button>

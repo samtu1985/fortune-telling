@@ -8,15 +8,15 @@ export default function Error({
 }) {
   return (
     <main className="flex flex-col items-center justify-center min-h-dvh px-6 text-center">
-      <h2 className="text-xl font-serif text-gold tracking-wide mb-3">
+      <h2 className="text-xl font-medium text-text-primary mb-3">
         發生錯誤
       </h2>
-      <p className="text-sm text-stone/60 mb-6">
+      <p className="text-sm text-text-tertiary mb-6">
         頁面載入時出現問題，請重新嘗試。
       </p>
       <button
         onClick={reset}
-        className="px-6 py-2.5 rounded-sm text-sm font-serif tracking-widest border border-gold/20 text-gold hover:bg-gold/15 transition-colors"
+        className="px-6 py-2.5 rounded text-sm bg-accent text-white hover:bg-accent/90 transition-colors duration-[330ms]"
       >
         重新載入
       </button>

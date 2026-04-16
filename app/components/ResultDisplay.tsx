@@ -54,7 +54,7 @@ function renderInlineMarkdown(text: string): string {
   return text
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, '<code class="text-gold-bright text-[0.85em]">$1</code>');
+    .replace(/`(.+?)`/g, '<code class="text-accent text-[0.85em]">$1</code>');
 }
 
 export function renderMarkdown(text: string): string {
@@ -100,7 +100,7 @@ function renderTable(table: TableData): string {
   const thCells = table.headers
     .map(
       (h) =>
-        `<th class="px-3 py-2.5 text-left font-semibold text-[0.85rem] border-b" style="color:var(--gold);border-color:rgba(var(--glass-rgb),0.15)">${renderInlineMarkdown(h)}</th>`
+        `<th class="px-3 py-2.5 text-left font-semibold text-[0.85rem] border-b" style="color:var(--accent);border-color:var(--border-light)">${renderInlineMarkdown(h)}</th>`
     )
     .join("");
 
@@ -109,17 +109,17 @@ function renderTable(table: TableData): string {
       const cells = row
         .map(
           (cell) =>
-            `<td class="px-3 py-2 text-[0.85rem] border-b" style="color:var(--cream);border-color:rgba(var(--glass-rgb),0.06)">${renderInlineMarkdown(cell)}</td>`
+            `<td class="px-3 py-2 text-[0.85rem] border-b" style="color:var(--text-primary);border-color:var(--border-light)">${renderInlineMarkdown(cell)}</td>`
         )
         .join("");
       const bgAlpha = ri % 2 === 0 ? "0.01" : "0.03";
-      return `<tr style="background:rgba(var(--glass-rgb),${bgAlpha})">${cells}</tr>`;
+      return `<tr style="background:${ri % 2 === 0 ? 'transparent' : 'var(--bg-secondary)'}">${cells}</tr>`;
     })
     .join("");
 
-  return `<div class="my-4 overflow-x-auto rounded border" style="border-color:rgba(var(--glass-rgb),0.1)">
+  return `<div class="my-4 overflow-x-auto rounded border" style="border-color:var(--border-light)">
     <table class="w-full border-collapse min-w-0">
-      <thead><tr style="background:rgba(var(--glass-rgb),0.04)">${thCells}</tr></thead>
+      <thead><tr style="background:var(--bg-secondary)">${thCells}</tr></thead>
       <tbody>${bodyRows}</tbody>
     </table>
   </div>`;
@@ -130,24 +130,24 @@ function renderLine(line: string): string {
 
   // Headers
   if (trimmed.startsWith("#### "))
-    return `<h4 class="text-gold text-[0.95rem] font-semibold mt-4 mb-2">${renderInlineMarkdown(trimmed.slice(5))}</h4>`;
+    return `<h4 class="text-accent text-[0.95rem] font-semibold mt-4 mb-2">${renderInlineMarkdown(trimmed.slice(5))}</h4>`;
   if (trimmed.startsWith("### "))
-    return `<h3 class="text-gold text-[1.05rem] font-semibold mt-5 mb-2">${renderInlineMarkdown(trimmed.slice(4))}</h3>`;
+    return `<h3 class="text-accent text-[1.05rem] font-semibold mt-5 mb-2">${renderInlineMarkdown(trimmed.slice(4))}</h3>`;
   if (trimmed.startsWith("## "))
-    return `<h3 class="text-gold text-[1.1rem] font-bold mt-6 mb-2">${renderInlineMarkdown(trimmed.slice(3))}</h3>`;
+    return `<h3 class="text-accent text-[1.1rem] font-bold mt-6 mb-2">${renderInlineMarkdown(trimmed.slice(3))}</h3>`;
 
   // Horizontal rule
   if (trimmed.match(/^[-*_]{3,}$/))
-    return `<div class="my-4 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent"></div>`;
+    return `<div class="my-4 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent"></div>`;
 
   // Unordered list
   if (trimmed.match(/^[-*+]\s/))
-    return `<div class="flex gap-2 mb-1 pl-2"><span class="text-gold-dim shrink-0">·</span><span>${renderInlineMarkdown(trimmed.slice(2))}</span></div>`;
+    return `<div class="flex gap-2 mb-1 pl-2"><span class="text-text-tertiary shrink-0">·</span><span>${renderInlineMarkdown(trimmed.slice(2))}</span></div>`;
 
   // Ordered list
   const olMatch = trimmed.match(/^(\d+)[.)]\s(.+)/);
   if (olMatch)
-    return `<div class="flex gap-2 mb-1 pl-2"><span class="text-gold-dim shrink-0">${olMatch[1]}.</span><span>${renderInlineMarkdown(olMatch[2])}</span></div>`;
+    return `<div class="flex gap-2 mb-1 pl-2"><span class="text-text-tertiary shrink-0">${olMatch[1]}.</span><span>${renderInlineMarkdown(olMatch[2])}</span></div>`;
 
   // Empty line
   if (!trimmed) return `<div class="h-3"></div>`;
@@ -173,15 +173,15 @@ export default function ResultDisplay({
   if (!content && !reasoning) return null;
 
   return (
-    <div className="animate-fade-in-up mt-8" style={{ animationDelay: "200ms", opacity: 0 }}>
-      <div className="gold-line mb-6" />
+    <div className="animate-fade-in mt-8">
+      <div className="tesla-divider mb-6" />
 
       {/* Reasoning toggle */}
       {reasoning && (
         <div className="mb-4">
           <button
             onClick={() => setShowReasoning(!showReasoning)}
-            className="flex items-center gap-2 text-sm text-stone hover:text-mist transition-colors min-h-[44px]"
+            className="flex items-center gap-2 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px]"
           >
             <svg
               className={`w-3.5 h-3.5 transition-transform duration-300 ${
@@ -195,12 +195,12 @@ export default function ResultDisplay({
             </svg>
             {t("result.thinkingProcess")}
             {streaming && !content && (
-              <span className="inline-block w-2 h-2 rounded-full bg-gold/60 animate-pulse" />
+              <span className="inline-block w-2 h-2 rounded-full bg-accent/60 animate-pulse" />
             )}
           </button>
 
           {showReasoning && (
-            <div className="mt-3 pl-4 border-l border-gold-dim/20 text-sm text-stone/80 leading-relaxed max-h-64 overflow-y-auto">
+            <div className="mt-3 pl-4 border-l border-border-light text-sm text-text-tertiary leading-relaxed max-h-64 overflow-y-auto">
               <div
                 className={streaming && !content ? "streaming-cursor" : ""}
                 dangerouslySetInnerHTML={{ __html: renderedReasoning }}
@@ -214,14 +214,14 @@ export default function ResultDisplay({
       {content && (
         <div className="relative">
           {/* Decorative corner brackets */}
-          <div className="absolute -top-2 -left-2 w-6 h-6 border-t border-l border-gold/30" />
-          <div className="absolute -top-2 -right-2 w-6 h-6 border-t border-r border-gold/30" />
-          <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b border-l border-gold/30" />
-          <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b border-r border-gold/30" />
+          <div className="absolute -top-2 -left-2 w-6 h-6 border-t border-l border-border-light" />
+          <div className="absolute -top-2 -right-2 w-6 h-6 border-t border-r border-border-light" />
+          <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b border-l border-border-light" />
+          <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b border-r border-border-light" />
 
           <div className="px-6 py-8">
             <div
-              className={`result-text font-serif text-[0.95rem] leading-[1.9] ${
+              className={`result-text text-[0.95rem] leading-[1.9] ${
                 streaming ? "streaming-cursor" : ""
               }`}
               dangerouslySetInnerHTML={{ __html: renderedContent }}
@@ -238,8 +238,8 @@ export default function ResultDisplay({
             disabled={isSaved}
             className={`text-xs flex items-center gap-1 min-h-[32px] px-2 transition-colors ${
               isSaved
-                ? "text-gold-dim/50 cursor-default"
-                : "text-stone/40 hover:text-gold-dim"
+                ? "text-text-tertiary cursor-default"
+                : "text-text-placeholder hover:text-accent"
             }`}
           >
             {isSaved ? (
@@ -263,7 +263,7 @@ export default function ResultDisplay({
 
       {/* Disclaimer */}
       {content && !streaming && !hideDisclaimer && (
-        <p className="mt-6 text-center text-xs text-stone/50 tracking-wide">
+        <p className="mt-6 text-center text-xs text-text-placeholder">
           {t("result.aiDisclaimer")}
         </p>
       )}

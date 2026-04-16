@@ -11,7 +11,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       aria-label={theme === "dark" ? t("theme.light") : t("theme.dark")}
-      className="p-2 rounded-sm text-stone hover:text-gold transition-colors duration-300"
+      className="p-2 rounded text-text-tertiary hover:text-text-primary transition-colors duration-[330ms]"
     >
       {theme === "dark" ? (
         // Sun icon

@@ -67,52 +67,52 @@ export default function SavedConversations({ type }: SavedConversationsProps) {
   return (
     <div>
       {/* Sub-tabs */}
-      <div className="mb-5 flex gap-4 border-b border-gold/15">
+      <div className="mb-5 flex gap-4 border-b border-border-light">
         <button
           type="button"
           onClick={() => setTab("manual")}
-          className={`pb-2 text-sm font-serif transition-colors ${
+          className={`pb-2 text-sm transition-colors ${
             tab === "manual"
-              ? "border-b-2 border-gold text-gold"
-              : "text-stone/60 hover:text-stone"
+              ? "border-b-2 border-accent text-accent"
+              : "text-text-tertiary hover:text-text-secondary"
           }`}
         >
           {t("saved.tabManual")}
-          <span className="ml-1.5 text-[10px] text-stone/40">({manualConvs.length})</span>
+          <span className="ml-1.5 text-[10px] text-text-placeholder">({manualConvs.length})</span>
         </button>
         <button
           type="button"
           onClick={() => setTab("auto")}
-          className={`pb-2 text-sm font-serif transition-colors ${
+          className={`pb-2 text-sm transition-colors ${
             tab === "auto"
-              ? "border-b-2 border-gold text-gold"
-              : "text-stone/60 hover:text-stone"
+              ? "border-b-2 border-accent text-accent"
+              : "text-text-tertiary hover:text-text-secondary"
           }`}
         >
           {t("saved.tabAuto")}
-          <span className="ml-1.5 text-[10px] text-stone/40">({autoConvs.length}/3)</span>
+          <span className="ml-1.5 text-[10px] text-text-placeholder">({autoConvs.length}/3)</span>
         </button>
       </div>
 
       {tab === "auto" && (
-        <p className="mb-4 text-[11px] text-stone/50 leading-relaxed">
+        <p className="mb-4 text-[11px] text-text-placeholder leading-relaxed">
           {t("saved.autoHint")}
         </p>
       )}
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+          <span className="inline-block w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : visible.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-stone/50">
+          <p className="text-sm text-text-placeholder">
             {tab === "manual"
               ? t("saved.noConversations", { type: typeLabel })
               : t("saved.noAutoConversations", { type: typeLabel })}
           </p>
           {tab === "manual" && (
-            <p className="text-xs text-stone/30 mt-2">{t("saved.howToSave")}</p>
+            <p className="text-xs text-text-placeholder mt-2">{t("saved.howToSave")}</p>
           )}
         </div>
       ) : (
@@ -120,19 +120,18 @@ export default function SavedConversations({ type }: SavedConversationsProps) {
           {visible.map((conv) => (
             <div
               key={conv.id}
-              className="border border-gold/10 rounded-lg p-4"
-              style={{ background: "rgba(var(--glass-rgb), 0.02)" }}
+              className="border border-border-light rounded-lg p-4"
             >
               {/* Metadata */}
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-xs text-stone/50 flex-wrap">
+                <div className="flex items-center gap-2 text-xs text-text-placeholder flex-wrap">
                   {conv.origin === "auto" && (
                     <span className="px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/5 text-amber-300/80 text-[10px]">
                       {t("saved.autoBadge")}
                     </span>
                   )}
                   {conv.profileLabel && (
-                    <span className="px-2 py-0.5 rounded-full border border-gold/15 text-gold-dim">
+                    <span className="px-2 py-0.5 rounded-full border border-border-light text-text-tertiary">
                       {conv.profileLabel}
                     </span>
                   )}
@@ -145,15 +144,15 @@ export default function SavedConversations({ type }: SavedConversationsProps) {
                 </div>
                 <button
                   onClick={() => handleDelete(conv.id)}
-                  className="text-xs text-stone/40 hover:text-red-seal transition-colors min-h-[32px] px-2"
+                  className="text-xs text-text-placeholder hover:text-red-seal transition-colors min-h-[32px] px-2"
                 >
                   {t("saved.delete")}
                 </button>
               </div>
 
               {/* User question as blockquote */}
-              <div className="mb-3 pl-3 border-l-2 border-gold/20">
-                <p className="text-sm text-stone/70 leading-relaxed whitespace-pre-wrap">
+              <div className="mb-3 pl-3 border-l-2 border-border-light">
+                <p className="text-sm text-text-tertiary leading-relaxed whitespace-pre-wrap">
                   {conv.userQuestion}
                 </p>
               </div>

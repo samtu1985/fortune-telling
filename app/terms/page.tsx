@@ -29,10 +29,10 @@ export default function TermsPage() {
       <SmokeParticles />
 
       {/* Header */}
-      <header className="relative z-20 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gold/10">
+      <header className="relative z-20 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border-light">
         <Link
           href="/"
-          className="text-sm text-gold/70 hover:text-gold transition-colors font-serif tracking-wide"
+          className="text-sm text-accent/70 hover:text-accent transition-colors"
         >
           ← {t("terms.back")}
         </Link>
@@ -44,23 +44,23 @@ export default function TermsPage() {
 
       {/* Content */}
       <article className="relative z-10 max-w-3xl mx-auto w-full px-5 sm:px-8 py-8 sm:py-12 flex-1">
-        <h1 className="text-2xl sm:text-3xl text-gold font-serif tracking-wide mb-2">
+        <h1 className="text-2xl sm:text-3xl text-accent mb-2">
           {t("terms.title")}
         </h1>
-        <p className="text-xs text-stone/50 mb-8">{t("terms.lastUpdated")}</p>
+        <p className="text-xs text-text-placeholder mb-8">{t("terms.lastUpdated")}</p>
 
         {sections.map(({ key, hasList, listCount }) => (
           <section key={key} className="mb-8">
-            <h2 className="text-base sm:text-lg text-cream font-serif tracking-wide mb-3 border-l-2 border-gold/40 pl-3">
+            <h2 className="text-base sm:text-lg text-text-primary mb-3 border-l-2 border-accent/40 pl-3">
               {t(`${key}.title`)}
             </h2>
-            <p className="text-sm text-stone/80 leading-relaxed whitespace-pre-line">
+            <p className="text-sm text-text-tertiary leading-relaxed whitespace-pre-line">
               {t(`${key}.body`)}
             </p>
             {hasList && listCount && (
-              <ul className="mt-3 space-y-1.5 text-sm text-stone/75 leading-relaxed">
+              <ul className="mt-3 space-y-1.5 text-sm text-text-tertiary leading-relaxed">
                 {Array.from({ length: listCount }, (_, i) => (
-                  <li key={i} className="pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-gold/60">
+                  <li key={i} className="pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-accent/60">
                     {t(`${key}.item${i + 1}`)}
                   </li>
                 ))}
