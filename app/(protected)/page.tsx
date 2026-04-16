@@ -1080,7 +1080,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                           prev.filter((_, j) => j !== i)
                         )
                       }
-                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-seal text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       ×
                     </button>
@@ -1525,8 +1525,8 @@ ${t("birth.topic")}：${aiQuestion}`;
                 )}
 
                 {/* AI question input */}
-                <div className="border-t border-gold/10 pt-5 space-y-3">
-                  <label className="text-sm font-serif text-gold">{t("main.questionDirection")}</label>
+                <div className="border-t border-border-light pt-5 space-y-3">
+                  <label className="text-sm text-accent">{t("main.questionDirection")}</label>
                   <input
                     type="text"
                     value={aiQuestion}
@@ -1536,14 +1536,14 @@ ${t("birth.topic")}：${aiQuestion}`;
                   <div className="flex gap-3">
                     <button
                       onClick={() => { setChartPreview(null); setChartSaved(false); }}
-                      className="flex-1 py-3 rounded-sm text-sm text-stone border border-gold/10 hover:bg-gold/5 transition-colors font-serif tracking-widest"
+                      className="flex-1 py-3 rounded text-sm text-text-secondary border border-border-light hover:bg-bg-secondary transition-colors"
                     >
                       {t("main.backToEdit")}
                     </button>
                     <button
                       onClick={handleStartAiConversation}
                       disabled={!aiQuestion.trim()}
-                      className="flex-1 py-3 rounded-sm text-sm text-gold border border-gold/20 bg-gold/15 hover:bg-gold/25 transition-colors font-serif tracking-widest disabled:opacity-40"
+                      className="flex-1 py-3 rounded text-sm bg-accent text-white hover:bg-accent/90 transition-colors disabled:opacity-40"
                     >
                       {t("main.startAnalysis")}
                     </button>
