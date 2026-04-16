@@ -269,11 +269,11 @@ export default function PackagesAdmin() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-serif text-gold">方案管理</h3>
+        <h3 className="text-lg font-medium text-accent">方案管理</h3>
         <button
           type="button"
           onClick={openCreate}
-          className="px-3 py-1.5 text-sm rounded border border-gold/40 text-gold hover:bg-gold/10 transition-colors"
+          className="px-3 py-1.5 text-sm rounded border border-border-light text-accent hover:bg-accent/10 transition-colors"
         >
           ＋ 新增方案
         </button>
@@ -286,16 +286,16 @@ export default function PackagesAdmin() {
       )}
 
       {loading ? (
-        <div className="p-8 text-center text-mist">載入中…</div>
+        <div className="p-8 text-center text-text-secondary">載入中…</div>
       ) : packages.length === 0 ? (
-        <div className="p-8 text-center text-mist border border-dashed border-gold/20 rounded">
+        <div className="p-8 text-center text-text-secondary border border-dashed border-border-light rounded">
           目前沒有任何方案，點擊上方「＋ 新增方案」開始。
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-mist border-b border-gold/20">
+              <tr className="text-left text-text-secondary border-b border-border-light">
                 <th className="py-2 pr-2">排序</th>
                 <th className="py-2 pr-2">名稱</th>
                 <th className="py-2 pr-2">額度</th>
@@ -309,21 +309,21 @@ export default function PackagesAdmin() {
               {packages.map((pkg) => (
                 <tr
                   key={pkg.id}
-                  className={`border-b border-gold/10 ${
+                  className={`border-b border-border-light ${
                     pkg.isActive ? "" : "opacity-60"
                   }`}
                 >
-                  <td className="py-2 pr-2 text-cream">{pkg.sortOrder}</td>
-                  <td className="py-2 pr-2 text-cream">
+                  <td className="py-2 pr-2 text-text-primary">{pkg.sortOrder}</td>
+                  <td className="py-2 pr-2 text-text-primary">
                     <div className="font-medium">{pkg.name}</div>
                     {pkg.description && (
-                      <div className="text-xs text-mist">{pkg.description}</div>
+                      <div className="text-xs text-text-secondary">{pkg.description}</div>
                     )}
                   </td>
-                  <td className="py-2 pr-2 text-cream">
+                  <td className="py-2 pr-2 text-text-primary">
                     +{pkg.singleCreditsGranted} / +{pkg.multiCreditsGranted}
                   </td>
-                  <td className="py-2 pr-2 text-cream">
+                  <td className="py-2 pr-2 text-text-primary">
                     {formatHkd(pkg.priceAmount)}
                   </td>
                   <td className="py-2 pr-2">
@@ -331,13 +331,13 @@ export default function PackagesAdmin() {
                       className={`text-xs px-1.5 py-0.5 rounded ${
                         pkg.isActive
                           ? "bg-green-500/20 text-green-500"
-                          : "bg-stone-500/20 text-mist"
+                          : "bg-stone-500/20 text-text-secondary"
                       }`}
                     >
                       {pkg.isActive ? "啟用" : "停用"}
                     </span>
                   </td>
-                  <td className="py-2 pr-2 text-xs text-mist font-mono">
+                  <td className="py-2 pr-2 text-xs text-text-secondary font-mono">
                     {lastSegment(pkg.stripePriceId)}
                   </td>
                   <td className="py-2 pr-2 text-right">
@@ -346,7 +346,7 @@ export default function PackagesAdmin() {
                         type="button"
                         onClick={() => openEdit(pkg)}
                         disabled={rowBusyId === pkg.id}
-                        className="text-xs text-gold hover:underline disabled:opacity-50"
+                        className="text-xs text-accent hover:underline disabled:opacity-50"
                       >
                         編輯
                       </button>
@@ -354,7 +354,7 @@ export default function PackagesAdmin() {
                         type="button"
                         onClick={() => handleToggleActive(pkg)}
                         disabled={rowBusyId === pkg.id}
-                        className="text-xs text-mist hover:text-gold disabled:opacity-50"
+                        className="text-xs text-text-secondary hover:text-accent disabled:opacity-50"
                       >
                         {pkg.isActive ? "停用" : "啟用"}
                       </button>
@@ -384,17 +384,17 @@ export default function PackagesAdmin() {
         >
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-lg border border-gold/30 bg-[color:var(--cream)]/5 backdrop-blur-md p-6"
+            className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-lg border border-border-light bg-bg-secondary backdrop-blur-md p-6"
             style={{ background: "rgba(10,10,10,0.92)" }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-serif text-gold">
+              <h3 className="text-lg font-medium text-accent">
                 {modalMode === "create" ? "新增方案" : "編輯方案"}
               </h3>
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-mist hover:text-gold"
+                className="text-text-secondary hover:text-accent"
               >
                 ✕
               </button>
@@ -402,7 +402,7 @@ export default function PackagesAdmin() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-mist mb-1">
+                <label className="block text-xs text-text-secondary mb-1">
                   方案名稱 *
                 </label>
                 <input
@@ -412,28 +412,28 @@ export default function PackagesAdmin() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
-                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none"
+                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-mist mb-1">描述</label>
+                <label className="block text-xs text-text-secondary mb-1">描述</label>
                 <textarea
                   rows={2}
                   value={form.description}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, description: e.target.value }))
                   }
-                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none"
+                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none"
                 />
               </div>
 
-              <div className="p-3 rounded border border-gold/20 bg-gold/5">
-                <div className="text-xs text-mist mb-2">
+              <div className="p-3 rounded border border-border-light bg-accent/5">
+                <div className="text-xs text-text-secondary mb-2">
                   打開 Stripe Dashboard → Products → 選擇您的產品 → 複製 Price
-                  ID（以 <code className="text-gold">price_</code> 開頭）
+                  ID（以 <code className="text-accent">price_</code> 開頭）
                 </div>
-                <label className="block text-xs text-mist mb-1">
+                <label className="block text-xs text-text-secondary mb-1">
                   Price ID *
                 </label>
                 <div className="flex gap-2">
@@ -447,7 +447,7 @@ export default function PackagesAdmin() {
                       setForm((f) => ({ ...f, priceId: e.target.value }));
                       setVerified(false);
                     }}
-                    className="flex-1 px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none font-mono text-xs"
+                    className="flex-1 px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none font-mono text-xs"
                   />
                   <button
                     type="button"
@@ -455,7 +455,7 @@ export default function PackagesAdmin() {
                     disabled={
                       verifying || !form.priceId.startsWith("price_")
                     }
-                    className="px-3 py-1.5 text-xs rounded border border-gold/40 text-gold hover:bg-gold/10 disabled:opacity-50 whitespace-nowrap"
+                    className="px-3 py-1.5 text-xs rounded border border-border-light text-accent hover:bg-accent/10 disabled:opacity-50 whitespace-nowrap"
                   >
                     {verifying ? "驗證中…" : "🔍 驗證並抓取方案資訊"}
                   </button>
@@ -464,21 +464,21 @@ export default function PackagesAdmin() {
                   <div className="mt-2 text-xs text-red-400">{verifyError}</div>
                 )}
                 {form.stripePriceId && (
-                  <div className="mt-3 p-2 rounded bg-black/40 text-xs text-cream space-y-1">
+                  <div className="mt-3 p-2 rounded bg-black/40 text-xs text-text-primary space-y-1">
                     <div>
-                      <span className="text-mist">Price ID：</span>
+                      <span className="text-text-secondary">Price ID：</span>
                       <span className="font-mono">{form.stripePriceId}</span>
                     </div>
                     <div>
-                      <span className="text-mist">金額：</span>
+                      <span className="text-text-secondary">金額：</span>
                       {formatHkd(form.priceAmount)}
                     </div>
                     <div>
-                      <span className="text-mist">幣別：</span>
+                      <span className="text-text-secondary">幣別：</span>
                       {form.currency?.toUpperCase() ?? "—"}
                     </div>
                     <div>
-                      <span className="text-mist">產品名稱：</span>
+                      <span className="text-text-secondary">產品名稱：</span>
                       {form.productName ?? "—"}
                     </div>
                   </div>
@@ -486,10 +486,10 @@ export default function PackagesAdmin() {
               </div>
 
               <div>
-                <label className="block text-xs text-mist mb-1">
+                <label className="block text-xs text-text-secondary mb-1">
                   Buy Button ID *
                 </label>
-                <div className="text-[10px] text-mist mb-1">
+                <div className="text-[10px] text-text-secondary mb-1">
                   從 Stripe Buy Button 設定頁的 embed code 複製
                 </div>
                 <input
@@ -499,13 +499,13 @@ export default function PackagesAdmin() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, buyButtonId: e.target.value }))
                   }
-                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none font-mono text-xs"
+                  className="w-full px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none font-mono text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-mist mb-1">
+                  <label className="block text-xs text-text-secondary mb-1">
                     單次問答 +N
                   </label>
                   <input
@@ -518,11 +518,11 @@ export default function PackagesAdmin() {
                         singleCreditsGranted: Number(e.target.value) || 0,
                       }))
                     }
-                    className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none"
+                    className="w-full px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-mist mb-1">
+                  <label className="block text-xs text-text-secondary mb-1">
                     三師論道 +M
                   </label>
                   <input
@@ -535,14 +535,14 @@ export default function PackagesAdmin() {
                         multiCreditsGranted: Number(e.target.value) || 0,
                       }))
                     }
-                    className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none"
+                    className="w-full px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-mist mb-1">排序</label>
+                  <label className="block text-xs text-text-secondary mb-1">排序</label>
                   <input
                     type="number"
                     value={form.sortOrder}
@@ -552,11 +552,11 @@ export default function PackagesAdmin() {
                         sortOrder: Number(e.target.value) || 0,
                       }))
                     }
-                    className="w-full px-3 py-1.5 rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none"
+                    className="w-full px-3 py-1.5 rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none"
                   />
                 </div>
                 <div className="flex items-end">
-                  <label className="inline-flex items-center gap-2 text-sm text-cream">
+                  <label className="inline-flex items-center gap-2 text-sm text-text-primary">
                     <input
                       type="checkbox"
                       checked={form.isActive}
@@ -581,14 +581,14 @@ export default function PackagesAdmin() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-3 py-1.5 text-sm rounded border border-gold/20 text-mist hover:text-gold"
+                className="px-3 py-1.5 text-sm rounded border border-border-light text-text-secondary hover:text-accent"
               >
                 取消
               </button>
               <button
                 type="submit"
                 disabled={!canSubmit || submitting}
-                className="px-4 py-1.5 text-sm rounded border border-gold/40 text-gold hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-1.5 text-sm rounded border border-border-light text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {submitting
                   ? "儲存中…"

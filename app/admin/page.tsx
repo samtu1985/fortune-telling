@@ -745,7 +745,7 @@ export default function AdminPage() {
             ? "border-yellow-500/30 bg-yellow-500/[0.03]"
             : user.status === "unverified"
             ? "border-orange-400/30 bg-orange-400/[0.03]"
-            : "border-gold/10"
+            : "border-border-light"
         }`}
         style={{
           backgroundColor:
@@ -757,16 +757,16 @@ export default function AdminPage() {
         <div className="flex items-start gap-3 sm:items-center">
           {user.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.image} alt="" className="w-10 h-10 rounded-full border border-gold/20 shrink-0" />
+            <img src={user.image} alt="" className="w-10 h-10 rounded-full border border-border-light shrink-0" />
           ) : (
-            <div className="w-10 h-10 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-sm text-gold shrink-0">
+            <div className="w-10 h-10 rounded-full border border-border-light bg-accent/10 flex items-center justify-center text-sm text-accent shrink-0">
               {user.name?.[0] || "?"}
             </div>
           )}
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-cream font-medium truncate">
+              <span className="text-sm text-text-primary font-medium truncate">
                 {user.name || t("admin.unnamed")}
               </span>
               <span className={`text-xs ${status.color}`}>{status.text}</span>
@@ -786,15 +786,15 @@ export default function AdminPage() {
                 </span>
               ) : null}
               {user.username && (
-                <span className="text-[10px] text-stone/50">@{user.username}</span>
+                <span className="text-[10px] text-text-tertiary">@{user.username}</span>
               )}
             </div>
-            <p className="text-xs text-stone/60 truncate">{user.email}</p>
-            <p className="text-xs text-stone/40 mt-0.5">
+            <p className="text-xs text-text-tertiary truncate">{user.email}</p>
+            <p className="text-xs text-text-tertiary mt-0.5">
               {t("admin.registeredOn")} {new Date(user.createdAt).toLocaleDateString("zh-TW")}
             </p>
             {((user.singleCredits ?? 0) > 0 || (user.multiCredits ?? 0) > 0) && (
-              <p className="text-[10px] text-stone/40 mt-0.5">
+              <p className="text-[10px] text-text-tertiary mt-0.5">
                 {t("admin.userCredits")}: S {user.singleUsed ?? 0}/{user.singleCredits ?? 0} | M {user.multiUsed ?? 0}/{user.multiCredits ?? 0}
               </p>
             )}
@@ -802,9 +802,9 @@ export default function AdminPage() {
 
           <div className="flex gap-2 shrink-0 flex-wrap justify-end">
             {isAdmin ? (
-              <span className="text-xs text-stone/40">{t("admin.adminLabel")}</span>
+              <span className="text-xs text-text-tertiary">{t("admin.adminLabel")}</span>
             ) : isLoading ? (
-              <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              <span className="inline-block w-4 h-4 border-2 border-border-light border-t-accent rounded-full animate-spin" />
             ) : (
               <>
                 {user.status === "pending" && (
@@ -854,7 +854,7 @@ export default function AdminPage() {
                   className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
                     user.isAmbassador
                       ? "text-violet-400 border-violet-400/30 hover:bg-violet-400/10"
-                      : "text-stone/50 border-stone/20 hover:bg-stone/10"
+                      : "text-text-tertiary border-border-light hover:bg-bg-secondary"
                   }`}
                 >
                   {user.isAmbassador ? t("admin.removeAmbassador") : t("admin.setAmbassador")}
@@ -876,7 +876,7 @@ export default function AdminPage() {
                   className={`px-3 py-1.5 min-h-[36px] text-xs border rounded transition-colors ${
                     user.isFriend
                       ? "text-pink-400 border-pink-400/30 hover:bg-pink-400/10"
-                      : "text-stone/50 border-stone/20 hover:bg-stone/10"
+                      : "text-text-tertiary border-border-light hover:bg-bg-secondary"
                   }`}
                 >
                   {user.isFriend ? t("admin.removeFriend") : t("admin.setFriend")}
@@ -935,7 +935,7 @@ export default function AdminPage() {
       <div className="relative z-20 flex items-center justify-between px-4 sm:px-6 pt-4 pb-2">
         <a
           href="/"
-          className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+          className="flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px]"
         >
           <svg
             className="w-4 h-4"
@@ -958,7 +958,7 @@ export default function AdminPage() {
           <ThemeToggle />
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-xs text-stone hover:text-gold transition-colors"
+            className="text-xs text-text-tertiary hover:text-accent transition-colors"
           >
             {t("admin.logout")}
           </button>
@@ -967,21 +967,21 @@ export default function AdminPage() {
 
       {/* Header */}
       <header className="text-center py-6">
-        <h1 className="font-serif text-2xl font-bold tracking-[0.15em] text-gold">
+        <h1 className="text-2xl font-medium text-text-primary">
           {t("admin.title")}
         </h1>
-        <div className="mx-auto mt-4 w-24 gold-line" />
+        <div className="mx-auto mt-4 w-24 tesla-divider" />
       </header>
 
       {/* Tabs */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-6">
-        <div className="flex gap-1 border-b border-gold/10">
+        <div className="flex gap-1 border-b border-border-light">
           <button
             onClick={() => setActiveTab("users")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               activeTab === "users"
-                ? "text-gold"
-                : "text-stone/60 hover:text-stone"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {t("admin.userTab")}
@@ -991,65 +991,65 @@ export default function AdminPage() {
               </span>
             )}
             {activeTab === "users" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("ai")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               activeTab === "ai"
-                ? "text-gold"
-                : "text-stone/60 hover:text-stone"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {t("admin.aiTab")}
             {activeTab === "ai" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("tts")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-              activeTab === "tts" ? "text-gold" : "text-stone/60 hover:text-stone"
+              activeTab === "tts" ? "text-accent" : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {t("admin.ttsTab")}
             {activeTab === "tts" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("usage")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               activeTab === "usage"
-                ? "text-gold"
-                : "text-stone/60 hover:text-stone"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {t("admin.usageTab")}
             {activeTab === "usage" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("cases")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               activeTab === "cases"
-                ? "text-gold"
-                : "text-stone/60 hover:text-stone"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {t("admin.casesTab")}
             {activeTab === "cases" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("feedback")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               activeTab === "feedback"
-                ? "text-gold"
-                : "text-stone/60 hover:text-stone"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {t("admin.feedbackTab")}
@@ -1059,20 +1059,20 @@ export default function AdminPage() {
               </span>
             )}
             {activeTab === "feedback" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("payments")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               activeTab === "payments"
-                ? "text-gold"
-                : "text-stone/60 hover:text-stone"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
             付款管理
             {activeTab === "payments" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
         </div>
@@ -1084,7 +1084,7 @@ export default function AdminPage() {
           <>
             {/* Storage status */}
             {storageType && (
-              <p className="text-xs text-stone/50 mb-3 text-center">
+              <p className="text-xs text-text-tertiary mb-3 text-center">
                 {t("admin.storage")}{storageType === "postgres" ? t("admin.storagePostgres") : t("admin.storageLocal")}
               </p>
             )}
@@ -1092,7 +1092,7 @@ export default function AdminPage() {
               <div className="mb-4 mx-auto max-w-md px-4 py-2 rounded border border-red-400/30 bg-red-400/5">
                 <p className="text-xs text-red-400">{storageError}</p>
                 {storageType === "local" && (
-                  <p className="text-xs text-stone/50 mt-1">
+                  <p className="text-xs text-text-tertiary mt-1">
                     {t("admin.storageNote")}
                   </p>
                 )}
@@ -1102,16 +1102,16 @@ export default function AdminPage() {
             {/* User list */}
             {loading ? (
               <div className="text-center py-12">
-                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-6 h-6 border-2 border-border-light border-t-accent rounded-full animate-spin" />
               </div>
             ) : users.length === 0 ? (
-              <p className="text-center text-stone/60 py-12">{t("admin.noUsers")}</p>
+              <p className="text-center text-text-tertiary py-12">{t("admin.noUsers")}</p>
             ) : (
               <>
                 {/* Search + Sort controls */}
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-2">
                   <div className="relative">
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone/40 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
@@ -1119,7 +1119,7 @@ export default function AdminPage() {
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
                       placeholder={t("admin.userSearchPlaceholder")}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
                       style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
                     />
                   </div>
@@ -1130,7 +1130,7 @@ export default function AdminPage() {
                       setUserSortBy(by);
                       setUserSortDir(dir);
                     }}
-                    className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
+                    className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary focus:border-accent/50 focus:outline-none"
                     style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
                   >
                     <option value="createdAt-desc">{t("admin.sortCreatedDesc")}</option>
@@ -1157,11 +1157,11 @@ export default function AdminPage() {
 
                 {/* Regular users list (paginated) */}
                 {normalUsers.length === 0 && priorityUsers.length === 0 ? (
-                  <p className="text-center text-stone/60 py-8">{t("admin.noSearchResults")}</p>
+                  <p className="text-center text-text-tertiary py-8">{t("admin.noSearchResults")}</p>
                 ) : normalUsers.length > 0 && (
                   <>
                     {priorityUsers.length > 0 && (
-                      <p className="text-xs text-stone/50 mb-2 mt-4">
+                      <p className="text-xs text-text-tertiary mb-2 mt-4">
                         {t("admin.allUsersLabel")} ({normalUsers.length})
                       </p>
                     )}
@@ -1173,17 +1173,17 @@ export default function AdminPage() {
                         <button
                           onClick={() => setUserPage((p) => Math.max(1, p - 1))}
                           disabled={userPage === 1}
-                          className="px-3 py-1.5 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 text-xs text-accent border border-border-light rounded hover:bg-accent/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ← {t("admin.prevPage")}
                         </button>
-                        <span className="text-xs text-stone/60">
+                        <span className="text-xs text-text-tertiary">
                           {userPage} / {totalPages}
                         </span>
                         <button
                           onClick={() => setUserPage((p) => Math.min(totalPages, p + 1))}
                           disabled={userPage === totalPages}
-                          className="px-3 py-1.5 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 text-xs text-accent border border-border-light rounded hover:bg-accent/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           {t("admin.nextPage")} →
                         </button>
@@ -1198,13 +1198,13 @@ export default function AdminPage() {
 
         {activeTab === "ai" && (
           <>
-            <p className="text-xs text-stone/50 mb-4 text-center">
+            <p className="text-xs text-text-tertiary mb-4 text-center">
               {t("admin.aiConfigDesc")}
             </p>
 
             {aiLoading ? (
               <div className="text-center py-12">
-                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-6 h-6 border-2 border-border-light border-t-accent rounded-full animate-spin" />
               </div>
             ) : (
               <div className="space-y-3">
@@ -1219,16 +1219,16 @@ export default function AdminPage() {
                   return (
                     <div
                       key={key}
-                      className="rounded-lg border border-gold/10 p-4"
+                      className="rounded-lg border border-border-light p-4"
                       style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
                     >
                       {/* Header row */}
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <span className="text-sm text-cream font-medium">
+                          <span className="text-sm text-text-primary font-medium">
                             {label}
                           </span>
-                          <span className="ml-2 text-xs text-stone/50">
+                          <span className="ml-2 text-xs text-text-tertiary">
                             {config ? (
                               <>
                                 {providerLabel} / {config.modelId}
@@ -1262,14 +1262,14 @@ export default function AdminPage() {
                                 )}
                               </>
                             ) : (
-                              <span className="text-stone/40">{t("admin.useDefault")}</span>
+                              <span className="text-text-tertiary">{t("admin.useDefault")}</span>
                             )}
                           </span>
                         </div>
                         {!isEditing && (
                           <button
                             onClick={() => startEditing(key)}
-                            className="px-3 py-1.5 min-h-[36px] text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors"
+                            className="px-3 py-1.5 min-h-[36px] text-xs text-accent border border-border-light rounded hover:bg-accent/10 transition-colors"
                           >
                             {t("admin.settings")}
                           </button>
@@ -1278,10 +1278,10 @@ export default function AdminPage() {
 
                       {/* Edit form */}
                       {isEditing && (
-                        <div className="mt-3 space-y-3 border-t border-gold/10 pt-3">
+                        <div className="mt-3 space-y-3 border-t border-border-light pt-3">
                           {/* Provider - radio buttons */}
                           <div>
-                            <label className="block text-xs text-stone/70 mb-2">
+                            <label className="block text-xs text-text-tertiary mb-2">
                               {t("admin.provider")}
                             </label>
                             <div className="flex flex-wrap gap-2">
@@ -1292,8 +1292,8 @@ export default function AdminPage() {
                                   onClick={() => handleProviderChange(id)}
                                   className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                     editForm.provider === id
-                                      ? "border-gold/50 text-gold bg-gold/10"
-                                      : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                      ? "border-accent/50 text-accent bg-accent/10"
+                                      : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                   }`}
                                 >
                                   {info.label}
@@ -1305,7 +1305,7 @@ export default function AdminPage() {
                           {/* Model — Claude gets a picker, others get text input */}
                           {editForm.provider === "anthropic" ? (
                             <div>
-                              <label className="block text-xs text-stone/70 mb-2">
+                              <label className="block text-xs text-text-tertiary mb-2">
                                 {t("admin.model")}
                               </label>
                               <div className="flex flex-wrap gap-2">
@@ -1316,8 +1316,8 @@ export default function AdminPage() {
                                     onClick={() => handleClaudeModelChange(m.id)}
                                     className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                       editForm.modelId === m.id
-                                        ? "border-gold/50 text-gold bg-gold/10"
-                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        ? "border-accent/50 text-accent bg-accent/10"
+                                        : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                     }`}
                                   >
                                     {m.label}
@@ -1327,7 +1327,7 @@ export default function AdminPage() {
                             </div>
                           ) : (
                             <div>
-                              <label className="block text-xs text-stone/70 mb-1">
+                              <label className="block text-xs text-text-tertiary mb-1">
                                 {t("admin.modelId")}
                               </label>
                               <input
@@ -1337,8 +1337,8 @@ export default function AdminPage() {
                                   setEditForm((f) => ({ ...f, modelId: e.target.value }))
                                 }
                                 placeholder={PROVIDERS[editForm.provider]?.defaultModel || t("admin.modelName")}
-                                className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
-                                style={{ backgroundColor: "var(--parchment)" }}
+                                className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+                                style={{ backgroundColor: "var(--bg-primary)" }}
                               />
                             </div>
                           )}
@@ -1349,7 +1349,7 @@ export default function AdminPage() {
                             const isEffortModel = selectedModel?.useEffort ?? false;
                             return (
                               <div>
-                                <label className="block text-xs text-stone/70 mb-2">
+                                <label className="block text-xs text-text-tertiary mb-2">
                                   {t("admin.thinkingCapability")}
                                 </label>
                                 {isEffortModel ? (
@@ -1361,8 +1361,8 @@ export default function AdminPage() {
                                         onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "disabled" }))}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                           editForm.thinkingMode === "disabled"
-                                            ? "border-gold/50 text-gold bg-gold/10"
-                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                            ? "border-accent/50 text-accent bg-accent/10"
+                                            : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                         }`}
                                       >
                                         {t("admin.off")}
@@ -1372,8 +1372,8 @@ export default function AdminPage() {
                                         onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "adaptive" }))}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                           editForm.thinkingMode === "adaptive"
-                                            ? "border-gold/50 text-gold bg-gold/10"
-                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                            ? "border-accent/50 text-accent bg-accent/10"
+                                            : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                         }`}
                                       >
                                         {t("admin.adaptiveThinking")}
@@ -1381,7 +1381,7 @@ export default function AdminPage() {
                                     </div>
                                     {editForm.thinkingMode === "adaptive" && (
                                       <div className="mt-2">
-                                        <label className="block text-xs text-stone/50 mb-2">
+                                        <label className="block text-xs text-text-tertiary mb-2">
                                           {t("admin.effortLabel")}
                                         </label>
                                         <div className="flex flex-wrap gap-2">
@@ -1393,14 +1393,14 @@ export default function AdminPage() {
                                               className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                                 editForm.effort === opt.value
                                                   ? "border-blue-400/50 text-blue-400 bg-blue-400/10"
-                                                  : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                                  : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                               }`}
                                             >
                                               {opt.label}
                                             </button>
                                           ))}
                                         </div>
-                                        <p className="text-xs text-stone/40 mt-1">
+                                        <p className="text-xs text-text-tertiary mt-1">
                                           {t("admin.comprehensiveNote")}
                                         </p>
                                       </div>
@@ -1415,8 +1415,8 @@ export default function AdminPage() {
                                         onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "disabled" }))}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                           editForm.thinkingMode === "disabled"
-                                            ? "border-gold/50 text-gold bg-gold/10"
-                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                            ? "border-accent/50 text-accent bg-accent/10"
+                                            : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                         }`}
                                       >
                                         {t("admin.off")}
@@ -1426,8 +1426,8 @@ export default function AdminPage() {
                                         onClick={() => setEditForm((f) => ({ ...f, thinkingMode: "enabled" }))}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                           editForm.thinkingMode === "enabled"
-                                            ? "border-gold/50 text-gold bg-gold/10"
-                                            : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                            ? "border-accent/50 text-accent bg-accent/10"
+                                            : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                         }`}
                                       >
                                         {t("admin.enableThinking")}
@@ -1435,7 +1435,7 @@ export default function AdminPage() {
                                     </div>
                                     {editForm.thinkingMode === "enabled" && (
                                       <div className="mt-2">
-                                        <label className="block text-xs text-stone/50 mb-1">
+                                        <label className="block text-xs text-text-tertiary mb-1">
                                           {t("admin.thinkingBudget")}
                                         </label>
                                         <input
@@ -1446,8 +1446,8 @@ export default function AdminPage() {
                                           onChange={(e) =>
                                             setEditForm((f) => ({ ...f, thinkingBudget: Math.max(1024, parseInt(e.target.value) || 1024) }))
                                           }
-                                          className="w-40 px-3 py-2 text-sm border border-gold/20 rounded text-cream focus:border-gold/50 focus:outline-none"
-                                          style={{ backgroundColor: "var(--parchment)" }}
+                                          className="w-40 px-3 py-2 text-sm border border-border-light rounded text-text-primary focus:border-accent/50 focus:outline-none"
+                                          style={{ backgroundColor: "var(--bg-primary)" }}
                                         />
                                       </div>
                                     )}
@@ -1460,7 +1460,7 @@ export default function AdminPage() {
                           {/* BytePlus reasoning depth */}
                           {editForm.provider === "byteplus" && (
                             <div>
-                              <label className="block text-xs text-stone/70 mb-2">
+                              <label className="block text-xs text-text-tertiary mb-2">
                                 {t("admin.thinkingDepth")}
                               </label>
                               <div className="flex flex-wrap gap-2">
@@ -1471,8 +1471,8 @@ export default function AdminPage() {
                                     onClick={() => setEditForm((f) => ({ ...f, reasoningDepth: opt.value }))}
                                     className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                       editForm.reasoningDepth === opt.value
-                                        ? "border-gold/50 text-gold bg-gold/10"
-                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        ? "border-accent/50 text-accent bg-accent/10"
+                                        : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                     }`}
                                   >
                                     {opt.label}
@@ -1485,7 +1485,7 @@ export default function AdminPage() {
                           {/* Google Gemini thinking depth */}
                           {editForm.provider === "google" && (
                             <div>
-                              <label className="block text-xs text-stone/70 mb-2">
+                              <label className="block text-xs text-text-tertiary mb-2">
                                 {t("admin.thinkingDepth")}
                               </label>
                               <div className="flex flex-wrap gap-2">
@@ -1496,21 +1496,21 @@ export default function AdminPage() {
                                     onClick={() => setEditForm((f) => ({ ...f, effort: opt.value }))}
                                     className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                                       editForm.effort === opt.value
-                                        ? "border-gold/50 text-gold bg-gold/10"
-                                        : "border-gold/15 text-stone/70 hover:text-cream hover:border-gold/30"
+                                        ? "border-accent/50 text-accent bg-accent/10"
+                                        : "border-border-light text-text-tertiary hover:text-text-primary hover:border-border-light"
                                     }`}
                                   >
                                     {opt.label}
                                   </button>
                                 ))}
                               </div>
-                              <p className="text-[10px] text-stone/40 mt-2">{t("admin.comprehensiveNote")}</p>
+                              <p className="text-[10px] text-text-tertiary mt-2">{t("admin.comprehensiveNote")}</p>
                             </div>
                           )}
 
                           {/* API URL */}
                           <div>
-                            <label className="block text-xs text-stone/70 mb-1">
+                            <label className="block text-xs text-text-tertiary mb-1">
                               {t("admin.apiEndpoint")}
                             </label>
                             <input
@@ -1520,17 +1520,17 @@ export default function AdminPage() {
                                 setEditForm((f) => ({ ...f, apiUrl: e.target.value }))
                               }
                               placeholder={PROVIDERS[editForm.provider]?.defaultUrl || "https://..."}
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
-                              style={{ backgroundColor: "var(--parchment)" }}
+                              className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+                              style={{ backgroundColor: "var(--bg-primary)" }}
                             />
                           </div>
 
                           {/* API Key */}
                           <div>
-                            <label className="block text-xs text-stone/70 mb-1">
+                            <label className="block text-xs text-text-tertiary mb-1">
                               {t("admin.apiKeyLabel")}
                               {config?.hasKey && (
-                                <span className="ml-1.5 text-stone/40">
+                                <span className="ml-1.5 text-text-tertiary">
                                   {t("admin.keepExistingKey")}
                                 </span>
                               )}
@@ -1542,8 +1542,8 @@ export default function AdminPage() {
                                 setEditForm((f) => ({ ...f, apiKey: e.target.value }))
                               }
                               placeholder={config?.hasKey ? t("admin.keepExistingKeyPlaceholder") : t("admin.enterApiKey")}
-                              className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
-                              style={{ backgroundColor: "var(--parchment)" }}
+                              className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+                              style={{ backgroundColor: "var(--bg-primary)" }}
                             />
                           </div>
 
@@ -1561,17 +1561,17 @@ export default function AdminPage() {
                             <button
                               onClick={() => setEditingKey(null)}
                               disabled={isSaving}
-                              className="px-3 py-1.5 min-h-[36px] text-xs text-stone border border-stone/30 rounded hover:bg-stone/10 transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 min-h-[36px] text-xs text-text-tertiary border border-border-light rounded hover:bg-bg-secondary transition-colors disabled:opacity-50"
                             >
                               {t("admin.cancel")}
                             </button>
                             <button
                               onClick={() => saveAISetting(key)}
                               disabled={isSaving}
-                              className="px-3 py-1.5 min-h-[36px] text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 min-h-[36px] text-xs text-accent border border-border-light rounded hover:bg-accent/10 transition-colors disabled:opacity-50"
                             >
                               {isSaving ? (
-                                <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                                <span className="inline-block w-3 h-3 border-2 border-border-light border-t-accent rounded-full animate-spin" />
                               ) : (
                                 t("admin.save")
                               )}
@@ -1586,11 +1586,11 @@ export default function AdminPage() {
             )}
 
             {/* Credit Settings */}
-            <div className="mt-8 pt-6 border-t border-gold/10">
-              <h3 className="text-sm font-serif text-gold mb-4">{t("admin.creditSettings")}</h3>
+            <div className="mt-8 pt-6 border-t border-border-light">
+              <h3 className="text-sm font-medium text-accent mb-4">{t("admin.creditSettings")}</h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="text-xs text-stone mb-1 block">{t("admin.defaultSingleRounds")}</label>
+                  <label className="text-xs text-text-tertiarymb-1 block">{t("admin.defaultSingleRounds")}</label>
                   <input
                     type="number"
                     min={0}
@@ -1600,7 +1600,7 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-stone mb-1 block">{t("admin.defaultMultiSessions")}</label>
+                  <label className="text-xs text-text-tertiarymb-1 block">{t("admin.defaultMultiSessions")}</label>
                   <input
                     type="number"
                     min={0}
@@ -1613,10 +1613,10 @@ export default function AdminPage() {
               <button
                 onClick={saveCreditSettings}
                 disabled={creditSaving}
-                className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors disabled:opacity-40"
+                className="px-4 py-2 text-xs border border-border-light rounded-sm text-accent hover:bg-accent/10 transition-colors disabled:opacity-40"
               >
                 {creditSaving ? (
-                  <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <span className="inline-block w-3 h-3 border-2 border-border-light border-t-accent rounded-full animate-spin" />
                 ) : (
                   t("admin.creditsSave")
                 )}
@@ -1628,23 +1628,23 @@ export default function AdminPage() {
         {activeTab === "tts" && (
           <>
             {/* TTS sub-tab navigation */}
-            <div className="mb-6 flex gap-6 border-b border-gold/20">
+            <div className="mb-6 flex gap-6 border-b border-border-light">
               <button
                 onClick={() => setTtsSubTab("voice")}
-                className={`pb-3 text-sm font-serif transition-colors ${
+                className={`pb-3 text-sm transition-colors ${
                   ttsSubTab === "voice"
-                    ? "border-b-2 border-gold text-gold"
-                    : "text-stone/60 hover:text-stone"
+                    ? "border-b-2 border-accent text-accent"
+                    : "text-text-tertiary hover:text-text-secondary"
                 }`}
               >
                 語音參數
               </button>
               <button
                 onClick={() => setTtsSubTab("pronunciation")}
-                className={`pb-3 text-sm font-serif transition-colors ${
+                className={`pb-3 text-sm transition-colors ${
                   ttsSubTab === "pronunciation"
-                    ? "border-b-2 border-gold text-gold"
-                    : "text-stone/60 hover:text-stone"
+                    ? "border-b-2 border-accent text-accent"
+                    : "text-text-tertiary hover:text-text-secondary"
                 }`}
               >
                 發音校正
@@ -1654,13 +1654,13 @@ export default function AdminPage() {
             {ttsSubTab === "voice" && (
             <>
             {/* Global TTS Settings */}
-            <div className="rounded-lg border border-gold/10 p-6 mb-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-              <h3 className="text-sm font-serif text-gold mb-4">ElevenLabs {t("admin.ttsTab")}</h3>
+            <div className="rounded-lg border border-border-light p-6 mb-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+              <h3 className="text-sm font-medium text-accent mb-4">ElevenLabs {t("admin.ttsTab")}</h3>
 
               <div className="space-y-4">
                 {/* API Key */}
                 <div>
-                  <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsApiKey")}</label>
+                  <label className="text-xs text-text-tertiary mb-1 block">{t("admin.ttsApiKey")}</label>
                   <input
                     type="password"
                     value={ttsApiKey}
@@ -1672,7 +1672,7 @@ export default function AdminPage() {
 
                 {/* Model */}
                 <div>
-                  <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsModel")}</label>
+                  <label className="text-xs text-text-tertiary mb-1 block">{t("admin.ttsModel")}</label>
                   <select
                     value={ttsEditConfig.modelId}
                     onChange={(e) => setTtsEditConfig((p) => ({ ...p, modelId: e.target.value }))}
@@ -1682,7 +1682,7 @@ export default function AdminPage() {
                     <option value="eleven_flash_v2_5">Flash v2.5 — 即時低延遲 (~75ms, 32 語言 / 40K 字)</option>
                     <option value="eleven_multilingual_v2">Multilingual v2 — 情感豐富 (29 語言 / 10K 字)</option>
                   </select>
-                  <p className="mt-1.5 text-[10px] text-stone/50 leading-relaxed">
+                  <p className="mt-1.5 text-[10px] text-text-tertiary leading-relaxed">
                     此處僅影響**未來**的 TTS 呼叫；使用量統計中列出的歷史模型是過去曾使用過的紀錄，非目前設定。
                   </p>
                 </div>
@@ -1690,34 +1690,34 @@ export default function AdminPage() {
                 {/* Voice Settings */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsStability")}: {ttsEditConfig.stability.toFixed(2)}</label>
+                    <label className="text-xs text-text-tertiary mb-1 block">{t("admin.ttsStability")}: {ttsEditConfig.stability.toFixed(2)}</label>
                     <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.stability}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, stability: parseFloat(e.target.value) }))}
                       className="w-full" />
-                    <p className="mt-1 text-[10px] text-stone/50 leading-snug">
-                      越高越穩、每次生成越一致（太低會亂念字、語速失控）。建議 <span className="text-gold/70">0.75 – 1.00</span>。
+                    <p className="mt-1 text-[10px] text-text-tertiary leading-snug">
+                      越高越穩、每次生成越一致（太低會亂念字、語速失控）。建議 <span className="text-accent/70">0.75 – 1.00</span>。
                     </p>
                   </div>
                   <div>
-                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsSimilarity")}: {ttsEditConfig.similarityBoost.toFixed(2)}</label>
+                    <label className="text-xs text-text-tertiary mb-1 block">{t("admin.ttsSimilarity")}: {ttsEditConfig.similarityBoost.toFixed(2)}</label>
                     <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.similarityBoost}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, similarityBoost: parseFloat(e.target.value) }))}
                       className="w-full" />
-                    <p className="mt-1 text-[10px] text-stone/50 leading-snug">
-                      越高越貼近聲源。聲源若有雜音，過高反而會一起放大。建議 <span className="text-gold/70">0.75</span>。
+                    <p className="mt-1 text-[10px] text-text-tertiary leading-snug">
+                      越高越貼近聲源。聲源若有雜音，過高反而會一起放大。建議 <span className="text-accent/70">0.75</span>。
                     </p>
                   </div>
                   <div>
-                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsSpeed")}: {ttsEditConfig.speed.toFixed(2)}</label>
+                    <label className="text-xs text-text-tertiary mb-1 block">{t("admin.ttsSpeed")}: {ttsEditConfig.speed.toFixed(2)}</label>
                     <input type="range" min="0.7" max="1.2" step="0.05" value={ttsEditConfig.speed}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, speed: parseFloat(e.target.value) }))}
                       className="w-full" />
-                    <p className="mt-1 text-[10px] text-stone/50 leading-snug">
-                      1.0 = 原速。&gt; 1.1 會吞音、字音糊掉；&lt; 0.8 會拖慢。ElevenLabs 上限 <span className="text-gold/70">0.7 – 1.2</span>。
+                    <p className="mt-1 text-[10px] text-text-tertiary leading-snug">
+                      1.0 = 原速。&gt; 1.1 會吞音、字音糊掉；&lt; 0.8 會拖慢。ElevenLabs 上限 <span className="text-accent/70">0.7 – 1.2</span>。
                     </p>
                   </div>
                   <div>
-                    <label className="text-xs text-stone/70 mb-1 block">{t("admin.ttsStyle")}: {ttsEditConfig.style.toFixed(2)}</label>
+                    <label className="text-xs text-text-tertiary mb-1 block">{t("admin.ttsStyle")}: {ttsEditConfig.style.toFixed(2)}</label>
                     <input type="range" min="0" max="1" step="0.05" value={ttsEditConfig.style}
                       onChange={(e) => setTtsEditConfig((p) => ({ ...p, style: parseFloat(e.target.value) }))}
                       className="w-full" />
@@ -1743,34 +1743,34 @@ export default function AdminPage() {
                     }
                   }}
                   disabled={ttsSaving}
-                  className="px-4 py-2 text-xs border border-gold/30 rounded-sm text-gold hover:bg-gold/15 transition-colors disabled:opacity-40"
+                  className="px-4 py-2 text-xs border border-border-light rounded-sm text-accent hover:bg-accent/10 transition-colors disabled:opacity-40"
                 >
                   {ttsSaving ? (
-                    <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                    <span className="inline-block w-3 h-3 border-2 border-border-light border-t-accent rounded-full animate-spin" />
                   ) : t("admin.ttsSave")}
                 </button>
               </div>
             </div>
 
             {/* Per-Master Voice Mapping */}
-            <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-              <h3 className="text-sm font-serif text-gold mb-4">{t("admin.ttsVoices")}</h3>
+            <div className="rounded-lg border border-border-light p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+              <h3 className="text-sm font-medium text-accent mb-4">{t("admin.ttsVoices")}</h3>
 
               {availableVoices.length === 0 && ttsConfig?.hasKey && (
-                <p className="text-xs text-stone/50 mb-4">Loading voices from ElevenLabs...</p>
+                <p className="text-xs text-text-tertiary mb-4">Loading voices from ElevenLabs...</p>
               )}
               {!ttsConfig?.hasKey && (
-                <p className="text-xs text-stone/50 mb-4">{t("admin.ttsNoKey")}</p>
+                <p className="text-xs text-text-tertiary mb-4">{t("admin.ttsNoKey")}</p>
               )}
 
               <div className="space-y-6">
                 {["bazi", "ziwei", "zodiac"].map((master) => (
                   <div key={master}>
-                    <p className="text-xs text-cream font-medium mb-2">{t(`master.${master}` as string)}</p>
+                    <p className="text-xs text-text-primary font-medium mb-2">{t(`master.${master}` as string)}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {["zh-Hant", "zh-Hans", "en", "ja"].map((loc) => (
                         <div key={loc} className="flex items-center gap-2">
-                          <span className="text-[10px] text-stone/50 w-14 shrink-0">{loc}</span>
+                          <span className="text-[10px] text-text-tertiary w-14 shrink-0">{loc}</span>
                           <select
                             value={ttsVoices[master]?.[loc] || ""}
                             onChange={async (e) => {
@@ -1813,14 +1813,14 @@ export default function AdminPage() {
             )}
 
             {ttsSubTab === "pronunciation" && (
-              <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-                <h3 className="text-sm font-serif text-gold mb-2">發音校正對照表</h3>
-                <p className="text-[10px] text-stone/50 mb-5 leading-relaxed">
+              <div className="rounded-lg border border-border-light p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                <h3 className="text-sm font-medium text-accent mb-2">發音校正對照表</h3>
+                <p className="text-[10px] text-text-tertiary mb-5 leading-relaxed">
                   ElevenLabs TTS 有時會念錯特定中文字詞。在這裡新增「原文 → 替換文字」規則後，系統在語音合成前會自動將原文替換成替換文字（畫面上的文字不受影響）。
                 </p>
 
                 {/* New rule form */}
-                <div className="flex flex-col sm:flex-row gap-2 mb-5 pb-5 border-b border-gold/10">
+                <div className="flex flex-col sm:flex-row gap-2 mb-5 pb-5 border-b border-border-light">
                   <input
                     type="text"
                     placeholder="原文（會念錯的字詞）"
@@ -1829,7 +1829,7 @@ export default function AdminPage() {
                     maxLength={200}
                     className="flex-1 text-sm"
                   />
-                  <span className="hidden sm:flex items-center text-mist text-xs">→</span>
+                  <span className="hidden sm:flex items-center text-text-secondary text-xs">→</span>
                   <input
                     type="text"
                     placeholder="替換為（正確讀音的同義詞）"
@@ -1849,7 +1849,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={!newRulePattern.trim() || !newRuleReplacement.trim() || newRuleSaving}
                     onClick={createTTSRule}
-                    className="px-4 py-2 rounded border border-gold/30 text-gold text-xs hover:bg-gold/10 disabled:opacity-30 transition-colors whitespace-nowrap"
+                    className="px-4 py-2 rounded border border-border-light text-accent text-xs hover:bg-accent/10 disabled:opacity-30 transition-colors whitespace-nowrap"
                   >
                     {newRuleSaving ? "..." : "＋ 新增"}
                   </button>
@@ -1857,14 +1857,14 @@ export default function AdminPage() {
 
                 {/* Rules table */}
                 {ttsRulesLoading ? (
-                  <p className="text-xs text-mist py-6 text-center">載入中...</p>
+                  <p className="text-xs text-text-secondary py-6 text-center">載入中...</p>
                 ) : ttsRules.length === 0 ? (
-                  <p className="text-xs text-stone/60 py-6 text-center">目前沒有發音校正規則</p>
+                  <p className="text-xs text-text-tertiary py-6 text-center">目前沒有發音校正規則</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gold/20 text-left text-mist text-xs">
+                        <tr className="border-b border-border-light text-left text-text-secondary text-xs">
                           <th className="py-2 pr-2">原文</th>
                           <th className="py-2 pr-2">替換為</th>
                           <th className="py-2 pr-2">備註</th>
@@ -1876,11 +1876,11 @@ export default function AdminPage() {
                         {ttsRules.map((rule) => (
                           <tr
                             key={rule.id}
-                            className={`border-b border-gold/10 ${!rule.isActive ? "opacity-40" : ""}`}
+                            className={`border-b border-border-light ${!rule.isActive ? "opacity-40" : ""}`}
                           >
-                            <td className="py-2 pr-2 font-mono text-cream">{rule.pattern}</td>
-                            <td className="py-2 pr-2 font-mono text-gold">{rule.replacement}</td>
-                            <td className="py-2 pr-2 text-xs text-stone/60 max-w-[200px] truncate">{rule.note ?? "—"}</td>
+                            <td className="py-2 pr-2 font-mono text-text-primary">{rule.pattern}</td>
+                            <td className="py-2 pr-2 font-mono text-accent">{rule.replacement}</td>
+                            <td className="py-2 pr-2 text-xs text-text-tertiary max-w-[200px] truncate">{rule.note ?? "—"}</td>
                             <td className="py-2 pr-2 text-center">
                               <button
                                 type="button"
@@ -1888,7 +1888,7 @@ export default function AdminPage() {
                                 className={`text-xs px-2 py-0.5 rounded border transition-colors ${
                                   rule.isActive
                                     ? "border-green-500/40 text-green-400 hover:bg-green-500/10"
-                                    : "border-stone/30 text-stone/50 hover:bg-stone/10"
+                                    : "border-border-light text-text-tertiary hover:bg-bg-secondary"
                                 }`}
                               >
                                 {rule.isActive ? "ON" : "OFF"}
@@ -1898,7 +1898,7 @@ export default function AdminPage() {
                               <button
                                 type="button"
                                 onClick={() => deleteTTSRule(rule)}
-                                className="text-xs text-stone/40 hover:text-red-400 transition-colors"
+                                className="text-xs text-text-tertiary hover:text-red-400 transition-colors"
                               >
                                 刪除
                               </button>
@@ -1924,8 +1924,8 @@ export default function AdminPage() {
                   onClick={() => setUsageRange(r)}
                   className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${
                     usageRange === r
-                      ? "bg-gold/20 text-gold border border-gold/30"
-                      : "text-stone/60 hover:text-stone border border-transparent"
+                      ? "bg-accent/10 text-accent border border-border-light"
+                      : "text-text-tertiary hover:text-text-secondary border border-transparent"
                   }`}
                 >
                   {r.toUpperCase()}
@@ -1935,23 +1935,23 @@ export default function AdminPage() {
 
             {usageLoading ? (
               <div className="text-center py-12">
-                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-6 h-6 border-2 border-border-light border-t-accent rounded-full animate-spin" />
               </div>
             ) : usageData ? (
               <>
                 {/* Summary cards */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="rounded-lg border border-gold/10 p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-                    <p className="text-2xl font-bold text-gold">{usageData.summary.totalCalls}</p>
-                    <p className="text-xs text-stone/60 mt-1">{t("admin.totalCalls")}</p>
+                  <div className="rounded-lg border border-border-light p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <p className="text-2xl font-bold text-accent">{usageData.summary.totalCalls}</p>
+                    <p className="text-xs text-text-tertiary mt-1">{t("admin.totalCalls")}</p>
                   </div>
-                  <div className="rounded-lg border border-gold/10 p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-                    <p className="text-2xl font-bold text-gold">{formatTokens(usageData.summary.totalInputTokens)}</p>
-                    <p className="text-xs text-stone/60 mt-1">{t("admin.totalInputTokens")}</p>
+                  <div className="rounded-lg border border-border-light p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <p className="text-2xl font-bold text-accent">{formatTokens(usageData.summary.totalInputTokens)}</p>
+                    <p className="text-xs text-text-tertiary mt-1">{t("admin.totalInputTokens")}</p>
                   </div>
-                  <div className="rounded-lg border border-gold/10 p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-                    <p className="text-2xl font-bold text-gold">{formatTokens(usageData.summary.totalOutputTokens)}</p>
-                    <p className="text-xs text-stone/60 mt-1">{t("admin.totalOutputTokens")}</p>
+                  <div className="rounded-lg border border-border-light p-4 text-center" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                    <p className="text-2xl font-bold text-accent">{formatTokens(usageData.summary.totalOutputTokens)}</p>
+                    <p className="text-xs text-text-tertiary mt-1">{t("admin.totalOutputTokens")}</p>
                   </div>
                 </div>
 
@@ -1962,41 +1962,41 @@ export default function AdminPage() {
                       <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                       </svg>
-                      <span className="text-sm font-serif text-violet-400">ElevenLabs TTS</span>
+                      <span className="text-sm font-medium text-violet-400">ElevenLabs TTS</span>
                     </div>
-                    <div className="flex gap-6 text-xs text-stone/70">
-                      <span>Calls: <span className="text-cream font-medium">{usageData.tts.calls}</span></span>
-                      <span>Characters: <span className="text-cream font-medium">{formatTokens(usageData.tts.characters)}</span></span>
+                    <div className="flex gap-6 text-xs text-text-tertiary">
+                      <span>Calls: <span className="text-text-primary font-medium">{usageData.tts.calls}</span></span>
+                      <span>Characters: <span className="text-text-primary font-medium">{formatTokens(usageData.tts.characters)}</span></span>
                       <span title="此區間內曾使用過的所有模型，並非當前設定">
-                        此區間用過: <span className="text-cream">{usageData.tts.models.join(", ") || "-"}</span>
+                        此區間用過: <span className="text-text-primary">{usageData.tts.models.join(", ") || "-"}</span>
                       </span>
                     </div>
                   </div>
                 )}
 
                 {/* Credit grants audit log */}
-                <div className="mb-6 rounded-lg border border-gold/15 p-4" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                <div className="mb-6 rounded-lg border border-border-light p-4" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-sm font-serif text-gold">額度紀錄（最近 50 筆）</span>
+                      <span className="text-sm font-medium text-accent">額度紀錄（最近 50 筆）</span>
                     </div>
-                    <span className="text-[10px] text-stone/50">
+                    <span className="text-[10px] text-text-tertiary">
                       記錄由 /api/credits/send 透過「送額度」功能發出的每一次贈送
                     </span>
                   </div>
 
                   {creditGrantsLoading ? (
-                    <p className="text-xs text-mist py-4 text-center">載入中...</p>
+                    <p className="text-xs text-text-secondary py-4 text-center">載入中...</p>
                   ) : creditGrants.length === 0 ? (
-                    <p className="text-xs text-stone/60 py-4 text-center">尚無額度贈送紀錄</p>
+                    <p className="text-xs text-text-tertiary py-4 text-center">尚無額度贈送紀錄</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="border-b border-gold/20 text-left text-mist">
+                          <tr className="border-b border-border-light text-left text-text-secondary">
                             <th className="py-2 pr-3 whitespace-nowrap">時間</th>
                             <th className="py-2 pr-3 whitespace-nowrap">贈送者</th>
                             <th className="py-2 pr-3 whitespace-nowrap">接收者</th>
@@ -2007,8 +2007,8 @@ export default function AdminPage() {
                         </thead>
                         <tbody>
                           {creditGrants.map((g) => (
-                            <tr key={g.id} className="border-b border-gold/10 text-cream">
-                              <td className="py-2 pr-3 whitespace-nowrap text-stone/70">
+                            <tr key={g.id} className="border-b border-border-light text-text-primary">
+                              <td className="py-2 pr-3 whitespace-nowrap text-text-tertiary">
                                 {new Date(g.createdAt).toLocaleString("zh-HK", {
                                   year: "numeric", month: "2-digit", day: "2-digit",
                                   hour: "2-digit", minute: "2-digit",
@@ -2018,16 +2018,16 @@ export default function AdminPage() {
                               <td className="py-2 pr-3 truncate max-w-[180px]">{g.recipientEmail}</td>
                               <td className="py-2 pr-3 whitespace-nowrap">
                                 {g.singleCredits > 0 ? (
-                                  <span className="text-gold">+{g.singleCredits}</span>
+                                  <span className="text-accent">+{g.singleCredits}</span>
                                 ) : (
-                                  <span className="text-stone/40">—</span>
+                                  <span className="text-text-tertiary">—</span>
                                 )}
                               </td>
                               <td className="py-2 pr-3 whitespace-nowrap">
                                 {g.multiCredits > 0 ? (
-                                  <span className="text-gold">+{g.multiCredits}</span>
+                                  <span className="text-accent">+{g.multiCredits}</span>
                                 ) : (
-                                  <span className="text-stone/40">—</span>
+                                  <span className="text-text-tertiary">—</span>
                                 )}
                               </td>
                               <td className="py-2 pr-3 whitespace-nowrap">
@@ -2056,38 +2056,38 @@ export default function AdminPage() {
 
                 {/* User detail table */}
                 {usageData.byUser.length === 0 ? (
-                  <p className="text-center text-stone/60 py-12">{t("admin.noUsageData")}</p>
+                  <p className="text-center text-text-tertiary py-12">{t("admin.noUsageData")}</p>
                 ) : (
                   <div className="space-y-3">
                     {usageData.byUser.map((user) => (
                       <div
                         key={user.email}
-                        className="rounded-lg border border-gold/10 p-4"
+                        className="rounded-lg border border-border-light p-4"
                         style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
                       >
                         <div className="flex items-center gap-3 mb-3">
                           {user.image ? (
-                            <img src={user.image} alt="" className="w-8 h-8 rounded-full border border-gold/20" />
+                            <img src={user.image} alt="" className="w-8 h-8 rounded-full border border-border-light" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full border border-gold/20 bg-gold/10 flex items-center justify-center text-xs text-gold">
+                            <div className="w-8 h-8 rounded-full border border-border-light bg-accent/10 flex items-center justify-center text-xs text-accent">
                               {user.name?.[0] || "?"}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-cream font-medium truncate">{user.name || user.email}</p>
-                            <p className="text-xs text-stone/50 truncate">{user.email}</p>
+                            <p className="text-sm text-text-primary font-medium truncate">{user.name || user.email}</p>
+                            <p className="text-xs text-text-tertiary truncate">{user.email}</p>
                           </div>
-                          <span className="text-lg font-bold text-gold">{user.calls}</span>
-                          <span className="text-xs text-stone/50">{t("admin.usageCalls")}</span>
+                          <span className="text-lg font-bold text-accent">{user.calls}</span>
+                          <span className="text-xs text-text-tertiary">{t("admin.usageCalls")}</span>
                         </div>
-                        <div className="flex gap-4 text-xs text-stone/60">
-                          <span>Input: <span className="text-cream">{formatTokens(user.inputTokens)}</span></span>
-                          <span>Output: <span className="text-cream">{formatTokens(user.outputTokens)}</span></span>
+                        <div className="flex gap-4 text-xs text-text-tertiary">
+                          <span>Input: <span className="text-text-primary">{formatTokens(user.inputTokens)}</span></span>
+                          <span>Output: <span className="text-text-primary">{formatTokens(user.outputTokens)}</span></span>
                         </div>
                         {Object.keys(user.models).length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {Object.keys(user.models).map((model) => (
-                              <span key={model} className="text-[10px] px-2 py-0.5 rounded-full border border-gold/15 text-stone/60">
+                              <span key={model} className="text-[10px] px-2 py-0.5 rounded-full border border-border-light text-text-tertiary">
                                 {model}
                               </span>
                             ))}
@@ -2106,46 +2106,46 @@ export default function AdminPage() {
           <>
             {casesLoading ? (
               <div className="text-center py-12">
-                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-6 h-6 border-2 border-border-light border-t-accent rounded-full animate-spin" />
               </div>
             ) : selectedCase ? (
               /* Case detail view */
               <div>
                 <button
                   onClick={() => setSelectedCase(null)}
-                  className="text-sm text-stone hover:text-gold transition-colors mb-4 flex items-center gap-1"
+                  className="text-sm text-text-tertiaryhover:text-accent transition-colors mb-4 flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
                   </svg>
                   {t("admin.caseBack")}
                 </button>
-                <div className="rounded-lg border border-gold/10 p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-                  <h3 className="text-sm font-serif text-gold mb-1">{t("admin.caseDetail")}</h3>
-                  <p className="text-xs text-stone/50 mb-4">
+                <div className="rounded-lg border border-border-light p-6" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                  <h3 className="text-sm font-medium text-accent mb-1">{t("admin.caseDetail")}</h3>
+                  <p className="text-xs text-text-tertiary mb-4">
                     {new Date(selectedCase.createdAt).toLocaleDateString()}
                   </p>
-                  <div className="mb-4 p-3 rounded border border-gold/10 bg-gold/5">
-                    <p className="text-sm text-cream font-medium">{selectedCase.summary}</p>
+                  <div className="mb-4 p-3 rounded border border-border-light bg-accent/5">
+                    <p className="text-sm text-text-primary font-medium">{selectedCase.summary}</p>
                   </div>
-                  <pre className="text-sm text-cream/80 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+                  <pre className="text-sm text-text-primary/80 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
                     {selectedCase.fullContent}
                   </pre>
                 </div>
               </div>
             ) : cases.length === 0 ? (
-              <p className="text-center text-stone/60 py-12">{t("admin.noCases")}</p>
+              <p className="text-center text-text-tertiary py-12">{t("admin.noCases")}</p>
             ) : (
               <div className="space-y-3">
                 {cases.map((c) => (
                   <button
                     key={c.id}
                     onClick={() => fetchCaseDetail(c.id)}
-                    className="w-full text-left rounded-lg border border-gold/10 p-4 hover:border-gold/25 transition-colors"
+                    className="w-full text-left rounded-lg border border-border-light p-4 hover:border-border-light transition-colors"
                     style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
                   >
-                    <p className="text-sm text-cream line-clamp-2">{c.summary}</p>
-                    <p className="text-xs text-stone/50 mt-2">
+                    <p className="text-sm text-text-primary line-clamp-2">{c.summary}</p>
+                    <p className="text-xs text-text-tertiary mt-2">
                       {new Date(c.createdAt).toLocaleDateString()}
                     </p>
                   </button>
@@ -2159,7 +2159,7 @@ export default function AdminPage() {
           <>
             {feedbackLoading ? (
               <div className="text-center py-12">
-                <span className="inline-block w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="inline-block w-6 h-6 border-2 border-border-light border-t-accent rounded-full animate-spin" />
               </div>
             ) : selectedFeedbackId !== null ? (() => {
               const fb = feedbackList.find((f) => f.id === selectedFeedbackId);
@@ -2168,37 +2168,37 @@ export default function AdminPage() {
                 <div>
                   <button
                     onClick={() => { setSelectedFeedbackId(null); setReplyText(""); }}
-                    className="text-sm text-stone hover:text-gold transition-colors mb-4 flex items-center gap-1"
+                    className="text-sm text-text-tertiaryhover:text-accent transition-colors mb-4 flex items-center gap-1"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
                     </svg>
                     {t("admin.feedbackBack")}
                   </button>
-                  <div className="rounded-lg border border-gold/10 p-5" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
+                  <div className="rounded-lg border border-border-light p-5" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
                     <div className="mb-4">
-                      <p className="text-sm text-cream font-medium">{fb.name}</p>
-                      <p className="text-xs text-stone/60">{fb.email}{fb.userEmail && fb.userEmail !== fb.email && ` · ${t("admin.feedbackLoggedAs")}: ${fb.userEmail}`}</p>
-                      <p className="text-xs text-stone/40 mt-1">
+                      <p className="text-sm text-text-primary font-medium">{fb.name}</p>
+                      <p className="text-xs text-text-tertiary">{fb.email}{fb.userEmail && fb.userEmail !== fb.email && ` · ${t("admin.feedbackLoggedAs")}: ${fb.userEmail}`}</p>
+                      <p className="text-xs text-text-tertiary mt-1">
                         {new Date(fb.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <div className="mb-4 p-3 rounded border border-gold/10 bg-gold/5">
-                      <p className="text-sm text-cream whitespace-pre-wrap leading-relaxed">{fb.message}</p>
+                    <div className="mb-4 p-3 rounded border border-border-light bg-accent/5">
+                      <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">{fb.message}</p>
                     </div>
 
                     {fb.reply ? (
-                      <div className="mt-5 pt-4 border-t border-gold/10">
-                        <p className="text-xs text-stone/50 mb-2">
+                      <div className="mt-5 pt-4 border-t border-border-light">
+                        <p className="text-xs text-text-tertiary mb-2">
                           {t("admin.feedbackRepliedAt")} {fb.repliedAt ? new Date(fb.repliedAt).toLocaleString() : ""}
                         </p>
                         <div className="p-3 rounded border border-green-500/20 bg-green-500/5">
-                          <p className="text-sm text-cream/90 whitespace-pre-wrap leading-relaxed">{fb.reply}</p>
+                          <p className="text-sm text-text-primary/90 whitespace-pre-wrap leading-relaxed">{fb.reply}</p>
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-5 pt-4 border-t border-gold/10">
-                        <label className="block text-xs text-stone/70 mb-2">
+                      <div className="mt-5 pt-4 border-t border-border-light">
+                        <label className="block text-xs text-text-tertiary mb-2">
                           {t("admin.feedbackReplyLabel")}
                         </label>
                         <textarea
@@ -2206,17 +2206,17 @@ export default function AdminPage() {
                           onChange={(e) => setReplyText(e.target.value)}
                           rows={5}
                           placeholder={t("admin.feedbackReplyPlaceholder")}
-                          className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none resize-none"
-                          style={{ backgroundColor: "var(--parchment)" }}
+                          className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none resize-none"
+                          style={{ backgroundColor: "var(--bg-primary)" }}
                         />
                         <div className="flex justify-end mt-2">
                           <button
                             onClick={() => submitReply(fb.id)}
                             disabled={replySaving || !replyText.trim()}
-                            className="px-4 py-2 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-40"
+                            className="px-4 py-2 text-xs text-accent border border-border-light rounded hover:bg-accent/10 transition-colors disabled:opacity-40"
                           >
                             {replySaving ? (
-                              <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                              <span className="inline-block w-3 h-3 border-2 border-border-light border-t-accent rounded-full animate-spin" />
                             ) : (
                               t("admin.feedbackSendReply")
                             )}
@@ -2228,12 +2228,12 @@ export default function AdminPage() {
                 </div>
               );
             })() : feedbackList.length === 0 ? (
-              <p className="text-center text-stone/60 py-12">{t("admin.feedbackEmpty")}</p>
+              <p className="text-center text-text-tertiary py-12">{t("admin.feedbackEmpty")}</p>
             ) : (
               <>
                 {/* Bulk action toolbar */}
-                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-gold/15 bg-black/20 px-3 py-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-mist">
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border-light bg-black/20 px-3 py-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-text-secondary">
                     <input
                       type="checkbox"
                       checked={
@@ -2252,7 +2252,7 @@ export default function AdminPage() {
                     />
                     {t("admin.feedbackSelectAll")}
                   </label>
-                  <span className="text-xs text-mist/60">
+                  <span className="text-xs text-text-secondary/60">
                     {t("admin.feedbackSelectedN", { n: String(selectedFeedbackIds.size) })}
                   </span>
                   <div className="ml-auto">
@@ -2278,7 +2278,7 @@ export default function AdminPage() {
                         className={`rounded-lg border p-4 transition-colors ${
                           !fb.isRead
                             ? "border-red-400/30 bg-red-400/[0.03] hover:border-red-400/50"
-                            : "border-gold/10 hover:border-gold/25"
+                            : "border-border-light hover:border-border-light"
                         }`}
                         style={{ backgroundColor: fb.isRead ? "rgba(var(--glass-rgb), 0.02)" : undefined }}
                       >
@@ -2303,7 +2303,7 @@ export default function AdminPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm text-cream font-medium truncate">{fb.name}</p>
+                                  <p className="text-sm text-text-primary font-medium truncate">{fb.name}</p>
                                   {!fb.isRead && (
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
                                       {t("admin.feedbackNew")}
@@ -2315,10 +2315,10 @@ export default function AdminPage() {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-stone/60 truncate">{fb.email}</p>
-                                <p className="text-sm text-cream/80 line-clamp-2 mt-2">{fb.message}</p>
+                                <p className="text-xs text-text-tertiary truncate">{fb.email}</p>
+                                <p className="text-sm text-text-primary/80 line-clamp-2 mt-2">{fb.message}</p>
                               </div>
-                              <p className="text-[10px] text-stone/40 shrink-0">
+                              <p className="text-[10px] text-text-tertiary shrink-0">
                                 {new Date(fb.createdAt).toLocaleDateString()}
                               </p>
                             </div>
@@ -2330,7 +2330,7 @@ export default function AdminPage() {
                               deleteFeedback([fb.id]);
                             }}
                             aria-label={t("admin.feedbackConfirmDelete")}
-                            className="shrink-0 text-stone/40 hover:text-red-400 transition-colors p-1"
+                            className="shrink-0 text-text-tertiary hover:text-red-400 transition-colors p-1"
                             disabled={feedbackDeleting}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

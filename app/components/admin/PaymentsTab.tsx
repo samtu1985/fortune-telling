@@ -11,14 +11,14 @@ export default function PaymentsTab() {
 
   return (
     <div>
-      <div className="mb-6 flex gap-6 border-b border-gold/30">
+      <div className="mb-6 flex gap-6 border-b border-border-light">
         <button
           type="button"
           onClick={() => setSub("packages")}
-          className={`pb-3 font-serif transition-colors ${
+          className={`pb-3 transition-colors ${
             sub === "packages"
-              ? "border-b-2 border-gold text-gold"
-              : "text-mist hover:text-gold"
+              ? "border-b-2 border-accent text-accent"
+              : "text-text-secondary hover:text-accent"
           }`}
         >
           方案管理
@@ -26,10 +26,10 @@ export default function PaymentsTab() {
         <button
           type="button"
           onClick={() => setSub("revenue")}
-          className={`pb-3 font-serif transition-colors ${
+          className={`pb-3 transition-colors ${
             sub === "revenue"
-              ? "border-b-2 border-gold text-gold"
-              : "text-mist hover:text-gold"
+              ? "border-b-2 border-accent text-accent"
+              : "text-text-secondary hover:text-accent"
           }`}
         >
           收入與交易

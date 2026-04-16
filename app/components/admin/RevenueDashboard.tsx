@@ -98,7 +98,7 @@ function StatusBadge({ status }: { status: string }) {
     refunded: "bg-orange-500/20 text-orange-400",
     failed: "bg-red-500/20 text-red-400",
   };
-  const cls = styles[status] ?? "bg-stone-500/20 text-mist";
+  const cls = styles[status] ?? "bg-stone-500/20 text-text-secondary";
   return (
     <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{status}</span>
   );
@@ -341,14 +341,14 @@ export default function RevenueDashboard() {
   const renderConnectionCard = () => {
     if (connectionLoading) {
       return (
-        <div className="glass-card-premium p-4 text-mist text-sm">
+        <div className="tesla-card-bordered p-4 text-text-secondary text-sm">
           檢查 Stripe 連線狀態…
         </div>
       );
     }
     if (!connection) {
       return (
-        <div className="glass-card-premium p-4 bg-red-900/20 border border-red-600/40 text-sm text-red-400">
+        <div className="tesla-card-bordered p-4 bg-red-900/20 border border-red-600/40 text-sm text-red-400">
           無法取得 Stripe 連線狀態
         </div>
       );
@@ -361,9 +361,9 @@ export default function RevenueDashboard() {
 
     if (missing.length === 0) {
       return (
-        <div className="glass-card-premium p-4 bg-emerald-900/20 border border-emerald-600/40">
-          <div className="font-serif text-emerald-400">✓ Stripe 已連線</div>
-          <div className="text-xs text-mist mt-1">
+        <div className="tesla-card-bordered p-4 bg-emerald-900/20 border border-emerald-600/40">
+          <div className="font-medium text-emerald-400">✓ Stripe 已連線</div>
+          <div className="text-xs text-text-secondary mt-1">
             Secret Key / Webhook Secret / Publishable Key 皆已設定
           </div>
         </div>
@@ -371,11 +371,11 @@ export default function RevenueDashboard() {
     }
 
     return (
-      <div className="glass-card-premium p-4 bg-yellow-900/20 border border-yellow-600/40">
-        <div className="font-serif text-yellow-400">
+      <div className="tesla-card-bordered p-4 bg-yellow-900/20 border border-yellow-600/40">
+        <div className="font-medium text-yellow-400">
           ⚠ Stripe 設定不完整
         </div>
-        <div className="text-sm text-cream mt-2">
+        <div className="text-sm text-text-primary mt-2">
           缺少環境變數：
           <ul className="list-disc list-inside mt-1 font-mono text-xs text-yellow-300">
             {missing.map((v) => (
@@ -383,7 +383,7 @@ export default function RevenueDashboard() {
             ))}
           </ul>
         </div>
-        <div className="text-xs text-mist mt-2">
+        <div className="text-xs text-text-secondary mt-2">
           請於 Vercel 專案的 Environment Variables 設定，並重新部署以套用。
         </div>
       </div>
@@ -395,15 +395,15 @@ export default function RevenueDashboard() {
       {renderConnectionCard()}
 
       {!connectionLoading && connection && !connection.secretKey ? (
-        <div className="glass-card-premium p-8 text-center text-mist">
+        <div className="tesla-card-bordered p-8 text-center text-text-secondary">
           STRIPE_SECRET_KEY 未設定，儀表板停用中。
         </div>
       ) : (
         <>
           {/* Range selector */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-mist mr-1">時間區間：</span>
-            <div className="inline-flex rounded border border-gold/30 overflow-hidden">
+            <span className="text-xs text-text-secondary mr-1">時間區間：</span>
+            <div className="inline-flex rounded border border-border-light overflow-hidden">
               {RANGES.map((r) => (
                 <button
                   key={r}
@@ -411,8 +411,8 @@ export default function RevenueDashboard() {
                   onClick={() => setRange(r)}
                   className={`px-3 py-1 text-xs transition-colors ${
                     r === range
-                      ? "bg-gold/20 text-gold"
-                      : "text-mist hover:bg-gold/10 hover:text-gold"
+                      ? "bg-accent/10 text-accent"
+                      : "text-text-secondary hover:bg-accent/10 hover:text-accent"
                   }`}
                 >
                   {r}
@@ -420,7 +420,7 @@ export default function RevenueDashboard() {
               ))}
             </div>
             {statsLoading && (
-              <span className="text-xs text-mist ml-2">載入中…</span>
+              <span className="text-xs text-text-secondary ml-2">載入中…</span>
             )}
           </div>
 
@@ -451,8 +451,8 @@ export default function RevenueDashboard() {
           </div>
 
           {/* Line chart */}
-          <div className="glass-card-premium p-4">
-            <div className="font-serif text-gold mb-2">收入趨勢</div>
+          <div className="tesla-card-bordered p-4">
+            <div className="font-medium text-accent mb-2">收入趨勢</div>
             {stats && stats.lineChart.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={stats.lineChart}>
@@ -490,15 +490,15 @@ export default function RevenueDashboard() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[260px] flex items-center justify-center text-mist text-sm">
+              <div className="h-[260px] flex items-center justify-center text-text-secondary text-sm">
                 {statsLoading ? "載入中…" : "尚無資料"}
               </div>
             )}
           </div>
 
           {/* Bar chart */}
-          <div className="glass-card-premium p-4">
-            <div className="font-serif text-gold mb-2">方案貢獻</div>
+          <div className="tesla-card-bordered p-4">
+            <div className="font-medium text-accent mb-2">方案貢獻</div>
             {stats && stats.barChart.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart
@@ -537,7 +537,7 @@ export default function RevenueDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[240px] flex items-center justify-center text-mist text-sm">
+              <div className="h-[240px] flex items-center justify-center text-text-secondary text-sm">
                 {statsLoading ? "載入中…" : "尚無資料"}
               </div>
             )}
@@ -545,7 +545,7 @@ export default function RevenueDashboard() {
 
           {/* Reconciliation */}
           {reconcileLoading ? (
-            <div className="glass-card-premium p-4 text-mist text-sm">
+            <div className="tesla-card-bordered p-4 text-text-secondary text-sm">
               對帳中…
             </div>
           ) : reconcile ? (
@@ -556,8 +556,8 @@ export default function RevenueDashboard() {
                   : "bg-red-900/20 border border-red-600/40"
               }`}
             >
-              <div className="font-serif text-gold mb-1">對帳狀態</div>
-              <div className="text-sm text-cream">
+              <div className="font-medium text-accent mb-1">對帳狀態</div>
+              <div className="text-sm text-text-primary">
                 最近 {reconcile.days} 天：我方 {reconcile.local.count} 筆 / HK${" "}
                 {(reconcile.local.total / 100).toFixed(2)}
                 {" ⚖ "}
@@ -578,15 +578,15 @@ export default function RevenueDashboard() {
           ) : null}
 
           {/* Transactions */}
-          <div className="glass-card-premium p-4">
+          <div className="tesla-card-bordered p-4">
             <div className="flex items-center justify-between mb-3 gap-2">
-              <div className="font-serif text-gold">交易紀錄</div>
+              <div className="font-medium text-accent">交易紀錄</div>
               <input
                 type="text"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="搜尋 email / 方案 / session…"
-                className="px-3 py-1.5 text-sm rounded bg-black/40 border border-gold/20 text-cream focus:border-gold focus:outline-none w-64 max-w-[60%]"
+                className="px-3 py-1.5 text-sm rounded bg-black/40 border border-border-light text-text-primary focus:border-accent focus:outline-none w-64 max-w-[60%]"
               />
             </div>
 
@@ -599,22 +599,22 @@ export default function RevenueDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-mist border-b border-gold/20">
+                  <tr className="text-left text-text-secondary border-b border-border-light">
                     <th
-                      className="py-2 pr-2 cursor-pointer select-none hover:text-gold"
+                      className="py-2 pr-2 cursor-pointer select-none hover:text-accent"
                       onClick={() => toggleSort("time")}
                     >
                       時間{sortIndicator("time")}
                     </th>
                     <th
-                      className="py-2 pr-2 cursor-pointer select-none hover:text-gold"
+                      className="py-2 pr-2 cursor-pointer select-none hover:text-accent"
                       onClick={() => toggleSort("user")}
                     >
                       使用者{sortIndicator("user")}
                     </th>
                     <th className="py-2 pr-2">方案</th>
                     <th
-                      className="py-2 pr-2 cursor-pointer select-none hover:text-gold"
+                      className="py-2 pr-2 cursor-pointer select-none hover:text-accent"
                       onClick={() => toggleSort("amount")}
                     >
                       金額{sortIndicator("amount")}
@@ -627,7 +627,7 @@ export default function RevenueDashboard() {
                 <tbody>
                   {txLoading && !transactions ? (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-mist">
+                      <td colSpan={7} className="py-6 text-center text-text-secondary">
                         載入中…
                       </td>
                     </tr>
@@ -635,7 +635,7 @@ export default function RevenueDashboard() {
                     transactions.rows.map((row) => (
                       <tr
                         key={row.id}
-                        className="border-b border-gold/10 text-cream"
+                        className="border-b border-border-light text-text-primary"
                       >
                         <td className="py-2 pr-2 whitespace-nowrap text-xs">
                           {formatDateTime(row.createdAt)}
@@ -658,12 +658,12 @@ export default function RevenueDashboard() {
                               href={`https://dashboard.stripe.com/payments/${row.stripePaymentIntentId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-gold hover:underline font-mono"
+                              className="text-xs text-accent hover:underline font-mono"
                             >
                               {row.stripePaymentIntentId.slice(-8)} ↗
                             </a>
                           ) : (
-                            <span className="text-xs text-mist">—</span>
+                            <span className="text-xs text-text-secondary">—</span>
                           )}
                         </td>
                         <td className="py-2 pr-2">
@@ -674,7 +674,7 @@ export default function RevenueDashboard() {
                               disabled={mutating}
                               aria-label="編輯狀態"
                               title="編輯狀態"
-                              className="p-1 text-mist hover:text-gold transition-colors disabled:opacity-30"
+                              className="p-1 text-text-secondary hover:text-accent transition-colors disabled:opacity-30"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -686,7 +686,7 @@ export default function RevenueDashboard() {
                               disabled={mutating}
                               aria-label="刪除交易"
                               title="刪除交易"
-                              className="p-1 text-mist hover:text-red-400 transition-colors disabled:opacity-30"
+                              className="p-1 text-text-secondary hover:text-red-400 transition-colors disabled:opacity-30"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -698,7 +698,7 @@ export default function RevenueDashboard() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-mist">
+                      <td colSpan={7} className="py-6 text-center text-text-secondary">
                         尚無交易紀錄
                       </td>
                     </tr>
@@ -709,7 +709,7 @@ export default function RevenueDashboard() {
 
             {/* Pagination */}
             {transactions && transactions.total > 0 && (
-              <div className="mt-3 flex items-center justify-between text-xs text-mist">
+              <div className="mt-3 flex items-center justify-between text-xs text-text-secondary">
                 <div>
                   共 {transactions.total.toLocaleString()} 筆，每頁{" "}
                   {transactions.pageSize} 筆
@@ -719,11 +719,11 @@ export default function RevenueDashboard() {
                     type="button"
                     disabled={page <= 1 || txLoading}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="px-2 py-1 rounded border border-gold/20 text-gold hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-2 py-1 rounded border border-border-light text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     ‹ 上一頁
                   </button>
-                  <span className="text-cream">
+                  <span className="text-text-primary">
                     第 {transactions.page} /{" "}
                     {Math.max(
                       1,
@@ -740,7 +740,7 @@ export default function RevenueDashboard() {
                         ) || txLoading
                     }
                     onClick={() => setPage((p) => p + 1)}
-                    className="px-2 py-1 rounded border border-gold/20 text-gold hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-2 py-1 rounded border border-border-light text-accent hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     下一頁 ›
                   </button>
@@ -760,18 +760,18 @@ export default function RevenueDashboard() {
           onClick={() => !mutating && setEditingRow(null)}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-gold/25 bg-[var(--parchment)] p-6 shadow-2xl"
+            className="w-full max-w-md rounded-xl border border-border-light bg-[var(--bg-primary)] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-serif text-lg text-gold mb-4">編輯交易狀態</h3>
-            <div className="mb-4 text-xs text-mist space-y-1">
+            <h3 className="font-medium text-lg text-accent mb-4">編輯交易狀態</h3>
+            <div className="mb-4 text-xs text-text-secondary space-y-1">
               <div>交易 #{editingRow.id} · {editingRow.userEmail ?? "—"}</div>
               <div>{editingRow.packageName ?? "—"} · {formatHkd(editingRow.amount)}</div>
               <div className="flex items-center gap-2">
                 目前狀態：<StatusBadge status={editingRow.status} />
               </div>
             </div>
-            <label className="block mb-2 text-xs text-mist">新狀態</label>
+            <label className="block mb-2 text-xs text-text-secondary">新狀態</label>
             <select
               value={editStatus}
               onChange={(e) =>
@@ -784,7 +784,7 @@ export default function RevenueDashboard() {
               <option value="refunded">refunded（已退款）</option>
               <option value="failed">failed（失敗 / 無效）</option>
             </select>
-            <div className="rounded border border-amber-500/30 bg-amber-500/5 p-3 mb-5 text-xs text-mist leading-relaxed">
+            <div className="rounded border border-amber-500/30 bg-amber-500/5 p-3 mb-5 text-xs text-text-secondary leading-relaxed">
               ⚠ 若狀態在 paid 與非 paid 之間切換，系統會自動調整使用者的額度（refund-safe：不會讓剩餘變成負數）。
             </div>
             <div className="flex items-center justify-end gap-2">
@@ -792,7 +792,7 @@ export default function RevenueDashboard() {
                 type="button"
                 onClick={() => setEditingRow(null)}
                 disabled={mutating}
-                className="px-4 py-2 text-sm text-mist hover:text-gold transition-colors disabled:opacity-40"
+                className="px-4 py-2 text-sm text-text-secondary hover:text-accent transition-colors disabled:opacity-40"
               >
                 取消
               </button>
@@ -800,7 +800,7 @@ export default function RevenueDashboard() {
                 type="button"
                 onClick={submitEdit}
                 disabled={mutating || editStatus === editingRow.status}
-                className="px-4 py-2 text-sm rounded border border-gold/40 text-gold hover:bg-gold/10 disabled:opacity-30 transition-colors"
+                className="px-4 py-2 text-sm rounded border border-border-light text-accent hover:bg-accent/10 disabled:opacity-30 transition-colors"
               >
                 {mutating ? "處理中..." : "確認"}
               </button>
@@ -814,9 +814,9 @@ export default function RevenueDashboard() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass-card-premium p-4">
-      <div className="text-xs text-mist">{label}</div>
-      <div className="text-xl font-serif text-gold mt-1">{value}</div>
+    <div className="tesla-card-bordered p-4">
+      <div className="text-xs text-text-secondary">{label}</div>
+      <div className="text-xl font-medium text-accent mt-1">{value}</div>
     </div>
   );
 }
