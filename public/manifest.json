@@ -4,8 +4,8 @@
   "description": "結合八字、紫微斗數與西洋星座的 AI 命理分析",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0e0c",
-  "theme_color": "#0f0e0c",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "icons": [
     {
       "src": "/icon-192.png",
