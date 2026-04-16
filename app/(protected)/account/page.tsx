@@ -23,7 +23,7 @@ export default function AccountPage() {
       <div className="mb-6 flex items-center justify-between gap-3">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 text-sm text-mist hover:text-gold transition-colors min-h-[44px]"
+          className="flex items-center gap-2 text-sm text-text-secondary hover:text-accent transition-colors min-h-[44px]"
           aria-label={t("account.back")}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,12 +33,12 @@ export default function AccountPage() {
         </button>
         <Link
           href="/"
-          className="text-xs text-mist/60 hover:text-gold transition-colors min-h-[44px] flex items-center"
+          className="text-xs text-text-secondary hover:text-accent transition-colors min-h-[44px] flex items-center"
         >
           {t("account.home")}
         </Link>
       </div>
-      <h1 className="font-serif text-2xl sm:text-3xl text-gold mb-8">
+      <h1 className="text-2xl sm:text-3xl text-accent mb-8">
         {t("account.title")}
       </h1>
       <PurchaseHistory />

@@ -86,23 +86,23 @@ export default function FeedbackModal({ open, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in-up"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", animationDuration: "200ms" }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-lg border border-gold/20 shadow-2xl"
-        style={{ background: "var(--parchment)" }}
+        className="relative w-full max-w-md rounded-lg border border-border-light"
+        style={{ background: "var(--bg-primary)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gold/10">
-          <h2 className="text-base text-gold font-serif tracking-wide">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-light">
+          <h2 className="text-base text-accent">
             {t("feedback.title")}
           </h2>
           <button
             onClick={onClose}
-            className="text-stone/50 hover:text-cream transition-colors w-6 h-6 flex items-center justify-center"
+            className="text-text-placeholder hover:text-text-primary transition-colors w-6 h-6 flex items-center justify-center"
             aria-label="Close"
           >
             ✕
@@ -117,17 +117,17 @@ export default function FeedbackModal({ open, onClose }: Props) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-sm text-cream font-serif">{t("feedback.successTitle")}</p>
-            <p className="text-xs text-stone/60 mt-1">{t("feedback.successBody")}</p>
+            <p className="text-sm text-text-primary">{t("feedback.successTitle")}</p>
+            <p className="text-xs text-text-tertiary mt-1">{t("feedback.successBody")}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3">
-            <p className="text-xs text-stone/60 leading-relaxed">
+            <p className="text-xs text-text-tertiary leading-relaxed">
               {t("feedback.description")}
             </p>
 
             <div>
-              <label className="block text-xs text-stone/70 mb-1">
+              <label className="block text-xs text-text-tertiary mb-1">
                 {t("feedback.nameLabel")}
               </label>
               <input
@@ -137,13 +137,13 @@ export default function FeedbackModal({ open, onClose }: Props) {
                 required
                 maxLength={255}
                 disabled={loading}
-                className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
-                style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-placeholder focus:border-accent/50 focus:outline-none"
+                style={{ backgroundColor: "var(--bg-secondary)" }}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-stone/70 mb-1">
+              <label className="block text-xs text-text-tertiary mb-1">
                 {t("feedback.emailLabel")}
               </label>
               <input
@@ -153,13 +153,13 @@ export default function FeedbackModal({ open, onClose }: Props) {
                 required
                 maxLength={255}
                 disabled={loading}
-                className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none"
-                style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-placeholder focus:border-accent/50 focus:outline-none"
+                style={{ backgroundColor: "var(--bg-secondary)" }}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-stone/70 mb-1">
+              <label className="block text-xs text-text-tertiary mb-1">
                 {t("feedback.messageLabel")}
               </label>
               <textarea
@@ -170,10 +170,10 @@ export default function FeedbackModal({ open, onClose }: Props) {
                 maxLength={4000}
                 disabled={loading}
                 placeholder={t("feedback.messagePlaceholder")}
-                className="w-full px-3 py-2 text-sm border border-gold/20 rounded text-cream placeholder:text-stone/30 focus:border-gold/50 focus:outline-none resize-none"
-                style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}
+                className="w-full px-3 py-2 text-sm border border-border-light rounded text-text-primary placeholder:text-text-placeholder focus:border-accent/50 focus:outline-none resize-none"
+                style={{ backgroundColor: "var(--bg-secondary)" }}
               />
-              <p className="text-[10px] text-stone/40 text-right mt-0.5">
+              <p className="text-[10px] text-text-placeholder text-right mt-0.5">
                 {message.length} / 4000
               </p>
             </div>
@@ -187,17 +187,17 @@ export default function FeedbackModal({ open, onClose }: Props) {
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="px-4 py-2 text-xs text-stone border border-stone/30 rounded hover:bg-stone/10 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-xs text-text-tertiary border border-border-light rounded hover:bg-bg-secondary transition-colors disabled:opacity-50"
               >
                 {t("feedback.cancel")}
               </button>
               <button
                 type="submit"
                 disabled={loading || !name.trim() || !email.trim() || !message.trim()}
-                className="px-4 py-2 text-xs text-gold border border-gold/30 rounded hover:bg-gold/10 transition-colors disabled:opacity-40"
+                className="px-4 py-2 text-xs text-accent border border-accent/30 rounded hover:bg-accent/10 transition-colors disabled:opacity-40"
               >
                 {loading ? (
-                  <span className="inline-block w-3 h-3 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <span className="inline-block w-3 h-3 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
                 ) : (
                   t("feedback.submit")
                 )}

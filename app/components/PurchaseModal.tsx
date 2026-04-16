@@ -112,12 +112,10 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
       >
         <div
           ref={dialogRef}
-          className="glass-card-premium relative w-full max-w-3xl animate-fade-in-up"
+          className="tesla-card-bordered relative w-full max-w-3xl animate-fade-in"
           style={{
             opacity: 0,
-            background: "var(--parchment)",
-            boxShadow:
-              "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,173,74,0.18)",
+            background: "var(--bg-primary)",
           }}
         >
           {/* Close */}
@@ -125,7 +123,7 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
             type="button"
             onClick={onClose}
             aria-label={t("purchase.closeAria")}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gold/25 text-gold/80 transition-colors hover:border-gold/60 hover:text-gold"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border-light text-accent/80 transition-colors hover:border-accent/60 hover:text-accent"
             style={{ background: "rgba(0,0,0,0.12)" }}
           >
             <svg
@@ -147,20 +145,18 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
           {/* Header */}
           <div className="px-6 pt-12 pb-6 sm:px-12 sm:pt-14 sm:pb-8 text-center">
             <div
-              className="mx-auto mb-5 text-[10px] sm:text-xs tracking-[0.3em] sm:tracking-[0.4em] text-gold/70"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="mx-auto mb-5 text-[10px] sm:text-xs text-accent/70"
             >
               {t("purchase.header")}
             </div>
             <h2
               id="purchase-modal-title"
-              className="text-xl sm:text-3xl font-medium tracking-[0.08em] sm:tracking-[0.12em] text-gold break-words"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="text-xl sm:text-3xl font-medium text-accent break-words"
             >
               {t("purchase.title")}
             </h2>
-            <div className="gold-line mx-auto mt-5 w-24" />
-            <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-mist">
+            <div className="tesla-divider mx-auto mt-5 w-24" />
+            <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-text-secondary">
               {t("purchase.subtitle")}
             </p>
           </div>
@@ -168,7 +164,7 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
           {/* Body */}
           <div className="px-5 pb-10 sm:px-10 sm:pb-14">
             {error ? (
-              <div className="py-10 text-center text-sm text-red-seal">
+              <div className="py-10 text-center text-sm text-red-400">
                 {error}
               </div>
             ) : packages === null ? (
@@ -191,8 +187,8 @@ export default function PurchaseModal({ userId, onClose }: PurchaseModalProps) {
           </div>
 
           {/* Footer note */}
-          <div className="border-t border-gold/10 px-5 py-5 sm:px-12 text-center">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.1em] sm:tracking-[0.15em] text-stone/70 leading-relaxed">
+          <div className="border-t border-border-light px-5 py-5 sm:px-12 text-center">
+            <p className="text-[10px] sm:text-[11px] text-text-tertiary leading-relaxed">
               {t("purchase.footer")}
             </p>
           </div>
@@ -219,11 +215,8 @@ function PackageCard({
 
   return (
     <div
-      className="group relative overflow-hidden rounded-lg border border-gold/20 transition-all duration-500 hover:border-gold/45 animate-fade-in-up"
+      className="group relative overflow-hidden rounded-lg border border-border-light transition-all duration-500 hover:border-accent/45 animate-fade-in"
       style={{
-        background:
-          "linear-gradient(180deg, rgba(212,173,74,0.04) 0%, rgba(212,173,74,0.01) 100%)",
-        boxShadow: "inset 0 1px 0 rgba(212,173,74,0.12)",
         opacity: 0,
         animationDelay: `${120 + index * 90}ms`,
       }}
@@ -233,7 +226,7 @@ function PackageCard({
         className="absolute left-0 right-0 top-0 h-[2px] opacity-60"
         style={{
           background:
-            "linear-gradient(90deg, transparent, var(--gold), transparent)",
+            "linear-gradient(90deg, transparent, var(--accent), transparent)",
         }}
       />
 
@@ -241,14 +234,13 @@ function PackageCard({
         {/* Left: details */}
         <div className="flex-1 min-w-0">
           <h3
-            className="text-xl sm:text-[1.4rem] font-medium tracking-[0.1em] text-gold"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-xl sm:text-[1.4rem] font-medium text-accent"
           >
             {pkg.name}
           </h3>
 
           {pkg.description && (
-            <p className="mt-2 text-sm leading-relaxed text-mist">
+            <p className="mt-2 text-sm leading-relaxed text-text-secondary">
               {pkg.description}
             </p>
           )}
@@ -257,8 +249,7 @@ function PackageCard({
           {price && (
             <div className="mt-5 flex items-baseline gap-2">
               <span
-                className="text-3xl sm:text-4xl font-medium text-cream"
-                style={{ fontFamily: "var(--font-display)" }}
+                className="text-3xl sm:text-4xl font-medium text-text-primary"
               >
                 {price}
               </span>
@@ -268,7 +259,7 @@ function PackageCard({
           {/* Credit grants */}
           <ul className="mt-5 space-y-2">
             {pkg.singleCreditsGranted > 0 && (
-              <li className="flex items-center gap-3 text-sm text-cream/90">
+              <li className="flex items-center gap-3 text-sm text-text-primary">
                 <CreditBullet />
                 <span>
                   {t("purchase.includesSingle", {
@@ -278,7 +269,7 @@ function PackageCard({
               </li>
             )}
             {pkg.multiCreditsGranted > 0 && (
-              <li className="flex items-center gap-3 text-sm text-cream/90">
+              <li className="flex items-center gap-3 text-sm text-text-primary">
                 <CreditBullet />
                 <span>
                   {t("purchase.includesMulti", {
@@ -295,7 +286,7 @@ function PackageCard({
           className="hidden sm:block w-px self-stretch"
           style={{
             background:
-              "linear-gradient(180deg, transparent, rgba(212,173,74,0.25), transparent)",
+              "linear-gradient(180deg, transparent, var(--border-light), transparent)",
           }}
         />
 
@@ -318,8 +309,7 @@ function CreditBullet() {
   return (
     <span
       aria-hidden="true"
-      className="inline-block h-[6px] w-[6px] rotate-45 bg-gold/70"
-      style={{ boxShadow: "0 0 6px rgba(212,173,74,0.4)" }}
+      className="inline-block h-[6px] w-[6px] rotate-45 bg-accent/70"
     />
   );
 }
@@ -328,13 +318,13 @@ function LoadingState({ t }: { t: TFn }) {
   return (
     <div className="flex flex-col items-center justify-center py-16">
       <div
-        className="h-10 w-10 animate-[spin_2.2s_linear_infinite] rounded-full border border-gold/20"
+        className="h-10 w-10 animate-[spin_2.2s_linear_infinite] rounded-full border border-accent/20"
         style={{
-          borderTopColor: "var(--gold)",
-          borderRightColor: "var(--gold)",
+          borderTopColor: "var(--accent)",
+          borderRightColor: "var(--accent)",
         }}
       />
-      <p className="mt-5 text-xs tracking-[0.3em] text-stone/70">
+      <p className="mt-5 text-xs text-text-tertiary">
         {t("purchase.loading")}
       </p>
     </div>
@@ -344,14 +334,13 @@ function LoadingState({ t }: { t: TFn }) {
 function EmptyState({ t }: { t: TFn }) {
   return (
     <div className="py-14 text-center">
-      <div className="gold-line mx-auto mb-6 w-16" />
+      <div className="tesla-divider mx-auto mb-6 w-16" />
       <p
-        className="text-base text-cream/85"
-        style={{ fontFamily: "var(--font-serif)" }}
+        className="text-base text-text-primary"
       >
         {t("purchase.noPackages")}
       </p>
-      <p className="mt-3 text-xs tracking-[0.15em] text-stone/70">
+      <p className="mt-3 text-xs text-text-tertiary">
         {t("purchase.noPackagesHint")}
       </p>
     </div>

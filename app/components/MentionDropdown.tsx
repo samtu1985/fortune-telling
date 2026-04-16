@@ -46,11 +46,11 @@ export default function MentionDropdown({
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-0 right-0 mb-1 max-h-48 overflow-y-auto rounded-lg border border-gold/20 shadow-lg z-30"
-      style={{ background: "var(--parchment)" }}
+      className="absolute bottom-full left-0 right-0 mb-1 max-h-48 overflow-y-auto rounded-lg border border-border-light z-30"
+      style={{ background: "var(--bg-primary)" }}
     >
       <div className="py-1">
-        <div className="px-3 py-1.5 text-[10px] text-stone/40 tracking-wide">
+        <div className="px-3 py-1.5 text-[10px] text-text-placeholder">
           {t("mention.selectProfile")}
         </div>
         {filtered.map((p) => (
@@ -58,15 +58,15 @@ export default function MentionDropdown({
             key={p.id}
             type="button"
             onClick={() => onSelect(p.label)}
-            className="w-full text-left px-3 py-2 min-h-[36px] text-sm hover:bg-gold/10 transition-colors flex items-center justify-between gap-2"
+            className="w-full text-left px-3 py-2 min-h-[36px] text-sm hover:bg-accent/10 transition-colors flex items-center justify-between gap-2"
           >
-            <span className={p.hasChart ? "text-gold" : "text-stone/40"}>
+            <span className={p.hasChart ? "text-accent" : "text-text-placeholder"}>
               @{p.label}
             </span>
             {p.hasChart ? (
-              <span className="text-[10px] text-gold-dim/60">({t("mention.hasChart")})</span>
+              <span className="text-[10px] text-text-tertiary">({t("mention.hasChart")})</span>
             ) : (
-              <span className="text-[10px] text-stone/30">({t("mention.noChart")})</span>
+              <span className="text-[10px] text-text-placeholder">({t("mention.noChart")})</span>
             )}
           </button>
         ))}

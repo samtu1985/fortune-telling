@@ -46,9 +46,7 @@ export default function FeaturesGuideButton() {
         onClick={handleOpen}
         aria-label={t("guide.iconAria")}
         title={t("guide.iconAria")}
-        className={`relative p-2 rounded-sm text-stone hover:text-gold transition-colors duration-300 ${
-          unseen ? "features-guide-blink" : ""
-        }`}
+        className="relative p-2 rounded-sm text-text-tertiary hover:text-accent transition-colors duration-300"
       >
         <svg
           viewBox="0 0 24 24"
@@ -68,7 +66,7 @@ export default function FeaturesGuideButton() {
         </svg>
         {unseen && (
           <span
-            className="features-guide-dot absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gold pointer-events-none"
+            className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent pointer-events-none"
             aria-hidden="true"
           />
         )}

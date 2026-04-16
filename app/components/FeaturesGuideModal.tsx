@@ -59,11 +59,9 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
     >
       <div
         ref={dialogRef}
-        className="relative w-full max-w-2xl rounded-xl border border-gold/20 animate-fade-in-up"
+        className="relative w-full max-w-2xl rounded-xl border border-border-light animate-fade-in"
         style={{
-          background: "var(--parchment)",
-          boxShadow:
-            "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,173,74,0.18)",
+          background: "var(--bg-primary)",
         }}
       >
         {/* Close button */}
@@ -71,7 +69,7 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
           type="button"
           onClick={onClose}
           aria-label={t("guide.modal.close")}
-          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gold/25 text-gold/80 transition-colors hover:border-gold/60 hover:text-gold"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-border-light text-accent/80 transition-colors hover:border-accent/60 hover:text-accent"
           style={{ background: "rgba(0,0,0,0.12)" }}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -87,22 +85,19 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
         {/* Header */}
         <div className="px-6 pt-10 pb-5 sm:px-10 sm:pt-12 sm:pb-6 text-center">
           <div
-            className="mx-auto mb-3 text-[10px] sm:text-xs tracking-[0.3em] sm:tracking-[0.4em] text-gold/60"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="mx-auto mb-3 text-[10px] sm:text-xs text-accent/60"
           >
             ✦ &nbsp; {t("guide.modal.cta")} &nbsp; ✦
           </div>
           <h2
             id="features-guide-title"
-            className="text-xl sm:text-2xl font-medium tracking-[0.12em] sm:tracking-[0.16em] text-gold break-words"
-            style={{ fontFamily: "var(--font-calligraphy, var(--font-serif))" }}
+            className="text-xl sm:text-2xl font-medium text-accent break-words"
           >
             {t("guide.modal.title")}
           </h2>
-          <div className="gold-line mx-auto mt-4 w-20" />
+          <div className="tesla-divider mx-auto mt-4 w-20" />
           <p
-            className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-stone/80 italic"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-text-tertiary italic"
           >
             {t("guide.modal.intro")}
           </p>
@@ -116,22 +111,21 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
               return (
                 <div
                   key={f.titleKey}
-                  className={`rounded-md border border-gold/15 bg-black/10 p-4 transition hover:border-gold/35 hover:bg-black/20 ${
+                  className={`rounded-md border border-border-light bg-bg-secondary p-4 transition hover:border-accent/35 hover:bg-bg-secondary ${
                     f.fullWidth ? "sm:col-span-2" : ""
                   }`}
                 >
                   <div
-                    className="flex items-baseline gap-2 mb-1.5 text-gold"
-                    style={{ fontFamily: "var(--font-serif)" }}
+                    className="flex items-baseline gap-2 mb-1.5 text-accent"
                   >
-                    <span className="text-[10px] tracking-widest text-gold/50">
+                    <span className="text-[10px] text-accent/50">
                       {num}
                     </span>
                     <span className="text-base font-semibold">
                       {t(f.titleKey)}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-[13px] text-stone/80 leading-relaxed">
+                  <p className="text-xs sm:text-[13px] text-text-tertiary leading-relaxed">
                     {t(f.taglineKey)}
                   </p>
                 </div>
@@ -141,18 +135,16 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
         </div>
 
         {/* Outro + CTA */}
-        <div className="border-t border-gold/10 px-6 py-6 sm:px-10 sm:py-7 text-center">
+        <div className="border-t border-border-light px-6 py-6 sm:px-10 sm:py-7 text-center">
           <p
-            className="mb-4 text-sm italic text-stone/70"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="mb-4 text-sm italic text-text-tertiary"
           >
             {t("guide.modal.outro")}
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="px-8 py-2.5 min-h-[44px] rounded-full border border-gold/50 text-gold text-sm tracking-[0.1em] hover:bg-gold/10 transition-colors"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="px-8 py-2.5 min-h-[44px] rounded-full border border-accent/50 text-accent text-sm hover:bg-accent/10 transition-colors"
           >
             {t("guide.modal.cta")}
           </button>
