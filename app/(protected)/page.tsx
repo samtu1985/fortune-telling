@@ -888,7 +888,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         <div className="relative z-20 flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
           <button
             onClick={handleBackToSelection}
-            className="flex items-center gap-1.5 text-sm text-stone hover:text-mist transition-colors min-h-[44px] font-serif"
+            className="flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors min-h-[44px]"
           >
             <svg
               className="w-4 h-4"
@@ -906,7 +906,7 @@ ${t("birth.topic")}：${aiQuestion}`;
             {t("main.backToSelect")}
           </button>
 
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-xl font-bold tracking-[0.15em] text-gold" style={{ fontFamily: "var(--font-calligraphy)" }}>
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-xl font-bold text-text-primary">
             {t("app.title")}
           </h1>
 
@@ -932,17 +932,17 @@ ${t("birth.topic")}：${aiQuestion}`;
                 key={dt.id}
                 onClick={() => setSelectedType(dt.id)}
                 className={`
-                  px-3 py-1.5 rounded-full text-xs font-serif tracking-wide transition-all duration-200
+                  px-3 py-1.5 rounded-full text-xs transition-all duration-200
                   ${
                     isActive
-                      ? "bg-gold/15 text-gold border border-gold/30"
-                      : "text-stone/60 border border-transparent hover:text-stone hover:border-gold/15"
+                      ? "bg-accent/[0.06] text-accent border border-accent/30"
+                      : "text-text-tertiary border border-transparent hover:text-text-secondary hover:border-border-light"
                   }
                 `}
               >
                 {dt.symbol} {dt.title}
                 {isStreaming && !isActive && (
-                  <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                  <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                 )}
               </button>
             );
@@ -951,7 +951,7 @@ ${t("birth.topic")}：${aiQuestion}`;
 
         {/* Divination type indicator */}
         <div className="text-center pb-2 shrink-0">
-          <div className="mx-auto mt-1 w-24 gold-line" />
+          <div className="mx-auto mt-1 w-24 tesla-divider" />
         </div>
 
         {/* Messages area — scrollable */}
@@ -973,7 +973,7 @@ ${t("birth.topic")}：${aiQuestion}`;
             {conv.messages.map((msg, i) =>
               msg.role === "user" ? (
                 <div key={i} className="flex justify-end">
-                  <div className="bg-gold/8 border border-gold/15 rounded-lg px-4 py-3 max-w-[85%] text-sm text-cream/90 leading-relaxed">
+                  <div className="bg-accent/[0.04] border border-accent/20 rounded-lg px-4 py-3 max-w-[85%] text-sm text-text-primary leading-relaxed">
                     {msg.images && msg.images.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {msg.images.map((img, j) => (
@@ -981,7 +981,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                             key={j}
                             src={img}
                             alt=""
-                            className="w-24 h-24 object-cover rounded border border-gold/20"
+                            className="w-24 h-24 object-cover rounded border border-border-light"
                           />
                         ))}
                       </div>
@@ -1019,7 +1019,7 @@ ${t("birth.topic")}：${aiQuestion}`;
             {!conv.streaming && conv.chartData && conv.profileId && (
               <div className="flex justify-center py-2">
                 {chartSaved ? (
-                  <span className="text-xs text-gold-dim/50 flex items-center gap-1.5 px-3 py-1.5">
+                  <span className="text-xs text-text-tertiary flex items-center gap-1.5 px-3 py-1.5">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -1028,7 +1028,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                 ) : (
                   <button
                     onClick={handleSaveChart}
-                    className="text-xs text-gold-dim/60 hover:text-gold-dim transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-gold/10 rounded-full"
+                    className="text-xs text-accent hover:text-accent transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-accent/20 rounded-full"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -1041,25 +1041,13 @@ ${t("birth.topic")}：${aiQuestion}`;
           </div>
         </div>
 
-        {/* Mobile FAB — collapsed state with spinning gradient ring */}
+        {/* Mobile FAB — collapsed state */}
         <button
           onClick={() => setMobileControlsOpen(true)}
-          className={`sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-[var(--parchment)] shadow-lg flex items-center justify-center text-gold/70 active:scale-95 transition-all duration-300 ease-in-out ${
+          className={`sm:hidden fixed bottom-6 right-4 z-30 w-12 h-12 rounded-full bg-bg-primary shadow-lg flex items-center justify-center text-accent/70 active:scale-95 transition-all duration-300 ease-in-out ${
             mobileControlsOpen ? "opacity-0 scale-75 pointer-events-none" : "opacity-100 scale-100"
           }`}
         >
-          {/* Spinning gradient ring */}
-          <span
-            className="absolute inset-0 rounded-full"
-            style={{
-              padding: "1.5px",
-              background: "conic-gradient(from 0deg, transparent 40%, var(--gold) 70%, transparent 100%)",
-              WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-              WebkitMaskComposite: "xor",
-              maskComposite: "exclude",
-              animation: "fab-ring-spin 3s linear infinite",
-            }}
-          />
           <svg className="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
@@ -1067,12 +1055,12 @@ ${t("birth.topic")}：${aiQuestion}`;
 
         {/* Follow-up input — slides down on mobile when collapsed, always visible on desktop */}
         <div
-          className={`relative z-20 border-t border-gold/10 px-4 sm:px-6 py-4 shrink-0 transition-all duration-300 ease-in-out sm:!translate-y-0 sm:!opacity-100 sm:!pointer-events-auto sm:!max-h-none ${
+          className={`relative z-20 border-t border-border-light px-4 sm:px-6 py-4 shrink-0 transition-all duration-300 ease-in-out sm:!translate-y-0 sm:!opacity-100 sm:!pointer-events-auto sm:!max-h-none ${
             !mobileControlsOpen
               ? "max-sm:translate-y-full max-sm:opacity-0 max-sm:pointer-events-none max-sm:max-h-0 max-sm:py-0 max-sm:overflow-hidden"
               : ""
           }`}
-          style={{ background: "var(--parchment)" }}
+          style={{ background: "var(--bg-primary)" }}
         >
           <div className="max-w-2xl mx-auto">
             {/* Image preview */}
@@ -1083,7 +1071,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                     <img
                       src={img}
                       alt=""
-                      className="w-16 h-16 object-cover rounded border border-gold/20"
+                      className="w-16 h-16 object-cover rounded border border-border-light"
                     />
                     <button
                       type="button"
@@ -1114,7 +1102,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                 type="button"
                 onClick={() => followUpFileRef.current?.click()}
                 disabled={conv.loading}
-                className="shrink-0 w-[44px] h-[44px] flex items-center justify-center rounded-sm border border-gold/15 text-gold-dim/60 hover:text-gold-dim hover:border-gold/30 transition-colors disabled:opacity-40"
+                className="shrink-0 w-[44px] h-[44px] flex items-center justify-center rounded-sm border border-border-light text-text-tertiary hover:text-text-secondary hover:border-border-subtle transition-colors disabled:opacity-40"
                 title={t("main.uploadImage")}
               >
                 <svg
@@ -1168,41 +1156,40 @@ ${t("birth.topic")}：${aiQuestion}`;
                   (!followUp.trim() && followUpImages.length === 0)
                 }
                 className={`
-                  px-5 py-2.5 rounded-sm text-sm tracking-widest font-serif transition-all duration-500
-                  border border-gold/20
+                  px-5 py-2.5 rounded-sm text-sm transition-all duration-500
                   ${
                     conv.loading ||
                     (!followUp.trim() && followUpImages.length === 0)
-                      ? "text-gold-dim/50 cursor-not-allowed"
-                      : "text-gold hover:bg-gold/15 active:scale-[0.98]"
+                      ? "bg-accent/50 text-white cursor-not-allowed"
+                      : "bg-accent text-white hover:bg-accent/90 active:scale-[0.98]"
                   }
                 `}
               >
                 {conv.loading ? (
-                  <span className="inline-block w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   t("main.send")
                 )}
               </button>
             </form>
-            <p className="text-center text-xs text-stone/40 mt-2 tracking-wide">
+            <p className="text-center text-xs text-text-placeholder mt-2">
               {t("main.aiDisclaimer")}
               {" · "}
-              <a href="/terms" className="hover:text-gold transition-colors underline-offset-2 hover:underline">
+              <a href="/terms" className="hover:text-accent transition-colors underline-offset-2 hover:underline">
                 {t("footer.terms")}
               </a>
               {" · "}
               <button
                 type="button"
                 onClick={() => setFeedbackOpen(true)}
-                className="hover:text-gold transition-colors underline-offset-2 hover:underline"
+                className="hover:text-accent transition-colors underline-offset-2 hover:underline"
               >
                 {t("footer.feedback")}
               </button>
             </p>
             <button
               onClick={() => setNewDiscussionConfirm(true)}
-              className="w-full mt-3 py-2 text-xs text-stone/40 hover:text-stone/60 transition-colors tracking-wide"
+              className="w-full mt-3 py-2 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
             >
               {t("main.newDiscussion")}
             </button>
@@ -1238,27 +1225,24 @@ ${t("birth.topic")}：${aiQuestion}`;
       {/* Header */}
       <header className="pt-16 pb-12 px-6 text-center">
         <h1
-          className="animate-fade-in-up text-5xl sm:text-6xl font-bold tracking-[0.15em] text-gold"
-          style={{ fontFamily: "var(--font-calligraphy)", opacity: 0 }}
+          className="animate-fade-in text-[40px] font-medium text-text-primary"
         >
           {t("app.title")}
         </h1>
         <p
-          className="animate-fade-in-up mt-3 font-display text-lg sm:text-xl text-stone italic tracking-wide"
-          style={{ animationDelay: "200ms", opacity: 0 }}
+          className="animate-fade-in mt-3 text-lg sm:text-xl text-text-tertiary"
         >
           {t("app.subtitle")}
         </p>
         <div
-          className="animate-fade-in-up mx-auto mt-6 w-32 gold-line"
-          style={{ animationDelay: "400ms", opacity: 0 }}
+          className="animate-fade-in mx-auto mt-6 w-32 tesla-divider"
         />
       </header>
 
       {/* Resume conversations */}
       {typesWithConversation.length > 0 && (
         <section className="max-w-2xl mx-auto px-6 pb-6">
-          <p className="text-center text-sm text-mist/60 mb-3 tracking-wide">
+          <p className="text-center text-sm text-text-secondary mb-3">
             {t("main.currentConversation")}
           </p>
           <div className="flex justify-center gap-3">
@@ -1268,14 +1252,14 @@ ${t("birth.topic")}：${aiQuestion}`;
                 <button
                   key={dt.id}
                   onClick={() => setSelectedType(dt.id)}
-                  className="px-4 py-2.5 rounded-lg border border-gold/20 bg-gold/[0.04] hover:bg-gold/10 transition-colors flex items-center gap-2"
+                  className="px-4 py-2.5 rounded-lg border border-accent/20 bg-accent/[0.04] hover:bg-accent/10 transition-colors flex items-center gap-2"
                 >
                   <span className="text-lg">{dt.symbol}</span>
-                  <span className="text-sm font-serif text-gold tracking-wide">
+                  <span className="text-sm text-accent">
                     {dt.title}
                   </span>
                   {isStreaming && (
-                    <span className="inline-block w-2 h-2 rounded-full bg-gold animate-pulse" />
+                    <span className="inline-block w-2 h-2 rounded-full bg-accent animate-pulse" />
                   )}
                 </button>
               );
@@ -1287,16 +1271,14 @@ ${t("birth.topic")}：${aiQuestion}`;
       {/* Divination Type Selection */}
       <section className="max-w-5xl mx-auto px-6 pb-8">
         <p
-          className="animate-fade-in-up text-center text-sm text-mist/60 mb-6 sm:mb-8 tracking-wide"
-          style={{ animationDelay: "500ms", opacity: 0 }}
+          className="animate-fade-in text-center text-sm text-text-secondary mb-6 sm:mb-8"
         >
           {t("main.selectType")}
         </p>
 
         {/* Mobile: Compact horizontal tabs — basic types */}
         <div
-          className="animate-fade-in-up flex sm:hidden gap-2"
-          style={{ animationDelay: "600ms", opacity: 0 }}
+          className="animate-fade-in flex sm:hidden gap-2"
         >
           {DIVINATION_TYPES.filter((dt) => dt.id !== "comprehensive").map((dt) => (
             <button
@@ -1306,15 +1288,10 @@ ${t("birth.topic")}：${aiQuestion}`;
                 flex-1 py-3 rounded-sm border text-center transition-all duration-300
                 ${
                   selectedType === dt.id
-                    ? "border-gold/60 bg-gold/[0.06]"
-                    : "border-gold/10 active:border-gold/30"
+                    ? "border-accent/60 bg-accent/[0.06]"
+                    : "border-border-light active:border-accent/30"
                 }
               `}
-              style={
-                selectedType !== dt.id
-                  ? { backgroundColor: "rgba(var(--glass-rgb), 0.02)" }
-                  : undefined
-              }
             >
               <span
                 className={`text-2xl block transition-opacity duration-300 ${
@@ -1324,8 +1301,8 @@ ${t("birth.topic")}：${aiQuestion}`;
                 {dt.symbol}
               </span>
               <span
-                className={`text-xs block mt-1 font-serif tracking-wide transition-colors duration-300 ${
-                  selectedType === dt.id ? "text-gold" : "text-cream/70"
+                className={`text-xs block mt-1 transition-colors duration-300 ${
+                  selectedType === dt.id ? "text-accent" : "text-text-primary"
                 }`}
               >
                 {dt.title}
@@ -1339,26 +1316,25 @@ ${t("birth.topic")}：${aiQuestion}`;
           const dt = DIVINATION_TYPES.find((d) => d.id === "comprehensive")!;
           const isActive = selectedType === ("comprehensive" as DivinationType);
           return (
-            <div className="animate-fade-in-up sm:hidden mt-3" style={{ animationDelay: "700ms", opacity: 0 }}>
-              <div className="mx-auto w-3/4 h-px mb-3" style={{ background: "linear-gradient(90deg, transparent, var(--gold), transparent)" }} />
+            <div className="animate-fade-in sm:hidden mt-3">
+              <div className="mx-auto w-3/4 h-px mb-3 tesla-divider" />
               <button
                 onClick={() => setSelectedType("comprehensive")}
                 className={`
                   w-full py-3 px-4 rounded-sm border text-center transition-all duration-300 flex items-center justify-center gap-2
                   ${isActive
-                    ? "border-gold/60 bg-gold/[0.06]"
-                    : "border-gold/20 active:border-gold/30"
+                    ? "border-accent/60 bg-accent/[0.06]"
+                    : "border-border-light active:border-accent/30"
                   }
                 `}
-                style={!isActive ? { backgroundColor: "rgba(var(--glass-rgb), 0.02)" } : undefined}
               >
                 <span className={`text-2xl transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-50"}`}>
                   {dt.symbol}
                 </span>
-                <span className={`text-xs font-serif tracking-wide transition-colors duration-300 ${isActive ? "text-gold" : "text-cream/70"}`}>
+                <span className={`text-xs transition-colors duration-300 ${isActive ? "text-accent" : "text-text-primary"}`}>
                   {dt.title}
                 </span>
-                <span className="text-[9px] tracking-[1px] px-1.5 py-0.5 border border-gold/25 rounded-full text-gold/50 font-display uppercase ml-1">
+                <span className="text-[9px] px-1.5 py-0.5 border border-accent/30 rounded-full text-accent/70 uppercase ml-1">
                   Premium
                 </span>
               </button>
@@ -1368,7 +1344,7 @@ ${t("birth.topic")}：${aiQuestion}`;
 
         {/* Mobile: Selected type description */}
         {selectedType && !conversationStarted && (
-          <p className="sm:hidden text-center text-sm text-mist/60 mt-4 px-2 leading-relaxed">
+          <p className="sm:hidden text-center text-sm text-text-secondary mt-4 px-2 leading-relaxed">
             {DIVINATION_TYPES.find((d) => d.id === selectedType)?.description}
           </p>
         )}
@@ -1393,10 +1369,9 @@ ${t("birth.topic")}：${aiQuestion}`;
 
         {/* Gold divider */}
         <div
-          className="hidden sm:block animate-fade-in-up my-8"
-          style={{ animationDelay: "1050ms", opacity: 0 }}
+          className="hidden sm:block animate-fade-in my-8"
         >
-          <div className="mx-auto w-full max-w-md h-px" style={{ background: "linear-gradient(90deg, transparent, var(--gold), transparent)" }} />
+          <div className="mx-auto w-full max-w-md tesla-divider" />
         </div>
 
         {/* Desktop: Premium comprehensive card */}
@@ -1405,8 +1380,7 @@ ${t("birth.topic")}：${aiQuestion}`;
           const isActive = selectedType === ("comprehensive" as DivinationType);
           return (
             <div
-              className="hidden sm:block animate-fade-in-up max-w-2xl mx-auto"
-              style={{ animationDelay: "1100ms", opacity: 0 }}
+              className="hidden sm:block animate-fade-in max-w-2xl mx-auto"
             >
               <button
                 onClick={() => setSelectedType("comprehensive")}
@@ -1414,44 +1388,30 @@ ${t("birth.topic")}：${aiQuestion}`;
               >
                 <div
                   className={`
-                    relative overflow-hidden glass-card-premium
+                    relative overflow-hidden tesla-card-bordered
                     ${isActive
-                      ? "!border-gold/60 !bg-gold/[0.08] !shadow-[0_0_30px_var(--card-shadow)]"
+                      ? "!border-accent/60 !bg-accent/[0.08]"
                       : ""
                     }
                   `}
-                  style={{
-                    backgroundColor: !isActive ? "rgba(var(--glass-rgb), 0.02)" : undefined,
-                    boxShadow: isActive
-                      ? "0 0 30px var(--card-shadow)"
-                      : "0 0 40px rgba(var(--gold-rgb, 201,183,124), 0.06)",
-                  }}
                 >
-                  <div className="h-[2px] transition-all duration-500" style={{ background: "linear-gradient(90deg, transparent, var(--gold), transparent)" }} />
                   <div className="p-6 sm:p-8 flex items-center gap-6">
                     <div className={`text-5xl transition-all duration-500 ${isActive ? "opacity-100" : "opacity-50 group-hover:opacity-70"}`}>
                       {dt.symbol}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className={`font-serif text-xl sm:text-2xl font-semibold tracking-wide transition-colors duration-300 ${isActive ? "text-gold" : "text-cream group-hover:text-gold-bright"}`}>
+                        <h3 className={`text-xl sm:text-2xl font-semibold transition-colors duration-300 ${isActive ? "text-accent" : "text-text-primary"}`}>
                           {dt.title}
                         </h3>
-                        <span className="text-[10px] tracking-[2px] px-2 py-0.5 border border-gold/30 rounded-full text-gold/70 font-display uppercase">
+                        <span className="text-[10px] px-2 py-0.5 border border-accent/30 rounded-full text-accent/70 uppercase">
                           Premium
                         </span>
                       </div>
-                      <p className="font-display text-sm text-stone italic mb-2">{dt.subtitle}</p>
-                      <p className="text-sm text-mist/70 leading-relaxed">{dt.description}</p>
+                      <p className="text-sm text-text-tertiary mb-2">{dt.subtitle}</p>
+                      <p className="text-sm text-text-secondary leading-relaxed">{dt.description}</p>
                     </div>
                   </div>
-                  {isActive && (
-                    <div className="absolute top-4 right-4 seal-appear">
-                      <div className="w-8 h-8 rounded-full border-2 border-red-seal/60 flex items-center justify-center">
-                        <div className="w-3 h-3 rounded-full bg-red-seal/80" />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </button>
             </div>
@@ -1463,33 +1423,33 @@ ${t("birth.topic")}：${aiQuestion}`;
       {selectedType && !conversationStarted && (
         <section className="max-w-2xl mx-auto px-6 pb-8">
           {/* Tabs */}
-          <div className="flex gap-1 mb-6 border-b border-gold/10">
+          <div className="flex gap-1 mb-6 border-b border-border-light">
             <button
               onClick={() => setActiveTab("input")}
-              className={`px-4 py-2.5 text-sm font-serif tracking-wide transition-colors border-b-2 -mb-px ${
+              className={`px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px ${
                 activeTab === "input"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-stone/50 hover:text-stone"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-tertiary hover:text-text-secondary"
               }`}
             >
               {t("main.inputTab")}
             </button>
             <button
               onClick={() => setActiveTab("saved")}
-              className={`px-4 py-2.5 text-sm font-serif tracking-wide transition-colors border-b-2 -mb-px ${
+              className={`px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px ${
                 activeTab === "saved"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-stone/50 hover:text-stone"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-tertiary hover:text-text-secondary"
               }`}
             >
               {t("main.savedConversations")}
             </button>
             <button
               onClick={() => setActiveTab("charts")}
-              className={`px-4 py-2.5 text-sm font-serif tracking-wide transition-colors border-b-2 -mb-px ${
+              className={`px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px ${
                 activeTab === "charts"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-stone/50 hover:text-stone"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-tertiary hover:text-text-secondary"
               }`}
             >
               {t("main.savedCharts")}
@@ -1499,8 +1459,8 @@ ${t("birth.topic")}：${aiQuestion}`;
           {activeTab === "input" ? (
             chartPreview ? (
               /* Chart Preview Stage */
-              <div className="space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
-                <div className="gold-line mb-4" />
+              <div className="space-y-6 animate-fade-in">
+                <div className="tesla-divider mb-4" />
 
                 {/* Ziwei visual chart */}
                 {selectedType === "ziwei" && chartPreview.ziweiBirthInfo && (
@@ -1513,9 +1473,9 @@ ${t("birth.topic")}：${aiQuestion}`;
                 )}
 
                 {/* Chart data display */}
-                <div className="border border-gold/10 rounded-lg p-4" style={{ background: "rgba(var(--glass-rgb), 0.02)" }}>
-                  <h3 className="text-sm font-serif text-gold mb-3">{t("main.chartData")}</h3>
-                  <pre className="text-xs text-stone/70 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
+                <div className="border border-border-light rounded-lg p-4">
+                  <h3 className="text-sm text-accent mb-3">{t("main.chartData")}</h3>
+                  <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
                     {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
                   </pre>
                 </div>
@@ -1524,7 +1484,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                 {chartPreview.request.profileId && (
                   <div className="flex justify-center">
                     {chartSaved ? (
-                      <span className="text-xs text-gold-dim/50 flex items-center gap-1.5">
+                      <span className="text-xs text-text-tertiary flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
@@ -1553,7 +1513,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                             );
                           }
                         }}
-                        className="text-xs text-gold-dim/60 hover:text-gold-dim transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-gold/10 rounded-full"
+                        className="text-xs text-accent hover:text-accent transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-accent/20 rounded-full"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
