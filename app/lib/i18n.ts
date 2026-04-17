@@ -422,6 +422,9 @@ const translations: Record<Locale, TranslationSet> = {
 
     // Locale switcher
     "locale.switch": "切換語言",
+    "locale.switchedHistory.title": "已切換語言",
+    "locale.switchedHistory.desc": "歷史對話將保留原語言；之後新的 AI 回覆會改用繁體中文。",
+    "locale.switchedHistory.dismiss": "知道了",
 
     // Error
     "error.prefix": "錯誤",
@@ -976,6 +979,9 @@ const translations: Record<Locale, TranslationSet> = {
     "theme.light": "切换至浅色模式",
     "theme.dark": "切换至深色模式",
     "locale.switch": "切换语言",
+    "locale.switchedHistory.title": "已切换语言",
+    "locale.switchedHistory.desc": "历史对话将保留原语言；之后新的 AI 回复会改用简体中文。",
+    "locale.switchedHistory.dismiss": "知道了",
     "error.prefix": "错误",
     "error.invalidType": "无效的命理类型",
     "error.noApiKey": "AI 引擎尚未设定 API Key",
@@ -1528,6 +1534,9 @@ const translations: Record<Locale, TranslationSet> = {
     "theme.light": "Switch to light mode",
     "theme.dark": "Switch to dark mode",
     "locale.switch": "Switch language",
+    "locale.switchedHistory.title": "Language switched",
+    "locale.switchedHistory.desc": "Existing conversations stay in their original language; new AI replies will use English.",
+    "locale.switchedHistory.dismiss": "Got it",
     "error.prefix": "Error",
     "error.invalidType": "Invalid divination type",
     "error.noApiKey": "API Key not configured for AI engine",
@@ -2080,6 +2089,9 @@ const translations: Record<Locale, TranslationSet> = {
     "theme.light": "ライトモードに切替",
     "theme.dark": "ダークモードに切替",
     "locale.switch": "言語を切替",
+    "locale.switchedHistory.title": "言語を切り替えました",
+    "locale.switchedHistory.desc": "既存の会話は元の言語のままです。以降の AI の応答は日本語になります。",
+    "locale.switchedHistory.dismiss": "了解",
     "error.prefix": "エラー",
     "error.invalidType": "無効な占い方式です",
     "error.noApiKey": "AIエンジンのAPI Keyが未設定です",

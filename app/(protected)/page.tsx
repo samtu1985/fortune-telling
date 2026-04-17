@@ -377,6 +377,7 @@ export default function Home() {
           loading: false,
           streaming: false,
         };
+        try { sessionStorage.setItem("fortune:hasAiHistory", "1"); } catch {}
         setConv((prev) => {
           if (selectedTypeRef.current === type) return { ...conversationsRef.current[type] };
           return prev;
