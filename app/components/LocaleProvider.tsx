@@ -31,7 +31,14 @@ export default function LocaleProvider({ children }: { children: React.ReactNode
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
+    setLocaleState((prev) => {
+      if (prev !== next) {
+        window.dispatchEvent(
+          new CustomEvent("locale:changed", { detail: { from: prev, to: next } }),
+        );
+      }
+      return next;
+    });
     localStorage.setItem("locale", next);
     document.documentElement.lang = next;
   }, []);

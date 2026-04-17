@@ -61,7 +61,7 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
   return (
     <div
       className={`
-        border border-border-light p-1.5 sm:p-2 flex flex-col justify-between min-h-[100px] sm:min-h-[130px] transition-colors
+        border border-border-light p-1.5 sm:p-2 flex flex-col justify-between min-h-[120px] sm:min-h-[140px] transition-colors
         ${isActive ? "bg-accent/10 border-accent/40" : "bg-accent/[0.02]"}
       `}
     >
@@ -71,17 +71,17 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
           majors.map((s, i) => (
             <div key={i} className="flex items-center gap-0.5 flex-wrap">
               <span
-                className={`text-[10px] sm:text-xs font-bold text-text-primary/90 ${
+                className={`text-xs sm:text-sm font-bold text-text-primary/90 ${
                   s.brightness ? BRIGHTNESS_OPACITY[s.brightness] || "" : ""
                 }`}
               >
                 {s.name}
               </span>
               {s.brightness && (
-                <span className="text-[8px] sm:text-[10px] text-text-tertiary/50">{s.brightness}</span>
+                <span className="text-[10px] sm:text-xs text-text-tertiary/60">{s.brightness}</span>
               )}
               {s.mutagen && (
-                <span className={`text-[8px] sm:text-[10px] font-bold ${MUTAGEN_COLORS[s.mutagen] || "text-accent"}`}>
+                <span className={`text-[10px] sm:text-xs font-bold ${MUTAGEN_COLORS[s.mutagen] || "text-accent"}`}>
                   {s.mutagen}
                 </span>
               )}
@@ -94,7 +94,7 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
         {minors.length > 0 && (
           <div className="flex flex-wrap gap-x-1 mt-0.5">
             {minors.slice(0, 4).map((s, i) => (
-              <span key={i} className="text-[8px] sm:text-[9px] text-text-tertiary/50">
+              <span key={i} className="text-[10px] sm:text-[11px] text-text-tertiary/60">
                 {s.name}
                 {s.mutagen && (
                   <span className={`${MUTAGEN_COLORS[s.mutagen] || ""}`}>{s.mutagen}</span>
@@ -102,7 +102,7 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
               </span>
             ))}
             {minors.length > 4 && (
-              <span className="text-[8px] text-text-tertiary/30">+{minors.length - 4}</span>
+              <span className="text-[10px] text-text-tertiary/40">+{minors.length - 4}</span>
             )}
           </div>
         )}
@@ -111,19 +111,19 @@ function PalaceCell({ palace, isActive }: { palace: PalaceData; isActive: boolea
       {/* Footer: palace name + branch */}
       <div className="flex items-end justify-between mt-1">
         <div className="flex items-center gap-0.5">
-          <span className={`text-[10px] sm:text-xs ${isActive ? "text-accent font-bold" : "text-accent/70"}`}>
+          <span className={`text-xs sm:text-sm ${isActive ? "text-accent font-bold" : "text-accent/70"}`}>
             {palace.name}
           </span>
           {palace.isBodyPalace && (
-            <span className="text-[7px] sm:text-[8px] px-0.5 bg-accent/20 text-accent rounded">身</span>
+            <span className="text-[10px] px-1 bg-accent/20 text-accent rounded">身</span>
           )}
         </div>
         <div className="text-right">
-          <span className="text-[8px] sm:text-[9px] text-text-tertiary/40">
+          <span className="text-[10px] sm:text-xs text-text-tertiary/50">
             {palace.heavenlyStem}{palace.earthlyBranch}
           </span>
           {palace.decadal?.range && (
-            <div className="text-[7px] sm:text-[8px] text-text-tertiary/30">
+            <div className="text-[10px] text-text-tertiary/40">
               {palace.decadal.range[0]}-{palace.decadal.range[1]}
             </div>
           )}
@@ -291,8 +291,8 @@ function ZiweiChartInner({ birthday, birthTime, gender, birthdayType }: ZiweiCha
   }
 
   return (
-    <div className="my-4 rounded-lg border border-border-light overflow-hidden">
-      <div className="grid grid-cols-4 grid-rows-4">
+    <div className="my-4 rounded-lg border border-border-light overflow-x-auto">
+      <div className="grid grid-cols-4 grid-rows-4 min-w-[480px]">
         {grid.flatMap((row, r) =>
           row.map((cell, c) => {
             if (!cell) return null;
