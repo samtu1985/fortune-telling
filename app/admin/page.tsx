@@ -793,7 +793,14 @@ export default function AdminPage() {
             <p className="text-xs text-text-tertiary mt-0.5">
               {t("admin.registeredOn")} {new Date(user.createdAt).toLocaleDateString("zh-TW")}
             </p>
-            {((user.singleCredits ?? 0) > 0 || (user.multiCredits ?? 0) > 0) && (
+            {(user.isFriend || user.isAmbassador) ? (
+              <p className="text-[10px] text-text-tertiary mt-0.5">
+                {t("admin.userCredits")}: {t("admin.userCreditsUnlimited", {
+                  s: String(user.singleUsed ?? 0),
+                  m: String(user.multiUsed ?? 0),
+                })}
+              </p>
+            ) : ((user.singleCredits ?? 0) > 0 || (user.multiCredits ?? 0) > 0) && (
               <p className="text-[10px] text-text-tertiary mt-0.5">
                 {t("admin.userCredits")}: S {user.singleUsed ?? 0}/{user.singleCredits ?? 0} | M {user.multiUsed ?? 0}/{user.multiCredits ?? 0}
               </p>
