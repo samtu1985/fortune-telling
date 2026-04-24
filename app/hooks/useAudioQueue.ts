@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 
-type MasterType = "bazi" | "ziwei" | "zodiac";
+type MasterType = "bazi" | "ziwei" | "zodiac" | "humandesign";
 
 export interface AudioSegment {
   masterKey: MasterType;
