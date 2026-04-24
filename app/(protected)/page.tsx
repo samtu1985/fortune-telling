@@ -59,6 +59,7 @@ type Profile = {
     bazi?: string;
     ziwei?: string;
     zodiac?: string;
+    humandesign?: string | Record<string, unknown>;
   };
 };
 
@@ -70,13 +71,13 @@ type ConversationState = {
   loading: boolean;
   ziweiBirthInfo?: ZiweiBirthInfo;
   humanDesignBirthInfo?: HumanDesignBirthInfo;
-  chartData?: string;
+  chartData?: string | Record<string, unknown>;
   profileId?: string;
   profileLabel?: string;
 };
 
 type ChartPreview = {
-  chart: string;
+  chart: string | Record<string, unknown>;
   request: ChartRequest;
   ziweiBirthInfo?: ZiweiBirthInfo;
   humanDesignBirthInfo?: HumanDesignBirthInfo;
@@ -592,7 +593,7 @@ ${t("birth.topic")}：${aiQuestion}`;
 
   // Start AI conversation directly from a saved chart
   const handleStartFromSavedChart = useCallback(
-    (profile: Profile, chart: string) => {
+    (profile: Profile, chart: string | Record<string, unknown>) => {
       if (!selectedType || selectedType === "comprehensive") return;
       // Set up chart preview with the saved chart data, then let user enter question
       const request: ChartRequest = {
@@ -1611,7 +1612,7 @@ ${t("birth.topic")}：${aiQuestion}`;
           ) : activeTab === "saved" ? (
             <SavedConversations type={selectedType as "bazi" | "ziwei" | "zodiac"} />
           ) : (
-            <SavedCharts type={selectedType as "bazi" | "ziwei" | "zodiac"} profiles={profiles} onStartChat={handleStartFromSavedChart} />
+            <SavedCharts type={selectedType as "bazi" | "ziwei" | "zodiac" | "humandesign"} profiles={profiles} onStartChat={handleStartFromSavedChart} />
           )}
         </section>
       )}
