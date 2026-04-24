@@ -984,10 +984,10 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-6">
-        <div className="flex gap-1 border-b border-border-light">
+        <div className="flex gap-1 border-b border-border-light overflow-x-auto">
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "users"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1005,7 +1005,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("ai")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "ai"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1018,7 +1018,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("tts")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "tts" ? "text-accent" : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
@@ -1029,7 +1029,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("usage")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "usage"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1042,7 +1042,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("cases")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "cases"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1055,7 +1055,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("feedback")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "feedback"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1073,7 +1073,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("payments")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "payments"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1086,7 +1086,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("integrations")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "integrations"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
