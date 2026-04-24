@@ -47,7 +47,9 @@ export default function IntegrationsTab() {
     const existing = rows.find((r) => r.service === key);
     if (existing) return existing;
     const defaultUrl = SERVICES.find((s) => s.key === key)?.defaultUrl ?? "";
-    return { service: key, apiUrl: defaultUrl, apiKey: "", hasKey: false, enabled: false, metadata: null };
+    // Default enabled=true for a first-time configuration — if admin is
+    // configuring the integration at all, they almost certainly want it active.
+    return { service: key, apiUrl: defaultUrl, apiKey: "", hasKey: false, enabled: true, metadata: null };
   }
 
   function updateLocal(key: string, patch: Partial<IntegrationRow>) {
@@ -65,25 +67,19 @@ export default function IntegrationsTab() {
     try {
       const row = getOrDefault(service);
       const keyToSend = editingKey[service];
-      // If the editing input was touched, send that. Otherwise preserve the stored key by omitting apiKey
-      // (the server currently overwrites — so if the user hasn't entered a new key, we must send empty string
-      //  to indicate "clear", OR keep whatever the server has by doing a GET-then-PATCH. For v1 we require
-      //  re-entry on save: if no edit made and hasKey is true, send an empty string only when user explicitly
-      //  clears. Simplest UX: require re-entry to save a new key, otherwise preserve by fetching twice — keep
-      //  v1 simple: always send what's in the edit buffer; if buffer is undefined and hasKey is true, skip
-      //  the save and show a hint.)
-      if (keyToSend === undefined && row.hasKey) {
-        // Only other fields may have changed. To preserve the stored key we need server support for
-        // partial update. For v1, force re-entry.
-        setTestResults((s) => ({ ...s, [service]: { ok: false, code: "reenter_key", message: "請重新輸入 API 金鑰以儲存變更" } }));
-        return;
-      }
-      const payload = {
+      // Server preserves the existing key when `apiKey` is omitted from the payload.
+      // Only include it when the admin actually typed something in the key field,
+      // or when there's no stored key yet (first-time save can write the empty string).
+      const payload: Record<string, unknown> = {
         service,
         apiUrl: row.apiUrl,
-        apiKey: keyToSend ?? "",
         enabled: row.enabled,
       };
+      if (keyToSend !== undefined) {
+        payload.apiKey = keyToSend;
+      } else if (!row.hasKey) {
+        payload.apiKey = "";
+      }
       const res = await fetch("/api/admin/integrations", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

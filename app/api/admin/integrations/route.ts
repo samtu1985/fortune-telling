@@ -4,6 +4,7 @@ import {
   listIntegrations,
   upsertIntegration,
   deleteIntegration,
+  getIntegration,
 } from "@/app/lib/integration-settings";
 
 const VALID_SERVICES = new Set(["humandesign"]);
@@ -49,10 +50,18 @@ export async function PUT(req: Request) {
     return Response.json({ error: `Invalid service: ${service}` }, { status: 400 });
   }
   const apiUrl = typeof body.apiUrl === "string" ? body.apiUrl : "";
-  const apiKey = typeof body.apiKey === "string" ? body.apiKey : "";
   const enabled = !!body.enabled;
   if (!apiUrl) {
     return Response.json({ error: "apiUrl required" }, { status: 400 });
+  }
+  // If the client omits apiKey entirely, preserve the existing encrypted key.
+  // If the client sends apiKey (even ""), treat as explicit write.
+  let apiKey: string;
+  if ("apiKey" in body) {
+    apiKey = typeof body.apiKey === "string" ? body.apiKey : "";
+  } else {
+    const existing = await getIntegration(service);
+    apiKey = existing?.apiKey ?? "";
   }
   await upsertIntegration({ service, apiUrl, apiKey, enabled });
   return Response.json({ ok: true });
