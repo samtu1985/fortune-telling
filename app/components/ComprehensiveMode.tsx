@@ -1186,24 +1186,37 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
               onChange={(e) => setAiQuestion(e.target.value)}
               placeholder="例：事業方向、感情發展、近期運勢..."
             />
-            {/* Podcast mode toggle */}
-                <div className="flex items-center gap-3 mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setPodcastMode(!podcastMode)}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${
-                      podcastMode ? "bg-accent/40" : "bg-bg-secondary"
+            {/* Podcast mode toggle — full-width clickable card, high contrast */}
+                <button
+                  type="button"
+                  onClick={() => setPodcastMode(!podcastMode)}
+                  className={`flex items-center gap-3 mt-3 w-full p-3 rounded-lg border transition-colors text-left ${
+                    podcastMode
+                      ? "border-accent bg-accent/10 hover:bg-accent/15"
+                      : "border-border-light bg-bg-secondary/40 hover:border-accent/50 hover:bg-bg-secondary/60"
+                  }`}
+                >
+                  <span
+                    className={`relative w-11 h-6 rounded-full shrink-0 transition-colors ${
+                      podcastMode ? "bg-accent" : "bg-text-tertiary/50 border border-border-light"
                     }`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-cream transition-transform ${
-                      podcastMode ? "translate-x-5" : ""
-                    }`} />
-                  </button>
-                  <div>
-                    <span className="text-sm text-text-primary">{t("podcast.toggle")}</span>
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        podcastMode ? "translate-x-5" : ""
+                      }`}
+                    />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm ${podcastMode ? "text-accent font-medium" : "text-text-primary"}`}>
+                      {t("podcast.toggle")}
+                    </span>
                     <p className="text-[10px] text-text-placeholder">{t("podcast.toggleHint")}</p>
                   </div>
-                </div>
+                  <span className={`text-xs font-medium shrink-0 ${podcastMode ? "text-accent" : "text-text-tertiary"}`}>
+                    {podcastMode ? "ON" : "OFF"}
+                  </span>
+                </button>
             <button
               onClick={handleStartDiscussion}
               disabled={!aiQuestion.trim() || !charts.bazi}
