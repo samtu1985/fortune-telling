@@ -118,6 +118,7 @@ const translations: Record<Locale, TranslationSet> = {
     "main.defaultQuestion": "我的命運",
     "main.chartSavedTo": "命盤已保存至",
     "main.saveChartTo": "保存命盤至",
+    "main.saveChartTo.humandesign": "保存設計圖至",
     "main.connectionInterrupted": "（連線中斷，以上為已接收的部分回應。可透過追問繼續。）",
     "main.connectionError": "連線錯誤",
     "main.chartGenFailed": "命盤生成失敗",
@@ -158,6 +159,7 @@ const translations: Record<Locale, TranslationSet> = {
     "form.profileCount": "已保存 {count}/10 筆",
     "form.generating": "生成中...",
     "form.showChart": "顯示命盤",
+    "form.showChart.humandesign": "顯示設計圖",
     "form.required": "*",
 
     // Zodiac signs
@@ -701,6 +703,7 @@ const translations: Record<Locale, TranslationSet> = {
     "main.defaultQuestion": "我的命运",
     "main.chartSavedTo": "命盘已保存至",
     "main.saveChartTo": "保存命盘至",
+    "main.saveChartTo.humandesign": "保存设计图至",
     "main.connectionInterrupted": "（连线中断，以上为已接收的部分回应。可透过追问继续。）",
     "main.connectionError": "连线错误",
     "main.chartGenFailed": "命盘生成失败",
@@ -740,6 +743,7 @@ const translations: Record<Locale, TranslationSet> = {
     "form.profileCount": "已保存 {count}/10 笔",
     "form.generating": "生成中...",
     "form.showChart": "显示命盘",
+    "form.showChart.humandesign": "显示设计图",
     "form.required": "*",
 
     "zodiac.aries": "白羊座",
@@ -1266,6 +1270,7 @@ const translations: Record<Locale, TranslationSet> = {
     "main.defaultQuestion": "My destiny",
     "main.chartSavedTo": "Chart saved to",
     "main.saveChartTo": "Save chart to",
+    "main.saveChartTo.humandesign": "Save energy design to",
     "main.connectionInterrupted": "(Connection interrupted. Partial response shown above. You can continue by asking a follow-up.)",
     "main.connectionError": "Connection error",
     "main.chartGenFailed": "Chart generation failed",
@@ -1305,6 +1310,7 @@ const translations: Record<Locale, TranslationSet> = {
     "form.profileCount": "{count}/10 saved",
     "form.generating": "Generating...",
     "form.showChart": "Show chart",
+    "form.showChart.humandesign": "Show energy design",
     "form.required": "*",
 
     "zodiac.aries": "Aries",
@@ -1831,6 +1837,7 @@ const translations: Record<Locale, TranslationSet> = {
     "main.defaultQuestion": "私の運命",
     "main.chartSavedTo": "命盤を保存しました",
     "main.saveChartTo": "命盤を保存",
+    "main.saveChartTo.humandesign": "エネルギーデザインを保存",
     "main.connectionInterrupted": "（接続が中断されました。上記は受信済みの部分です。追加質問で続けられます。）",
     "main.connectionError": "接続エラー",
     "main.chartGenFailed": "命盤生成に失敗しました",
@@ -1870,6 +1877,7 @@ const translations: Record<Locale, TranslationSet> = {
     "form.profileCount": "{count}/10 件保存済み",
     "form.generating": "生成中...",
     "form.showChart": "命盤を表示",
+    "form.showChart.humandesign": "エネルギーデザインを表示",
     "form.required": "*",
 
     "zodiac.aries": "牡羊座",

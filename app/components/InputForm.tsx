@@ -439,7 +439,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             {t("form.generating")}
           </span>
         ) : (
-          t("form.showChart")
+          t(type === "humandesign" ? "form.showChart.humandesign" : "form.showChart")
         )}
       </button>
     </form>
