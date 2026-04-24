@@ -144,6 +144,7 @@ export default function Home() {
     bazi: { ...emptyConversation },
     ziwei: { ...emptyConversation },
     zodiac: { ...emptyConversation },
+    humandesign: { ...emptyConversation },
     comprehensive: { ...emptyConversation },
   });
 
