@@ -1,3 +1,9 @@
+/**
+ * @deprecated v1 uses humandesignhub's official /v1/prompt/bodygraph-image
+ * endpoint via HumanDesignChartLoader instead. This custom SVG renderer
+ * did not achieve canonical bodygraph fidelity and is retained only so
+ * existing snapshot tests keep passing until we clean them up in v2.
+ */
 "use client";
 
 import type { HumanDesignChartData } from "@/app/lib/humandesign/types";

@@ -74,3 +74,42 @@ export async function fetchBodygraph(
     clearTimeout(timer);
   }
 }
+
+export async function fetchBodygraphImage(
+  cfg: ClientConfig,
+  input: HumanDesignInput,
+): Promise<ArrayBuffer> {
+  if (!cfg.apiKey) throw new HumanDesignApiError("not_configured", "API key missing");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15_000);
+  try {
+    const res = await fetch(`${cfg.apiUrl.replace(/\/$/, "")}/prompt/bodygraph-image`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": cfg.apiKey,
+      },
+      body: JSON.stringify({
+        datetime: formatDateTime(input),
+        city: input.city,
+      }),
+      signal: controller.signal,
+    });
+    if (res.status === 401 || res.status === 403) {
+      throw new HumanDesignApiError("auth", `humandesignhub ${res.status}`);
+    }
+    if (res.status === 400 || res.status === 422) {
+      const body = await res.text().catch(() => "");
+      throw new HumanDesignApiError("invalid_input", `humandesignhub ${res.status}: ${body.slice(0, 200)}`);
+    }
+    if (!res.ok) {
+      throw new HumanDesignApiError("unavailable", `humandesignhub ${res.status}`);
+    }
+    return await res.arrayBuffer();
+  } catch (e) {
+    if (e instanceof HumanDesignApiError) throw e;
+    throw new HumanDesignApiError("unavailable", "image request failed", e);
+  } finally {
+    clearTimeout(timer);
+  }
+}
