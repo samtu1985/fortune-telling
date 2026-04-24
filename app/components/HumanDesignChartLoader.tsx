@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { HumanDesignChartData } from "@/app/lib/humandesign/types";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { localizeHdTerm } from "@/app/lib/humandesign/localize";
 
 interface BirthInfo {
   birthDate: string; // "YYYY-MM-DD"
@@ -14,7 +15,7 @@ interface BirthInfo {
 }
 
 export default function HumanDesignChartLoader({ birthInfo }: { birthInfo: BirthInfo }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [chart, setChart] = useState<HumanDesignChartData | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -115,21 +116,23 @@ export default function HumanDesignChartLoader({ birthInfo }: { birthInfo: Birth
   if (!chart || !imageUrl) return null;
 
   const s = chart.summary;
-  const summaryItems: Array<[string, string]> = [
-    ["Type", s.type],
-    ["Strategy", s.strategy],
-    ["Authority", s.authority],
-    ["Profile", s.profile],
-    ["Definition", s.definition],
+  const summaryItems: Array<{ labelKey: string; value: string }> = [
+    { labelKey: "humandesign.label.type",       value: localizeHdTerm(locale, "type", s.type) },
+    { labelKey: "humandesign.label.strategy",   value: localizeHdTerm(locale, "strategy", s.strategy) },
+    { labelKey: "humandesign.label.authority",  value: localizeHdTerm(locale, "authority", s.authority) },
+    { labelKey: "humandesign.label.profile",    value: s.profile },
+    { labelKey: "humandesign.label.definition", value: localizeHdTerm(locale, "definition", s.definition) },
+    { labelKey: "humandesign.label.signature",  value: localizeHdTerm(locale, "signature", s.signature) },
+    { labelKey: "humandesign.label.notSelf",    value: localizeHdTerm(locale, "notSelf", s.notSelfTheme) },
   ];
 
   return (
     <div className="w-full max-w-[640px] mx-auto space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 rounded-sm border border-border-light bg-bg-secondary">
-        {summaryItems.map(([k, v]) => (
-          <div key={k} className="text-xs">
-            <div className="text-text-tertiary uppercase tracking-wide">{k}</div>
-            <div className="mt-0.5 text-sm font-medium text-text-primary">{v}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-sm border border-border-light bg-bg-secondary">
+        {summaryItems.map(({ labelKey, value }) => (
+          <div key={labelKey} className="text-xs">
+            <div className="text-text-tertiary uppercase tracking-wide">{t(labelKey)}</div>
+            <div className="mt-0.5 text-sm font-medium text-text-primary">{value || "—"}</div>
           </div>
         ))}
       </div>
