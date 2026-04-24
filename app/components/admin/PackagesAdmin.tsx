@@ -523,7 +523,7 @@ export default function PackagesAdmin() {
                 </div>
                 <div>
                   <label className="block text-xs text-text-secondary mb-1">
-                    三師論道 +M
+                    眾師論道 +M
                   </label>
                   <input
                     type="number"

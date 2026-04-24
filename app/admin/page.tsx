@@ -2023,7 +2023,7 @@ export default function AdminPage() {
                             <th className="py-2 pr-3 whitespace-nowrap">贈送者</th>
                             <th className="py-2 pr-3 whitespace-nowrap">接收者</th>
                             <th className="py-2 pr-3 whitespace-nowrap">個別</th>
-                            <th className="py-2 pr-3 whitespace-nowrap">三師</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">眾師</th>
                             <th className="py-2 pr-3 whitespace-nowrap">模式</th>
                           </tr>
                         </thead>

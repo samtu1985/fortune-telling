@@ -789,7 +789,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       const header = `
         <div style="text-align:center;margin-bottom:32px;">
           <h1 style="color:#7a5c10;font-size:28px;margin:0;">天機 FortuneFor.me</h1>
-          <p style="color:#847b72;font-size:13px;margin-top:4px;">三師論道 — ${t("comprehensive.discussionEnded")}</p>
+          <p style="color:#847b72;font-size:13px;margin-top:4px;">眾師論道 — ${t("comprehensive.discussionEnded")}</p>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,#7a5c10,transparent);margin:16px auto;"></div>
         </div>`;
 
@@ -996,7 +996,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
         <header className="pt-16 pb-8 px-6 text-center">
           <h1 className="text-3xl font-bold tracking-[0.15em] text-accent">
-            三師論道
+            眾師論道
           </h1>
           <p className="mt-2 text-sm text-text-tertiary">Comprehensive Analysis</p>
           <div className="mx-auto mt-4 w-24 tesla-divider" />
@@ -1048,7 +1048,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
         <header className="pt-16 pb-6 px-6 text-center">
           <h1 className="text-2xl font-bold tracking-[0.15em] text-accent">
-            三師論道 — 命盤總覽
+            眾師論道 — 命盤總覽
           </h1>
           <div className="mx-auto mt-4 w-24 tesla-divider" />
         </header>
@@ -1152,7 +1152,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <h1
           className="text-xl font-bold tracking-[0.15em] text-accent justify-self-center text-center truncate"
         >
-          三師論道
+          眾師論道
         </h1>
 
         <div className="flex items-center gap-2 justify-self-end">

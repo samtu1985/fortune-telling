@@ -129,7 +129,7 @@ export async function sendTrialNotification(
       <p>您收到了免費體驗額度：</p>
       <ul>
         <li><strong>個別問答（八字/紫微/星座）：</strong>${singleCredits} 輪</li>
-        <li><strong>三師論道：</strong>${multiCredits} 次</li>
+        <li><strong>眾師論道：</strong>${multiCredits} 次</li>
       </ul>
       <p>額度已加入您的帳戶，登入後點擊右上角頭像，即可查詢剩餘免費體驗次數。</p>
       <p style="text-align: center; margin: 24px 0;">
@@ -297,8 +297,8 @@ export async function sendPurchaseAdminNotification(
         <li><strong>使用者：</strong>${userEmailEsc}</li>
         <li><strong>方案：</strong>${pkgNameEsc}</li>
         <li><strong>金額：</strong>${amountStr}</li>
-        <li><strong>新增額度：</strong>個別 +${pkg.singleCreditsGranted} / 三師 +${pkg.multiCreditsGranted}</li>
-        <li><strong>目前剩餘：</strong>個別 ${remainingSingle} / 三師 ${remainingMulti}</li>
+        <li><strong>新增額度：</strong>個別 +${pkg.singleCreditsGranted} / 眾師 +${pkg.multiCreditsGranted}</li>
+        <li><strong>目前剩餘：</strong>個別 ${remainingSingle} / 眾師 ${remainingMulti}</li>
         <li><strong>Stripe：</strong><a href="${stripeUrl}">${stripeSessionId}</a></li>
       </ul>
     </div>
@@ -339,8 +339,8 @@ export async function sendRefundAdminNotification(
         <li><strong>方案：</strong>${pkgNameEsc}</li>
         <li><strong>原購買時間：</strong>${purchase.createdAt.toISOString()}</li>
         <li><strong>金額：</strong>${amountStr}</li>
-        <li><strong>扣除額度：</strong>個別 -${purchase.singleGranted} / 三師 -${purchase.multiGranted}（保留已使用次數）</li>
-        <li><strong>使用者剩餘：</strong>個別 ${remainingSingle} / 三師 ${remainingMulti}</li>
+        <li><strong>扣除額度：</strong>個別 -${purchase.singleGranted} / 眾師 -${purchase.multiGranted}（保留已使用次數）</li>
+        <li><strong>使用者剩餘：</strong>個別 ${remainingSingle} / 眾師 ${remainingMulti}</li>
         ${stripeUrl ? `<li><strong>Stripe：</strong><a href="${stripeUrl}">查看</a></li>` : ""}
       </ul>
     </div>
@@ -371,7 +371,7 @@ export async function sendTrialInvitation(
       <p>為您準備的免費體驗額度：</p>
       <ul>
         <li><strong>個別問答（八字/紫微/星座）：</strong>${singleCredits} 輪</li>
-        <li><strong>三師論道：</strong>${multiCredits} 次</li>
+        <li><strong>眾師論道：</strong>${multiCredits} 次</li>
       </ul>
       <p>註冊帳號並通過審核後，額度將自動加入您的帳戶。登入後點擊右上角頭像，即可查詢剩餘免費體驗次數。</p>
       <p style="text-align: center; margin: 24px 0;">
