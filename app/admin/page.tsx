@@ -115,6 +115,7 @@ export default function AdminPage() {
     { key: "bazi", label: t("master.bazi") },
     { key: "ziwei", label: t("master.ziwei") },
     { key: "zodiac", label: t("master.zodiac") },
+    { key: "humandesign", label: t("master.humandesign") },
   ], [t]);
 
   const EFFORT_OPTIONS = useMemo(() => [
@@ -1785,7 +1786,7 @@ export default function AdminPage() {
               )}
 
               <div className="space-y-6">
-                {["bazi", "ziwei", "zodiac"].map((master) => (
+                {["bazi", "ziwei", "zodiac", "humandesign"].map((master) => (
                   <div key={master}>
                     <p className="text-xs text-text-primary font-medium mb-2">{t(`master.${master}` as string)}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
