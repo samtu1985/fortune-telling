@@ -1393,7 +1393,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         )}
 
         {/* Desktop: Basic type cards */}
-        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="hidden sm:grid sm:grid-cols-2 gap-5">
           {DIVINATION_TYPES.filter((dt) => dt.id !== "comprehensive").map((dt, i) => (
             <DivinationCard
               key={dt.id}
