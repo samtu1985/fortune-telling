@@ -10,7 +10,7 @@ import {
   GATE_TO_CENTER,
   CANONICAL_CHANNELS,
   gateAnchor,
-} from "@/app/lib/humandesign/layout";
+} from "@/app/lib/humandesign/bodygraph-layout";
 
 interface Props {
   chart: HumanDesignChartData;
