@@ -10,6 +10,7 @@ import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
 import ZiweiChart from "@/app/components/ZiweiChart";
+import HumanDesignChartLoader from "@/app/components/HumanDesignChartLoader";
 import MentionDropdown from "@/app/components/MentionDropdown";
 import SavedCharts from "@/app/components/SavedCharts";
 import ComprehensiveMode from "@/app/components/ComprehensiveMode";
@@ -28,6 +29,14 @@ type ZiweiBirthInfo = {
   birthTime: number;
   gender: "男" | "女";
   birthdayType: "lunar" | "solar";
+};
+
+type HumanDesignBirthInfo = {
+  birthDate: string;
+  birthTime: string;
+  birthPlace: string;
+  calendarType: "solar" | "lunar";
+  isLeapMonth: boolean;
 };
 
 type Message = {
@@ -60,6 +69,7 @@ type ConversationState = {
   streaming: boolean;
   loading: boolean;
   ziweiBirthInfo?: ZiweiBirthInfo;
+  humanDesignBirthInfo?: HumanDesignBirthInfo;
   chartData?: string;
   profileId?: string;
   profileLabel?: string;
@@ -69,6 +79,7 @@ type ChartPreview = {
   chart: string;
   request: ChartRequest;
   ziweiBirthInfo?: ZiweiBirthInfo;
+  humanDesignBirthInfo?: HumanDesignBirthInfo;
 };
 
 const emptyConversation: ConversationState = {
@@ -500,7 +511,18 @@ export default function Home() {
           };
         }
 
-        setChartPreview({ chart, request, ziweiBirthInfo });
+        let humanDesignBirthInfo: HumanDesignBirthInfo | undefined;
+        if (request.type === "humandesign") {
+          humanDesignBirthInfo = {
+            birthDate: request.birthDate,
+            birthTime: request.birthTime,
+            birthPlace: request.birthPlace,
+            calendarType: request.calendarType === "lunar" ? "lunar" : "solar",
+            isLeapMonth: !!request.isLeapMonth,
+          };
+        }
+
+        setChartPreview({ chart, request, ziweiBirthInfo, humanDesignBirthInfo });
         setAiQuestion(t("main.defaultQuestion"));
       } finally {
         setChartLoading(false);
@@ -515,7 +537,7 @@ export default function Home() {
       if (!selectedType || !chartPreview) return;
       isNearBottomRef.current = true;
       const type = selectedType;
-      const { chart, request, ziweiBirthInfo } = chartPreview;
+      const { chart, request, ziweiBirthInfo, humanDesignBirthInfo } = chartPreview;
 
       const isChineseType = type === "bazi" || type === "ziwei";
       const shichen = isChineseType ? timeToShichen(request.birthTime) : "";
@@ -543,6 +565,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         ...conversationsRef.current[type],
         messages: [userMsg],
         ziweiBirthInfo,
+        humanDesignBirthInfo,
         chartData: chart,
         profileId: request.profileId,
         profileLabel: request.profileLabel,
@@ -551,6 +574,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         ...prev,
         messages: [userMsg],
         ziweiBirthInfo,
+        humanDesignBirthInfo,
         chartData: chart,
         profileId: request.profileId,
         profileLabel: request.profileLabel,
@@ -606,7 +630,18 @@ ${t("birth.topic")}：${aiQuestion}`;
         };
       }
 
-      setChartPreview({ chart, request, ziweiBirthInfo });
+      let humanDesignBirthInfo: HumanDesignBirthInfo | undefined;
+      if (selectedType === "humandesign") {
+        humanDesignBirthInfo = {
+          birthDate: profile.birthDate,
+          birthTime: profile.birthTime,
+          birthPlace: profile.birthPlace,
+          calendarType: (profile.calendarType || "solar") === "lunar" ? "lunar" : "solar",
+          isLeapMonth: !!profile.isLeapMonth,
+        };
+      }
+
+      setChartPreview({ chart, request, ziweiBirthInfo, humanDesignBirthInfo });
       setChartSaved(true); // Already saved
       setAiQuestion(t("main.defaultQuestion"));
       setActiveTab("input");
@@ -971,6 +1006,10 @@ ${t("birth.topic")}：${aiQuestion}`;
                 gender={conv.ziweiBirthInfo.gender}
                 birthdayType={conv.ziweiBirthInfo.birthdayType}
               />
+            )}
+            {/* Visual human design chart */}
+            {selectedType === "humandesign" && conv.humanDesignBirthInfo && (
+              <HumanDesignChartLoader birthInfo={conv.humanDesignBirthInfo} />
             )}
             {conv.messages.map((msg, i) =>
               msg.role === "user" ? (
@@ -1474,13 +1513,20 @@ ${t("birth.topic")}：${aiQuestion}`;
                   />
                 )}
 
-                {/* Chart data display */}
-                <div className="border border-border-light rounded-lg p-4">
-                  <h3 className="text-sm text-accent mb-3">{t("main.chartData")}</h3>
-                  <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
-                    {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
-                  </pre>
-                </div>
+                {/* Human design visual chart */}
+                {selectedType === "humandesign" && chartPreview.humanDesignBirthInfo && (
+                  <HumanDesignChartLoader birthInfo={chartPreview.humanDesignBirthInfo} />
+                )}
+
+                {/* Chart data display (text-based charts only — humandesign uses visual loader) */}
+                {selectedType !== "humandesign" && typeof chartPreview.chart === "string" && (
+                  <div className="border border-border-light rounded-lg p-4">
+                    <h3 className="text-sm text-accent mb-3">{t("main.chartData")}</h3>
+                    <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
+                      {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
+                    </pre>
+                  </div>
+                )}
 
                 {/* Save chart to profile */}
                 {chartPreview.request.profileId && (
