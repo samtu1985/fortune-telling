@@ -8,6 +8,7 @@ import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 import PaymentsTab from "@/app/components/admin/PaymentsTab";
+import IntegrationsTab from "@/app/components/admin/IntegrationsTab";
 
 interface UserItem {
   email: string;
@@ -57,7 +58,7 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback" | "payments";
+type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback" | "payments" | "integrations";
 
 interface FeedbackItem {
   id: number;
@@ -133,7 +134,7 @@ export default function AdminPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback" || tab === "payments") {
+      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback" || tab === "payments" || tab === "integrations") {
         return tab;
       }
     }
@@ -1079,6 +1080,19 @@ export default function AdminPage() {
           >
             付款管理
             {activeTab === "payments" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("integrations")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === "integrations"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            第三方整合
+            {activeTab === "integrations" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
@@ -2355,6 +2369,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === "payments" && <PaymentsTab />}
+        {activeTab === "integrations" && <IntegrationsTab />}
       </section>
 
       <SiteFooter />
