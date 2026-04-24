@@ -153,8 +153,7 @@ export default function AdminPage() {
   const [usageRange, setUsageRange] = useState("1m");
   const [usageData, setUsageData] = useState<{
     summary: { totalCalls: number; totalInputTokens: number; totalOutputTokens: number };
-    byUser: { email: string; name: string | null; image: string | null; calls: number; inputTokens: number; outputTokens: number; models: Record<string, number> }[];
-    tts?: { calls: number; characters: number; models: string[] };
+    byUser: { email: string; name: string | null; image: string | null; calls: number; inputTokens: number; outputTokens: number; models: Record<string, number>; tts: { calls: number; characters: number; models: string[] } | null }[];
   } | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
 
@@ -1977,25 +1976,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* TTS (ElevenLabs) stats */}
-                {usageData.tts && usageData.tts.calls > 0 && (
-                  <div className="mb-6 rounded-lg border border-violet-400/15 p-4" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
-                      <span className="text-sm font-medium text-violet-400">ElevenLabs TTS</span>
-                    </div>
-                    <div className="flex gap-6 text-xs text-text-tertiary">
-                      <span>Calls: <span className="text-text-primary font-medium">{usageData.tts.calls}</span></span>
-                      <span>Characters: <span className="text-text-primary font-medium">{formatTokens(usageData.tts.characters)}</span></span>
-                      <span title="此區間內曾使用過的所有模型，並非當前設定">
-                        此區間用過: <span className="text-text-primary">{usageData.tts.models.join(", ") || "-"}</span>
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Credit grants audit log */}
                 <div className="mb-6 rounded-lg border border-border-light p-4" style={{ backgroundColor: "rgba(var(--glass-rgb), 0.02)" }}>
                   <div className="flex items-center justify-between mb-3">
@@ -2106,6 +2086,17 @@ export default function AdminPage() {
                           <span>Input: <span className="text-text-primary">{formatTokens(user.inputTokens)}</span></span>
                           <span>Output: <span className="text-text-primary">{formatTokens(user.outputTokens)}</span></span>
                         </div>
+                        {user.tts && (
+                          <p className="text-[11px] text-violet-400 mt-1">
+                            TTS · Calls: <span className="text-text-primary">{user.tts.calls}</span>
+                            {"  "}· Characters: <span className="text-text-primary">{formatTokens(user.tts.characters)}</span>
+                            {user.tts.models.length > 0 && (
+                              <>
+                                {"  "}· <span className="text-text-tertiary">{user.tts.models.join(", ")}</span>
+                              </>
+                            )}
+                          </p>
+                        )}
                         {Object.keys(user.models).length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {Object.keys(user.models).map((model) => (
