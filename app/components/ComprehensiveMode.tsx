@@ -68,6 +68,12 @@ export default function ComprehensiveMode({
   const [phase, setPhase] = useState<"input" | "charts" | "discussion">("input");
   const [chartLoading, setChartLoading] = useState(false);
   const [charts, setCharts] = useState<{ bazi?: string; ziwei?: string; zodiac?: string; humandesign?: string | Record<string, unknown> }>({});
+  // Object-URL for the humandesign bodygraph PNG. The chart data (above) is a
+  // JSON object; the PNG comes from a separate /api/humandesign/image POST
+  // that streams image/png. Cached as a blob URL so the <img> in both the
+  // pre-discussion card grid and the in-discussion collapsible card renders
+  // without re-fetching.
+  const [humandesignImageUrl, setHumandesignImageUrl] = useState<string | null>(null);
   const [chartRequest, setChartRequest] = useState<ChartRequest | null>(null);
   const [aiQuestion, setAiQuestion] = useState(t("main.defaultQuestion"));
 
@@ -419,6 +425,38 @@ export default function ComprehensiveMode({
           humandesign: results[3] || undefined,
         });
         setPhase("charts");
+
+        // Fetch the humandesign PNG image separately. The /api/humandesign/image
+        // POST streams image/png given birth info; we turn the blob into an
+        // object URL and display it in the chart preview card. Non-fatal if it
+        // fails — the LLM still has the chart data, we just won't show the PNG.
+        (async () => {
+          try {
+            const imgRes = await fetch("/api/humandesign/image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                birthDate: request.birthDate,
+                birthTime: request.birthTime,
+                birthPlace: request.birthPlace,
+                isLunar: request.calendarType === "lunar",
+                isLeapMonth: request.isLeapMonth,
+              }),
+            });
+            if (imgRes.ok) {
+              const blob = await imgRes.blob();
+              const url = URL.createObjectURL(blob);
+              setHumandesignImageUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return url;
+              });
+            } else {
+              console.warn("[comprehensive] humandesign image fetch non-ok:", imgRes.status);
+            }
+          } catch (e) {
+            console.warn("[comprehensive] humandesign image fetch failed:", e);
+          }
+        })();
       } catch {
         alert(t("comprehensive.chartGenFailed"));
       } finally {
@@ -427,6 +465,15 @@ export default function ComprehensiveMode({
     },
     []
   );
+
+  // Release the humandesign blob URL on unmount (and when it's replaced by
+  // a new generation — handled inline in setHumandesignImageUrl above).
+  useEffect(() => {
+    return () => {
+      if (humandesignImageUrl) URL.revokeObjectURL(humandesignImageUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Start the initial discussion round
   const handleStartDiscussion = useCallback(async () => {
@@ -678,6 +725,10 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
     setPodcastMode(false);
     setPhase("input");
     setCharts({});
+    setHumandesignImageUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setChartRequest(null);
     setMessages([]);
     setStreamingContent("");
@@ -1079,8 +1130,15 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                       <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
                         {chart.replace(/<[^>]+>/g, "").trim()}
                       </pre>
+                    ) : m.id === "humandesign" && humandesignImageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={humandesignImageUrl}
+                        alt="Human Design Bodygraph"
+                        className="w-full h-auto rounded"
+                      />
                     ) : (
-                      <p className="text-xs text-text-tertiary">（圖形已生成）</p>
+                      <p className="text-xs text-text-tertiary">載入圖片中…</p>
                     )
                   ) : (
                     <p className="text-xs text-text-placeholder">{t("comprehensive.chartGenFailed")}</p>
@@ -1240,8 +1298,15 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                       <pre className="text-[10px] text-text-tertiary leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
                         {chart.replace(/<[^>]+>/g, "").trim()}
                       </pre>
+                    ) : m.id === "humandesign" && humandesignImageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={humandesignImageUrl}
+                        alt="Human Design Bodygraph"
+                        className="w-full h-auto mt-2 rounded"
+                      />
                     ) : (
-                      <p className="text-[10px] text-text-tertiary mt-2">（圖形已生成）</p>
+                      <p className="text-[10px] text-text-tertiary mt-2">載入圖片中…</p>
                     )}
                   </div>
                 </details>
