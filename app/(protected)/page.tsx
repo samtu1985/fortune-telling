@@ -21,7 +21,7 @@ import FeaturesGuideButton from "@/app/components/FeaturesGuideButton";
 import { useQuotaExhausted } from "@/app/components/QuotaExhaustedGate";
 import { callDivine } from "@/app/lib/divine-fetch";
 
-type DivinationType = "bazi" | "ziwei" | "zodiac" | "comprehensive";
+type DivinationType = "bazi" | "ziwei" | "zodiac" | "humandesign" | "comprehensive";
 
 type ZiweiBirthInfo = {
   birthday: string;
@@ -103,6 +103,7 @@ const DIVINATION_TYPE_IDS: { id: DivinationType; symbol: string }[] = [
   { id: "bazi", symbol: "乾" },
   { id: "ziwei", symbol: "紫" },
   { id: "zodiac", symbol: "☿" },
+  { id: "humandesign", symbol: "能" },
   { id: "comprehensive", symbol: "道" },
 ];
 
