@@ -19,6 +19,23 @@ interface ClientConfig {
   timeoutMs?: number; // default 10_000
 }
 
+/**
+ * IANA timezone → UTC offset map used to format datetime payloads for
+ * humandesignhub's `/bodygraph` endpoint. v1 only needs Asia/Taipei; extend
+ * as more markets are supported (a full tzdata lookup is overkill for now).
+ */
+const IANA_OFFSETS: Record<string, string> = {
+  "Asia/Taipei": "+08:00",
+  "Asia/Taipei Standard Time": "+08:00",
+  "UTC": "+00:00",
+  "Etc/UTC": "+00:00",
+};
+
+function formatDateTime(input: HumanDesignInput): string {
+  const offset = (input.timezone && IANA_OFFSETS[input.timezone]) ?? "+08:00";
+  return `${input.date}T${input.time}${offset}`;
+}
+
 export async function fetchBodygraph(
   cfg: ClientConfig,
   input: HumanDesignInput,
@@ -34,10 +51,8 @@ export async function fetchBodygraph(
         "X-API-KEY": cfg.apiKey,
       },
       body: JSON.stringify({
-        date: input.date,
-        time: input.time,
+        datetime: formatDateTime(input),
         city: input.city,
-        ...(input.timezone ? { timezone: input.timezone } : {}),
       }),
       signal: controller.signal,
     });

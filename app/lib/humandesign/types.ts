@@ -8,13 +8,18 @@ export type CenterKey =
 export type Planet =
   | "sun" | "earth" | "moon" | "northNode" | "southNode"
   | "mercury" | "venus" | "mars" | "jupiter" | "saturn"
-  | "uranus" | "neptune" | "pluto";
+  | "uranus" | "neptune" | "pluto" | "chiron";
 
 export interface HumanDesignInput {
-  date: string;       // "YYYY-MM-DD" (Gregorian)
-  time: string;       // "HH:mm"
+  date: string;         // "YYYY-MM-DD" (Gregorian)
+  time: string;         // "HH:mm"
   city: string;
-  timezone?: string;  // IANA; optional
+  /**
+   * IANA timezone. If omitted, v1 defaults to Asia/Taipei (offset +08:00)
+   * to match existing bazi/ziwei Taipei-first convention. Future versions
+   * may add a city→tz lookup or explicit picker.
+   */
+  timezone?: string;
 }
 
 export interface HumanDesignSummary {
@@ -56,5 +61,5 @@ export const CENTER_KEYS: CenterKey[] = [
 export const PLANET_KEYS: Planet[] = [
   "sun", "earth", "moon", "northNode", "southNode",
   "mercury", "venus", "mars", "jupiter", "saturn",
-  "uranus", "neptune", "pluto",
+  "uranus", "neptune", "pluto", "chiron",
 ];
