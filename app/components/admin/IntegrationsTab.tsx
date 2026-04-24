@@ -143,7 +143,7 @@ export default function IntegrationsTab() {
         return (
           <section
             key={key}
-            className="rounded-sm border border-border-light bg-bg-elevated p-4 space-y-4"
+            className="rounded-sm border border-border-light bg-bg-secondary p-4 space-y-4"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -165,7 +165,7 @@ export default function IntegrationsTab() {
                 <span className="block mb-1">API URL</span>
                 <input
                   type="text"
-                  className="w-full rounded-sm border border-border-light bg-bg-base px-2 py-1 text-sm text-text-primary focus:border-accent focus:outline-none"
+                  className="w-full rounded-sm border border-border-light bg-bg-primary px-2 py-1 text-sm text-text-primary focus:border-accent focus:outline-none"
                   value={row.apiUrl}
                   onChange={(e) => updateLocal(key, { apiUrl: e.target.value })}
                 />
@@ -177,7 +177,7 @@ export default function IntegrationsTab() {
                 </span>
                 <input
                   type="password"
-                  className="w-full rounded-sm border border-border-light bg-bg-base px-2 py-1 text-sm text-text-primary focus:border-accent focus:outline-none"
+                  className="w-full rounded-sm border border-border-light bg-bg-primary px-2 py-1 text-sm text-text-primary focus:border-accent focus:outline-none"
                   placeholder={row.hasKey ? "輸入新金鑰以覆蓋" : "輸入 API 金鑰"}
                   value={editingKey[key] ?? ""}
                   onChange={(e) => setEditingKey((s) => ({ ...s, [key]: e.target.value }))}
