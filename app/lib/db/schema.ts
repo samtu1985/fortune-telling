@@ -250,3 +250,15 @@ export const stripeEvents = pgTable("stripe_events", {
   type: text("type").notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── Integration Settings (third-party services) ─────────
+export const integrationSettings = pgTable("integration_settings", {
+  id: serial("id").primaryKey(),
+  service: varchar("service", { length: 50 }).unique().notNull(),
+  apiUrl: text("api_url").notNull(),
+  apiKeyEncrypted: text("api_key_encrypted").notNull().default(""),
+  enabled: boolean("enabled").notNull().default(false),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
