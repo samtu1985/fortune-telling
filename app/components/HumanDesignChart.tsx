@@ -33,13 +33,14 @@ export default function HumanDesignChart({ chart }: Props) {
   );
 
   return (
-    <div className="w-full max-w-[640px] mx-auto">
+    <div className="w-full max-w-[640px] mx-auto space-y-4">
+      <SummaryCard chart={chart} />
       <svg
         viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
         className="w-full h-auto"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Channels first — painted under the centers */}
+        {/* Channels (same logic as before) */}
         {CANONICAL_CHANNELS.map((ch) => {
           const [a, b] = ch.gates;
           const pa = gatePoint(a);
@@ -50,16 +51,35 @@ export default function HumanDesignChart({ chart }: Props) {
             <line
               key={`ch-${a}-${b}`}
               data-channel-active={String(active)}
-              x1={pa.x}
-              y1={pa.y}
-              x2={pb.x}
-              y2={pb.y}
+              x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
               stroke={active ? "var(--color-accent, #3E6AE1)" : "var(--color-border, #D1D5DB)"}
               strokeWidth={active ? 2.5 : 1}
             />
           );
         })}
-        {/* Centers — painted on top */}
+        {/* Gates — dot + label for every activated gate */}
+        {CENTER_KEYS.flatMap((key) => {
+          const gates = chart.centers[key]?.activatedGates ?? [];
+          return gates.map((g) => {
+            const p = gatePoint(g);
+            if (!p) return null;
+            return (
+              <g key={`gate-${key}-${g}`} data-gate={g}>
+                <circle cx={p.x} cy={p.y} r={6} fill="var(--color-accent, #3E6AE1)" />
+                <text
+                  x={p.x}
+                  y={p.y - 10}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fill="var(--color-text-primary, #111)"
+                >
+                  {g}
+                </text>
+              </g>
+            );
+          });
+        })}
+        {/* Centers — painted above channels, below gate dots overlap nicely */}
         {CENTER_KEYS.map((key) => {
           const pos = CENTER_POS[key];
           const shape = CENTER_SHAPE[key];
@@ -67,13 +87,7 @@ export default function HumanDesignChart({ chart }: Props) {
           const defined = !!chart.centers[key]?.defined;
           return (
             <g key={key} data-center={key} data-defined={String(defined)}>
-              <CenterShape
-                x={pos.x}
-                y={pos.y}
-                size={size}
-                shape={shape}
-                defined={defined}
-              />
+              <CenterShape x={pos.x} y={pos.y} size={size} shape={shape} defined={defined} />
             </g>
           );
         })}
@@ -116,5 +130,29 @@ function CenterShape(props: {
       stroke={stroke}
       strokeWidth={1}
     />
+  );
+}
+
+function SummaryCard({ chart }: { chart: HumanDesignChartData }) {
+  const s = chart.summary;
+  const items: Array<[string, string]> = [
+    ["Type", s.type],
+    ["Strategy", s.strategy],
+    ["Authority", s.authority],
+    ["Profile", s.profile],
+    ["Definition", s.definition],
+  ];
+  return (
+    <div
+      data-testid="humandesign-summary"
+      className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 rounded-sm border border-border-light bg-bg-secondary"
+    >
+      {items.map(([k, v]) => (
+        <div key={k} className="text-xs">
+          <div className="text-text-tertiary uppercase tracking-wide">{k}</div>
+          <div className="mt-0.5 text-sm font-medium text-text-primary">{v}</div>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -50,4 +50,29 @@ describe("HumanDesignChart", () => {
     const svg = container.querySelector("svg");
     expect(svg?.getAttribute("viewBox")).toBe("0 0 800 1200");
   });
+
+  it("renders a summary card with Type/Strategy/Authority/Profile/Definition values", () => {
+    const chart = normalizeResponse(fixture);
+    const { getByText, getByTestId } = render(<HumanDesignChart chart={chart} />);
+    expect(getByTestId("humandesign-summary")).toBeInTheDocument();
+    // Values from projector fixture
+    expect(getByText("Projector")).toBeInTheDocument();
+    expect(getByText("Wait for the Invitation")).toBeInTheDocument();
+    expect(getByText("Emotional")).toBeInTheDocument();
+    expect(getByText("6/2")).toBeInTheDocument();
+    expect(getByText("Split Definition")).toBeInTheDocument();
+  });
+
+  it("renders a gate number for every activated gate", () => {
+    const chart = normalizeResponse(fixture);
+    const { container } = render(<HumanDesignChart chart={chart} />);
+    const gateGroups = container.querySelectorAll("[data-gate]");
+    // Count activated gates across all 9 centers
+    const expected = Object.values(chart.centers).reduce(
+      (acc, c) => acc + c.activatedGates.length,
+      0,
+    );
+    expect(gateGroups.length).toBe(expected);
+    expect(expected).toBeGreaterThan(0);
+  });
 });
