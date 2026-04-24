@@ -331,6 +331,8 @@ export async function POST(request: NextRequest) {
   // Human Design: chart is async (external API); fetch once from the first user
   // message's birthData and inject into the system prompt. If this fails, return
   // BEFORE consumeQuota, so no quota is charged on chart failure.
+  // If consumeQuota is ever moved earlier in this handler, add a refundQuota
+  // helper to app/lib/quota.ts and call it in the catch branch below.
   if (type === "humandesign") {
     const firstUserMsg = chatMessages.find((m) => m.role === "user");
     const birthData = firstUserMsg ? parseBirthData(firstUserMsg.content) : null;
