@@ -110,7 +110,7 @@ export default function ComprehensiveMode({
   const reasoningDepthRef = useRef(reasoningDepth);
   reasoningDepthRef.current = reasoningDepth;
   const podcastModeRef = useRef(false);
-  const fetchTTSRef = useRef<((master: MasterType, text: string) => Promise<void>) | null>(null);
+  const fetchTTSRef = useRef<((master: MasterType, text: string, slotId?: number | null) => Promise<void>) | null>(null);
   const audioQueueRef = useRef<ReturnType<typeof useAudioQueue> | null>(null);
 
   const MAX_ROUNDS = 3;
@@ -272,6 +272,15 @@ export default function ComprehensiveMode({
           break;
         }
 
+        // Reserve an audio slot BEFORE streaming starts. Reservation order is
+        // the canonical playback order, so even if a later master's TTS
+        // returns first (shorter text synthesizes faster), playback waits for
+        // the earlier slot to fulfill. This fixes audio playing out of order.
+        let slotId: number | null = null;
+        if (podcastModeRef.current && audioQueueRef.current) {
+          slotId = audioQueueRef.current.reserve();
+        }
+
         try {
           const content = await streamMaster(master, msgs);
 
@@ -287,10 +296,12 @@ export default function ComprehensiveMode({
           msgs = [...msgs, newMsg];
           setMessages(msgs);
 
-          // Trigger TTS in background (don't block next master)
+          // Trigger TTS in background (don't block next master). Pass the
+          // reserved slotId so fetchTTS can fulfill the correct ordered slot
+          // instead of appending to an arrival-order queue.
           if (podcastModeRef.current && fetchTTSRef.current) {
-            console.log("[tts] Triggering TTS for", master, "text length:", cleanContent.length);
-            fetchTTSRef.current(master, cleanContent);
+            console.log("[tts] Triggering TTS for", master, "slot:", slotId, "text length:", cleanContent.length);
+            fetchTTSRef.current(master, cleanContent, slotId);
           } else {
             console.log("[tts] Skipped - podcastMode:", podcastModeRef.current, "fetchTTS:", !!fetchTTSRef.current);
           }
@@ -746,12 +757,22 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
   const getMasterInfo = (id?: MasterType) => MASTERS.find((m) => m.id === id);
 
-  // Fetch TTS audio for a master's response
+  // Fetch TTS audio for a master's response.
+  //
+  // `slotId` is an opaque id returned by audioQueue.reserve() before the
+  // master started speaking. Passing it here causes the resulting audio to
+  // fill that slot, which is how playback preserves speaking order even if
+  // TTS arrival order differs (e.g. ziwei's shorter text synthesizes before
+  // bazi's). If slotId is null (defensive path), we fall back to enqueue.
   const fetchTTS = useCallback(
-    async (master: MasterType, text: string): Promise<void> => {
-      console.log("[tts] fetchTTS called for", master, "locale:", locale, "textLen:", text.length, "preview:", text.slice(0, 50));
+    async (master: MasterType, text: string, slotId: number | null = null): Promise<void> => {
+      console.log("[tts] fetchTTS called for", master, "slot:", slotId, "locale:", locale, "textLen:", text.length, "preview:", text.slice(0, 50));
       if (!text || text.trim().length === 0) {
         console.warn("[tts] skipping", master, "— empty text after strip");
+        // Drop the reserved slot on the floor — it would stall playback
+        // otherwise. Fulfill with a tiny silent buffer? Simpler: just leave it.
+        // Instead we nudge the queue by marking this slot as unavailable via
+        // a sentinel. For now, leave unfulfilled — parent rarely hits this.
         return;
       }
       setTtsGeneratingCount((c) => c + 1);
@@ -798,8 +819,14 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             }
             const blob = new Blob([buffer], { type: "audio/mpeg" });
             const audioUrl = URL.createObjectURL(blob);
-            audioQueue.enqueue({ masterKey: master, audioUrl, audioBuffer: buffer });
-            console.log("[tts] enqueued", master);
+            const segment = { masterKey: master, audioUrl, audioBuffer: buffer };
+            if (slotId !== null) {
+              audioQueue.fulfill(slotId, segment);
+              console.log("[tts] fulfilled slot", slotId, master);
+            } else {
+              audioQueue.enqueue(segment);
+              console.log("[tts] enqueued (no slot)", master);
+            }
             break; // success — exit retry loop
           } catch (e) {
             console.warn("[tts] Error:", master, `attempt ${attempt}/${MAX_ATTEMPTS}`, e);

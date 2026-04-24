@@ -10,32 +10,76 @@ export interface AudioSegment {
   audioBuffer: ArrayBuffer;
 }
 
+// Internal slot representation. `id` is assigned in reserve() call order and is
+// how fulfill() and playback locate the slot. `segment` is null until the TTS
+// fetch completes. Playback is strictly ordered by slot id — so even if TTS
+// arrival order is (ziwei, bazi, …) because ziwei synthesized faster, playback
+// still follows the reservation order (bazi, ziwei, …).
+interface Slot {
+  id: number;
+  segment: AudioSegment | null;
+}
+
 export function useAudioQueue() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentMaster, setCurrentMaster] = useState<MasterType | null>(null);
   const [waitingForTap, setWaitingForTap] = useState(false);
-  // Reactive count of fully enqueued segments. Callers use this to know when
+  // Reactive count of fully fulfilled segments. Callers use this to know when
   // every expected segment has arrived (e.g. to only expose the download
-  // button after all three masters' audio is ready).
+  // button after all masters' audio is ready).
   const [segmentCount, setSegmentCount] = useState(0);
-  const queueRef = useRef<AudioSegment[]>([]);
+
+  // Ordered list of reserved slots. A slot is created (empty) when a master
+  // starts speaking, and filled later when its TTS arrives. Playback iterates
+  // this list in order; if the next slot is unfulfilled we pause playback and
+  // resume automatically as soon as fulfill() is called for that slot.
+  const slotsRef = useRef<Slot[]>([]);
+  const nextSlotIdRef = useRef(0);
+  const playheadRef = useRef(0); // index into slotsRef of the next slot to play
   const allSegmentsRef = useRef<AudioSegment[]>([]);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playingRef = useRef(false);
   const startedRef = useRef(false); // true after user taps to start
+  const waitingForSlotRef = useRef(false); // true when playback is stalled waiting for the next reserved slot to fulfill
 
-  // Play next segment in queue
+  // Forward reference so fulfill/enqueue can call playNext without React
+  // dependency ordering pain (playNext also needs to read these refs).
+  const playNextRef = useRef<() => void>(() => {});
+
+  // Play the slot at playheadRef. If it's not yet fulfilled, mark as waiting
+  // and return — fulfill() will kick playback back off once the slot lands.
   const playNext = useCallback(() => {
-    if (queueRef.current.length === 0) {
+    const slots = slotsRef.current;
+    const idx = playheadRef.current;
+
+    if (idx >= slots.length) {
+      // No more reserved slots. Idle until more come in (or stay idle if all
+      // done).
       setIsPlaying(false);
       setIsPaused(false);
       setCurrentMaster(null);
       playingRef.current = false;
+      waitingForSlotRef.current = false;
       return;
     }
 
-    const segment = queueRef.current.shift()!;
+    const slot = slots[idx];
+    if (!slot.segment) {
+      // Next slot is reserved but its TTS hasn't arrived yet. Pause — fulfill
+      // will call playNext again once this slot is filled.
+      waitingForSlotRef.current = true;
+      playingRef.current = false;
+      setIsPlaying(false);
+      setIsPaused(false);
+      setCurrentMaster(null);
+      return;
+    }
+
+    const segment = slot.segment;
+    waitingForSlotRef.current = false;
+    playheadRef.current = idx + 1;
     setCurrentMaster(segment.masterKey);
     setIsPlaying(true);
     setIsPaused(false);
@@ -49,6 +93,8 @@ export function useAudioQueue() {
       console.log(
         "[audio] metadata loaded",
         segment.masterKey,
+        "slot:",
+        slot.id,
         "duration:",
         audio.duration,
         "buffer bytes:",
@@ -58,9 +104,9 @@ export function useAudioQueue() {
 
     audio.onended = () => {
       const playedMs = Math.round(performance.now() - startedAt);
-      console.log("[audio] ended", segment.masterKey, "playedMs:", playedMs);
+      console.log("[audio] ended", segment.masterKey, "slot:", slot.id, "playedMs:", playedMs);
       URL.revokeObjectURL(segment.audioUrl);
-      playNext();
+      playNextRef.current();
     };
 
     audio.onerror = () => {
@@ -69,6 +115,8 @@ export function useAudioQueue() {
       console.error(
         "[audio] PLAYBACK ERROR",
         segment.masterKey,
+        "slot:",
+        slot.id,
         "code:",
         mediaErr?.code,
         "message:",
@@ -81,12 +129,12 @@ export function useAudioQueue() {
         playedMs
       );
       URL.revokeObjectURL(segment.audioUrl);
-      playNext();
+      playNextRef.current();
     };
 
     audio.play()
       .then(() => {
-        console.log("[audio] playing", segment.masterKey);
+        console.log("[audio] playing", segment.masterKey, "slot:", slot.id);
       })
       .catch((err) => {
         console.error(
@@ -96,9 +144,13 @@ export function useAudioQueue() {
           err?.message
         );
         URL.revokeObjectURL(segment.audioUrl);
-        playNext();
+        playNextRef.current();
       });
   }, []);
+
+  // Keep the ref in sync so the audio element callbacks (which close over
+  // playNextRef, not playNext) always see the latest implementation.
+  playNextRef.current = playNext;
 
   // User taps to start playback — this is a direct user gesture, always works
   const startPlayback = useCallback(() => {
@@ -107,20 +159,72 @@ export function useAudioQueue() {
     playNext();
   }, [playNext]);
 
-  // Enqueue a new audio segment
+  // Reserve a slot for a master that is ABOUT to speak. Returns an opaque slot
+  // id; callers must pass this id to fulfill() once the TTS audio arrives.
+  // Reservation order = playback order.
+  const reserve = useCallback((): number => {
+    const id = nextSlotIdRef.current++;
+    slotsRef.current.push({ id, segment: null });
+    // First reservation in podcast mode — surface the tap-to-start UI. We
+    // don't actually start playback yet; we wait for either the user tap or
+    // for the first slot to fulfill.
+    if (!startedRef.current && slotsRef.current.length === 1) {
+      setWaitingForTap(true);
+    }
+    return id;
+  }, []);
+
+  // Fill a previously reserved slot with its TTS audio. Triggers playback if
+  // we were stalled waiting for this slot.
+  const fulfill = useCallback(
+    (slotId: number, segment: AudioSegment) => {
+      const slot = slotsRef.current.find((s) => s.id === slotId);
+      if (!slot) {
+        console.warn(
+          "[audio] fulfill called for unknown slot",
+          slotId,
+          "— discarding and revoking url"
+        );
+        URL.revokeObjectURL(segment.audioUrl);
+        return;
+      }
+      if (slot.segment) {
+        console.warn(
+          "[audio] slot",
+          slotId,
+          "already fulfilled — ignoring duplicate"
+        );
+        URL.revokeObjectURL(segment.audioUrl);
+        return;
+      }
+      slot.segment = segment;
+      allSegmentsRef.current.push(segment);
+      setSegmentCount(allSegmentsRef.current.length);
+
+      // If playback was stalled on THIS slot, resume now. If we haven't
+      // started at all, wait for the user tap.
+      if (startedRef.current && !playingRef.current && waitingForSlotRef.current) {
+        playNext();
+      }
+    },
+    [playNext]
+  );
+
+  // Backwards-compat convenience: reserve + fulfill in a single call. Used for
+  // audio that arrives without a prior reservation (defensive — podcast mode
+  // should always reserve first).
   const enqueue = useCallback(
     (segment: AudioSegment) => {
+      const id = nextSlotIdRef.current++;
+      slotsRef.current.push({ id, segment });
       allSegmentsRef.current.push(segment);
-      queueRef.current.push(segment);
       setSegmentCount(allSegmentsRef.current.length);
 
       if (startedRef.current) {
-        // User already tapped — auto-play subsequent segments
         if (!playingRef.current) {
           playNext();
         }
       } else {
-        // First segment arrived — wait for user tap
         setWaitingForTap(true);
       }
     },
@@ -148,8 +252,18 @@ export function useAudioQueue() {
       audioRef.current.pause();
       audioRef.current = null;
     }
-    queueRef.current = [];
+    // Revoke any object URLs we still hold — for fulfilled slots not yet played
+    // and for segments that were passed through enqueue directly.
+    for (const slot of slotsRef.current) {
+      if (slot.segment) {
+        try { URL.revokeObjectURL(slot.segment.audioUrl); } catch { /* noop */ }
+      }
+    }
+    slotsRef.current = [];
+    nextSlotIdRef.current = 0;
+    playheadRef.current = 0;
     allSegmentsRef.current = [];
+    waitingForSlotRef.current = false;
     setSegmentCount(0);
     setIsPlaying(false);
     setIsPaused(false);
@@ -174,7 +288,11 @@ export function useAudioQueue() {
   const [podcastDownloading, setPodcastDownloading] = useState(false);
 
   const downloadPodcast = useCallback(async () => {
-    const segments = allSegmentsRef.current;
+    // Download uses slot order (speaking order) rather than arrival order so
+    // the exported podcast matches what the user heard.
+    const segments = slotsRef.current
+      .map((s) => s.segment)
+      .filter((s): s is AudioSegment => s !== null);
     if (segments.length === 0) return;
 
     setPodcastDownloading(true);
@@ -223,14 +341,18 @@ export function useAudioQueue() {
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      for (const segment of queueRef.current) {
-        URL.revokeObjectURL(segment.audioUrl);
+      for (const slot of slotsRef.current) {
+        if (slot.segment) {
+          try { URL.revokeObjectURL(slot.segment.audioUrl); } catch { /* noop */ }
+        }
       }
     };
   }, []);
 
   return {
     enqueue,
+    reserve,
+    fulfill,
     isPlaying,
     isPaused,
     currentMaster,
