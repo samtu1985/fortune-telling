@@ -9,6 +9,8 @@ import { auth } from "@/app/lib/auth";
 import { logUsage } from "@/app/lib/usage";
 import { getUserWithQuota } from "@/app/lib/users";
 import { checkQuota, consumeQuota } from "@/app/lib/quota";
+import { generateHumanDesignChart, HumanDesignApiError } from "@/app/lib/humandesign";
+import { serializeForPrompt as serializeHumanDesignForPrompt } from "@/app/lib/humandesign/serialize";
 
 // Helper: extract birth data from any message text (structured or natural language)
 function parseBirthData(content: string): {
@@ -241,6 +243,18 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 7. 當前行運的影響（如果適用）
 
 請以溫和、富有智慧的語氣回答，避免過於絕對的斷言。`,
+
+  humandesign: `你是一位資深的設計圖解讀師。使用者的能量設計圖資料會以 <humandesign-chart>JSON</humandesign-chart> 標籤提供，你必須且只能使用此 JSON 的欄位作為依據。
+
+解讀流程：
+1. 先以 summary 中的 type / strategy / authority / profile / definition 描繪整體能量圖像（200-300 字），語氣自然、具象、鼓勵實驗。
+2. 針對使用者的具體問題，援引相關的 centers（已定義 / 未定義）、啟動中的 channels 或關鍵 gates 作依據做具體回答。
+3. 提出 1-2 個「可以實驗的具體行動」，對齊該 authority 的決策模式。
+
+規範：
+- 不使用「Human Design」商標名稱，也不直接引述 Ra Uru Hu 的專屬文案；以「設計圖 / 能量圖 / 能量設計」等中性詞語描述。
+- 避免命定論語氣；用「可以觀察 / 邀請你實驗」式語言。
+- 避免算命式宣告，著重自我覺察與實踐。`,
 };
 
 export async function POST(request: NextRequest) {
@@ -313,6 +327,46 @@ export async function POST(request: NextRequest) {
   }
 
   console.log(`[divine] locale=${locale}, directive=${AI_LANGUAGE_DIRECTIVES[locale as Locale]?.slice(0, 30) || "none"}`);
+
+  // Human Design: chart is async (external API); fetch once from the first user
+  // message's birthData and inject into the system prompt. If this fails, return
+  // BEFORE consumeQuota, so no quota is charged on chart failure.
+  if (type === "humandesign") {
+    const firstUserMsg = chatMessages.find((m) => m.role === "user");
+    const birthData = firstUserMsg ? parseBirthData(firstUserMsg.content) : null;
+    if (birthData) {
+      try {
+        const hdChart = await generateHumanDesignChart(
+          {
+            date: birthData.birthDate,
+            time: birthData.birthTime,
+            city: birthData.birthPlace,
+          },
+          { calendarType: birthData.isLunar ? "lunar" : "solar" },
+        );
+        systemPrompt += `\n\n【以下是由排盤程式精確計算的能量設計圖資料，你必須完全依照這些資料進行解讀，不得自行推算或修改】\n\n${serializeHumanDesignForPrompt(hdChart)}`;
+      } catch (e) {
+        if (e instanceof HumanDesignApiError) {
+          const statusMap: Record<string, number> = {
+            not_configured: 422,
+            auth: 502,
+            invalid_input: 400,
+            unavailable: 503,
+            invalid_response: 500,
+          };
+          return new Response(
+            JSON.stringify({ error: `humandesign_${e.code}`, message: e.message }),
+            { status: statusMap[e.code] ?? 500, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        console.error("[divine] humandesign unexpected:", e);
+        return new Response(
+          JSON.stringify({ error: "humandesign_unknown" }),
+          { status: 500, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+  }
 
   // Collect generated charts for client-side saving
   const generatedCharts: { index: number; chart: string }[] = [];
