@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest) {
     reasoningDepth?: string;
   };
 
-  const validKeys = ["bazi", "ziwei", "zodiac"];
+  const validKeys = ["bazi", "ziwei", "zodiac", "humandesign"];
   if (!validKeys.includes(key)) {
     return Response.json({ error: "無效的設定項目" }, { status: 400 });
   }

@@ -20,7 +20,7 @@ interface Profile {
 }
 
 export interface ChartRequest {
-  type: "bazi" | "ziwei" | "zodiac";
+  type: "bazi" | "ziwei" | "zodiac" | "humandesign";
   birthDate: string;
   birthTime: string;
   gender: string;
@@ -32,7 +32,7 @@ export interface ChartRequest {
 }
 
 interface InputFormProps {
-  type: "bazi" | "ziwei" | "zodiac";
+  type: "bazi" | "ziwei" | "zodiac" | "humandesign";
   onSubmit: (request: ChartRequest) => void;
   loading: boolean;
   profiles: Profile[];
@@ -439,7 +439,7 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             {t("form.generating")}
           </span>
         ) : (
-          t("form.showChart")
+          t(type === "humandesign" ? "form.showChart.humandesign" : "form.showChart")
         )}
       </button>
     </form>

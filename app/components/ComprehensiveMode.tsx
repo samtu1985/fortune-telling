@@ -29,7 +29,7 @@ type Profile = {
   savedCharts?: { bazi?: string; ziwei?: string; zodiac?: string };
 };
 
-type MasterType = "bazi" | "ziwei" | "zodiac";
+type MasterType = "bazi" | "ziwei" | "zodiac" | "humandesign";
 
 type MasterMessage = {
   role: "user" | "assistant";
@@ -41,9 +41,10 @@ const MASTERS_BASE: { id: MasterType; labelKey: string; symbol: string; color: s
   { id: "bazi", labelKey: "master.bazi", symbol: "乾", color: "text-amber-400", bgClass: "border-amber-400/30 bg-amber-400/5" },
   { id: "ziwei", labelKey: "master.ziwei", symbol: "紫", color: "text-violet-400", bgClass: "border-violet-400/30 bg-violet-400/5" },
   { id: "zodiac", labelKey: "master.zodiac", symbol: "☿", color: "text-cyan-400", bgClass: "border-cyan-400/30 bg-cyan-400/5" },
+  { id: "humandesign", labelKey: "master.humandesign", symbol: "能", color: "text-emerald-400", bgClass: "border-emerald-400/30 bg-emerald-400/5" },
 ];
 
-const MASTER_ORDER: MasterType[] = ["bazi", "ziwei", "zodiac"];
+const MASTER_ORDER: MasterType[] = ["bazi", "ziwei", "zodiac", "humandesign"];
 
 interface ComprehensiveModeProps {
   profiles: Profile[];
@@ -66,7 +67,7 @@ export default function ComprehensiveMode({
   // Phase: "input" → "charts" → "discussion"
   const [phase, setPhase] = useState<"input" | "charts" | "discussion">("input");
   const [chartLoading, setChartLoading] = useState(false);
-  const [charts, setCharts] = useState<{ bazi?: string; ziwei?: string; zodiac?: string }>({});
+  const [charts, setCharts] = useState<{ bazi?: string; ziwei?: string; zodiac?: string; humandesign?: string | Record<string, unknown> }>({});
   const [chartRequest, setChartRequest] = useState<ChartRequest | null>(null);
   const [aiQuestion, setAiQuestion] = useState(t("main.defaultQuestion"));
 
@@ -389,7 +390,7 @@ export default function ComprehensiveMode({
       setChartRequest(request);
 
       try {
-        const types: MasterType[] = ["bazi", "ziwei", "zodiac"];
+        const types: MasterType[] = ["bazi", "ziwei", "zodiac", "humandesign"];
         const results = await Promise.all(
           types.map(async (type) => {
             const res = await fetch("/api/chart", {
@@ -407,14 +408,15 @@ export default function ComprehensiveMode({
             });
             if (!res.ok) return null;
             const data = await res.json();
-            return data.chart as string;
+            return data.chart;
           })
         );
 
         setCharts({
-          bazi: results[0] || undefined,
-          ziwei: results[1] || undefined,
-          zodiac: results[2] || undefined,
+          bazi: (results[0] as string | undefined) || undefined,
+          ziwei: (results[1] as string | undefined) || undefined,
+          zodiac: (results[2] as string | undefined) || undefined,
+          humandesign: results[3] || undefined,
         });
         setPhase("charts");
       } catch {
@@ -787,7 +789,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       const header = `
         <div style="text-align:center;margin-bottom:32px;">
           <h1 style="color:#7a5c10;font-size:28px;margin:0;">天機 FortuneFor.me</h1>
-          <p style="color:#847b72;font-size:13px;margin-top:4px;">三師論道 — ${t("comprehensive.discussionEnded")}</p>
+          <p style="color:#847b72;font-size:13px;margin-top:4px;">眾師論道 — ${t("comprehensive.discussionEnded")}</p>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,#7a5c10,transparent);margin:16px auto;"></div>
         </div>`;
 
@@ -994,7 +996,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
         <header className="pt-16 pb-8 px-6 text-center">
           <h1 className="text-3xl font-bold tracking-[0.15em] text-accent">
-            三師論道
+            眾師論道
           </h1>
           <p className="mt-2 text-sm text-text-tertiary">Comprehensive Analysis</p>
           <div className="mx-auto mt-4 w-24 tesla-divider" />
@@ -1046,7 +1048,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
         <header className="pt-16 pb-6 px-6 text-center">
           <h1 className="text-2xl font-bold tracking-[0.15em] text-accent">
-            三師論道 — 命盤總覽
+            眾師論道 — 命盤總覽
           </h1>
           <div className="mx-auto mt-4 w-24 tesla-divider" />
         </header>
@@ -1059,8 +1061,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             </div>
           )}
 
-          {/* Three charts in columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Charts in columns — one per master */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {MASTERS.map((m) => {
               const chart = charts[m.id];
               return (
@@ -1073,9 +1075,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     <span className={`text-sm font-semibold ${m.color}`}>{m.label}</span>
                   </div>
                   {chart ? (
-                    <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
-                      {chart.replace(/<[^>]+>/g, "").trim()}
-                    </pre>
+                    typeof chart === "string" ? (
+                      <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+                        {chart.replace(/<[^>]+>/g, "").trim()}
+                      </pre>
+                    ) : (
+                      <p className="text-xs text-text-tertiary">（圖形已生成）</p>
+                    )
                   ) : (
                     <p className="text-xs text-text-placeholder">{t("comprehensive.chartGenFailed")}</p>
                   )}
@@ -1146,7 +1152,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <h1
           className="text-xl font-bold tracking-[0.15em] text-accent justify-self-center text-center truncate"
         >
-          三師論道
+          眾師論道
         </h1>
 
         <div className="flex items-center gap-2 justify-self-end">
@@ -1199,7 +1205,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             <span className={`text-sm ${m.color}`}>{m.symbol}</span>
             <span className={`text-xs ${m.color}`}>{m.label}</span>
             {streamingMaster === m.id && (
-              <span className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${m.color === "text-amber-400" ? "bg-amber-400" : m.color === "text-violet-400" ? "bg-violet-400" : "bg-cyan-400"}`} />
+              <span className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${m.color === "text-amber-400" ? "bg-amber-400" : m.color === "text-violet-400" ? "bg-violet-400" : m.color === "text-emerald-400" ? "bg-emerald-400" : "bg-cyan-400"}`} />
             )}
           </div>
         ))}
@@ -1213,7 +1219,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
         <div className="max-w-5xl mx-auto">
           {/* Charts reference at top of discussion */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             {MASTERS.map((m) => {
               const chart = charts[m.id];
               if (!chart) return null;
@@ -1230,9 +1236,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     </svg>
                   </summary>
                   <div className="px-3 pb-3 border-t border-border-light">
-                    <pre className="text-[10px] text-text-tertiary leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
-                      {chart.replace(/<[^>]+>/g, "").trim()}
-                    </pre>
+                    {typeof chart === "string" ? (
+                      <pre className="text-[10px] text-text-tertiary leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
+                        {chart.replace(/<[^>]+>/g, "").trim()}
+                      </pre>
+                    ) : (
+                      <p className="text-[10px] text-text-tertiary mt-2">（圖形已生成）</p>
+                    )}
                   </div>
                 </details>
               );

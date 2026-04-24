@@ -8,6 +8,7 @@ import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 import PaymentsTab from "@/app/components/admin/PaymentsTab";
+import IntegrationsTab from "@/app/components/admin/IntegrationsTab";
 
 interface UserItem {
   email: string;
@@ -57,7 +58,7 @@ const CLAUDE_MODELS = [
   { id: "claude-opus-4-0", label: "Claude Opus 4", useEffort: false },
 ];
 
-type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback" | "payments";
+type Tab = "users" | "ai" | "tts" | "usage" | "cases" | "feedback" | "payments" | "integrations";
 
 interface FeedbackItem {
   id: number;
@@ -114,6 +115,7 @@ export default function AdminPage() {
     { key: "bazi", label: t("master.bazi") },
     { key: "ziwei", label: t("master.ziwei") },
     { key: "zodiac", label: t("master.zodiac") },
+    { key: "humandesign", label: t("master.humandesign") },
   ], [t]);
 
   const EFFORT_OPTIONS = useMemo(() => [
@@ -133,7 +135,7 @@ export default function AdminPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback" || tab === "payments") {
+      if (tab === "ai" || tab === "tts" || tab === "usage" || tab === "cases" || tab === "feedback" || tab === "payments" || tab === "integrations") {
         return tab;
       }
     }
@@ -982,10 +984,10 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-6">
-        <div className="flex gap-1 border-b border-border-light">
+        <div className="flex gap-1 border-b border-border-light overflow-x-auto">
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "users"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1003,7 +1005,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("ai")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "ai"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1016,7 +1018,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("tts")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "tts" ? "text-accent" : "text-text-tertiary hover:text-text-secondary"
             }`}
           >
@@ -1027,7 +1029,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("usage")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "usage"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1040,7 +1042,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("cases")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "cases"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1053,7 +1055,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("feedback")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "feedback"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1071,7 +1073,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("payments")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === "payments"
                 ? "text-accent"
                 : "text-text-tertiary hover:text-text-secondary"
@@ -1079,6 +1081,19 @@ export default function AdminPage() {
           >
             付款管理
             {activeTab === "payments" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("integrations")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
+              activeTab === "integrations"
+                ? "text-accent"
+                : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            第三方整合
+            {activeTab === "integrations" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
             )}
           </button>
@@ -1771,7 +1786,7 @@ export default function AdminPage() {
               )}
 
               <div className="space-y-6">
-                {["bazi", "ziwei", "zodiac"].map((master) => (
+                {["bazi", "ziwei", "zodiac", "humandesign"].map((master) => (
                   <div key={master}>
                     <p className="text-xs text-text-primary font-medium mb-2">{t(`master.${master}` as string)}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2008,7 +2023,7 @@ export default function AdminPage() {
                             <th className="py-2 pr-3 whitespace-nowrap">贈送者</th>
                             <th className="py-2 pr-3 whitespace-nowrap">接收者</th>
                             <th className="py-2 pr-3 whitespace-nowrap">個別</th>
-                            <th className="py-2 pr-3 whitespace-nowrap">三師</th>
+                            <th className="py-2 pr-3 whitespace-nowrap">眾師</th>
                             <th className="py-2 pr-3 whitespace-nowrap">模式</th>
                           </tr>
                         </thead>
@@ -2355,6 +2370,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === "payments" && <PaymentsTab />}
+        {activeTab === "integrations" && <IntegrationsTab />}
       </section>
 
       <SiteFooter />

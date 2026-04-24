@@ -10,6 +10,7 @@ import SmokeParticles from "@/app/components/SmokeParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
 import ZiweiChart from "@/app/components/ZiweiChart";
+import HumanDesignChartLoader from "@/app/components/HumanDesignChartLoader";
 import MentionDropdown from "@/app/components/MentionDropdown";
 import SavedCharts from "@/app/components/SavedCharts";
 import ComprehensiveMode from "@/app/components/ComprehensiveMode";
@@ -21,13 +22,21 @@ import FeaturesGuideButton from "@/app/components/FeaturesGuideButton";
 import { useQuotaExhausted } from "@/app/components/QuotaExhaustedGate";
 import { callDivine } from "@/app/lib/divine-fetch";
 
-type DivinationType = "bazi" | "ziwei" | "zodiac" | "comprehensive";
+type DivinationType = "bazi" | "ziwei" | "zodiac" | "humandesign" | "comprehensive";
 
 type ZiweiBirthInfo = {
   birthday: string;
   birthTime: number;
   gender: "男" | "女";
   birthdayType: "lunar" | "solar";
+};
+
+type HumanDesignBirthInfo = {
+  birthDate: string;
+  birthTime: string;
+  birthPlace: string;
+  calendarType: "solar" | "lunar";
+  isLeapMonth: boolean;
 };
 
 type Message = {
@@ -50,6 +59,7 @@ type Profile = {
     bazi?: string;
     ziwei?: string;
     zodiac?: string;
+    humandesign?: string | Record<string, unknown>;
   };
 };
 
@@ -60,15 +70,17 @@ type ConversationState = {
   streaming: boolean;
   loading: boolean;
   ziweiBirthInfo?: ZiweiBirthInfo;
-  chartData?: string;
+  humanDesignBirthInfo?: HumanDesignBirthInfo;
+  chartData?: string | Record<string, unknown>;
   profileId?: string;
   profileLabel?: string;
 };
 
 type ChartPreview = {
-  chart: string;
+  chart: string | Record<string, unknown>;
   request: ChartRequest;
   ziweiBirthInfo?: ZiweiBirthInfo;
+  humanDesignBirthInfo?: HumanDesignBirthInfo;
 };
 
 const emptyConversation: ConversationState = {
@@ -103,6 +115,7 @@ const DIVINATION_TYPE_IDS: { id: DivinationType; symbol: string }[] = [
   { id: "bazi", symbol: "乾" },
   { id: "ziwei", symbol: "紫" },
   { id: "zodiac", symbol: "☿" },
+  { id: "humandesign", symbol: "能" },
   { id: "comprehensive", symbol: "道" },
 ];
 
@@ -132,6 +145,7 @@ export default function Home() {
     bazi: { ...emptyConversation },
     ziwei: { ...emptyConversation },
     zodiac: { ...emptyConversation },
+    humandesign: { ...emptyConversation },
     comprehensive: { ...emptyConversation },
   });
 
@@ -499,7 +513,18 @@ export default function Home() {
           };
         }
 
-        setChartPreview({ chart, request, ziweiBirthInfo });
+        let humanDesignBirthInfo: HumanDesignBirthInfo | undefined;
+        if (request.type === "humandesign") {
+          humanDesignBirthInfo = {
+            birthDate: request.birthDate,
+            birthTime: request.birthTime,
+            birthPlace: request.birthPlace,
+            calendarType: request.calendarType === "lunar" ? "lunar" : "solar",
+            isLeapMonth: !!request.isLeapMonth,
+          };
+        }
+
+        setChartPreview({ chart, request, ziweiBirthInfo, humanDesignBirthInfo });
         setAiQuestion(t("main.defaultQuestion"));
       } finally {
         setChartLoading(false);
@@ -514,7 +539,7 @@ export default function Home() {
       if (!selectedType || !chartPreview) return;
       isNearBottomRef.current = true;
       const type = selectedType;
-      const { chart, request, ziweiBirthInfo } = chartPreview;
+      const { chart, request, ziweiBirthInfo, humanDesignBirthInfo } = chartPreview;
 
       const isChineseType = type === "bazi" || type === "ziwei";
       const shichen = isChineseType ? timeToShichen(request.birthTime) : "";
@@ -542,6 +567,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         ...conversationsRef.current[type],
         messages: [userMsg],
         ziweiBirthInfo,
+        humanDesignBirthInfo,
         chartData: chart,
         profileId: request.profileId,
         profileLabel: request.profileLabel,
@@ -550,6 +576,7 @@ ${t("birth.topic")}：${aiQuestion}`;
         ...prev,
         messages: [userMsg],
         ziweiBirthInfo,
+        humanDesignBirthInfo,
         chartData: chart,
         profileId: request.profileId,
         profileLabel: request.profileLabel,
@@ -566,7 +593,7 @@ ${t("birth.topic")}：${aiQuestion}`;
 
   // Start AI conversation directly from a saved chart
   const handleStartFromSavedChart = useCallback(
-    (profile: Profile, chart: string) => {
+    (profile: Profile, chart: string | Record<string, unknown>) => {
       if (!selectedType || selectedType === "comprehensive") return;
       // Set up chart preview with the saved chart data, then let user enter question
       const request: ChartRequest = {
@@ -605,7 +632,18 @@ ${t("birth.topic")}：${aiQuestion}`;
         };
       }
 
-      setChartPreview({ chart, request, ziweiBirthInfo });
+      let humanDesignBirthInfo: HumanDesignBirthInfo | undefined;
+      if (selectedType === "humandesign") {
+        humanDesignBirthInfo = {
+          birthDate: profile.birthDate,
+          birthTime: profile.birthTime,
+          birthPlace: profile.birthPlace,
+          calendarType: (profile.calendarType || "solar") === "lunar" ? "lunar" : "solar",
+          isLeapMonth: !!profile.isLeapMonth,
+        };
+      }
+
+      setChartPreview({ chart, request, ziweiBirthInfo, humanDesignBirthInfo });
       setChartSaved(true); // Already saved
       setAiQuestion(t("main.defaultQuestion"));
       setActiveTab("input");
@@ -971,6 +1009,10 @@ ${t("birth.topic")}：${aiQuestion}`;
                 birthdayType={conv.ziweiBirthInfo.birthdayType}
               />
             )}
+            {/* Visual human design chart */}
+            {selectedType === "humandesign" && conv.humanDesignBirthInfo && (
+              <HumanDesignChartLoader birthInfo={conv.humanDesignBirthInfo} />
+            )}
             {conv.messages.map((msg, i) =>
               msg.role === "user" ? (
                 <div key={i} className="flex justify-end">
@@ -1034,7 +1076,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                     </svg>
-                    {t("main.saveChartTo")}「{conv.profileLabel}」
+                    {t(selectedType === "humandesign" ? "main.saveChartTo.humandesign" : "main.saveChartTo")}「{conv.profileLabel}」
                   </button>
                 )}
               </div>
@@ -1473,13 +1515,20 @@ ${t("birth.topic")}：${aiQuestion}`;
                   />
                 )}
 
-                {/* Chart data display */}
-                <div className="border border-border-light rounded-lg p-4">
-                  <h3 className="text-sm text-accent mb-3">{t("main.chartData")}</h3>
-                  <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
-                    {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
-                  </pre>
-                </div>
+                {/* Human design visual chart */}
+                {selectedType === "humandesign" && chartPreview.humanDesignBirthInfo && (
+                  <HumanDesignChartLoader birthInfo={chartPreview.humanDesignBirthInfo} />
+                )}
+
+                {/* Chart data display (text-based charts only — humandesign uses visual loader) */}
+                {selectedType !== "humandesign" && typeof chartPreview.chart === "string" && (
+                  <div className="border border-border-light rounded-lg p-4">
+                    <h3 className="text-sm text-accent mb-3">{t("main.chartData")}</h3>
+                    <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
+                      {chartPreview.chart.replace(/<[^>]+>/g, "").trim()}
+                    </pre>
+                  </div>
+                )}
 
                 {/* Save chart to profile */}
                 {chartPreview.request.profileId && (
@@ -1519,7 +1568,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                         </svg>
-                        {t("main.saveChartTo")}「{chartPreview.request.profileLabel}」
+                        {t(selectedType === "humandesign" ? "main.saveChartTo.humandesign" : "main.saveChartTo")}「{chartPreview.request.profileLabel}」
                       </button>
                     )}
                   </div>
@@ -1563,7 +1612,7 @@ ${t("birth.topic")}：${aiQuestion}`;
           ) : activeTab === "saved" ? (
             <SavedConversations type={selectedType as "bazi" | "ziwei" | "zodiac"} />
           ) : (
-            <SavedCharts type={selectedType as "bazi" | "ziwei" | "zodiac"} profiles={profiles} onStartChat={handleStartFromSavedChart} />
+            <SavedCharts type={selectedType as "bazi" | "ziwei" | "zodiac" | "humandesign"} profiles={profiles} onStartChat={handleStartFromSavedChart} />
           )}
         </section>
       )}

@@ -2,6 +2,8 @@
 
 import { useLocale } from "./LocaleProvider";
 
+type SavedChartValue = string | Record<string, unknown>;
+
 interface Profile {
   id: string;
   label: string;
@@ -15,13 +17,32 @@ interface Profile {
     bazi?: string;
     ziwei?: string;
     zodiac?: string;
+    humandesign?: SavedChartValue;
   };
 }
 
 interface SavedChartsProps {
-  type: "bazi" | "ziwei" | "zodiac";
+  type: "bazi" | "ziwei" | "zodiac" | "humandesign";
   profiles: Profile[];
-  onStartChat?: (profile: Profile, chart: string) => void;
+  onStartChat?: (profile: Profile, chart: SavedChartValue) => void;
+}
+
+function renderChartPreview(chart: SavedChartValue): string {
+  if (typeof chart === "string") {
+    return chart.replace(/<[^>]+>/g, "").trim();
+  }
+  // Structured chart (humandesign). Show a compact summary; no raw JSON dump.
+  const summary = (chart as { summary?: Record<string, string> }).summary;
+  if (summary && typeof summary === "object") {
+    const lines: string[] = [];
+    if (summary.type) lines.push(`Type: ${summary.type}`);
+    if (summary.strategy) lines.push(`Strategy: ${summary.strategy}`);
+    if (summary.authority) lines.push(`Authority: ${summary.authority}`);
+    if (summary.profile) lines.push(`Profile: ${summary.profile}`);
+    if (summary.definition) lines.push(`Definition: ${summary.definition}`);
+    return lines.join("\n");
+  }
+  return "";
 }
 
 export default function SavedCharts({ type, profiles, onStartChat }: SavedChartsProps) {
@@ -33,6 +54,7 @@ export default function SavedCharts({ type, profiles, onStartChat }: SavedCharts
     bazi: t("charts.bazi"),
     ziwei: t("charts.ziwei"),
     zodiac: t("charts.zodiac"),
+    humandesign: t("charts.humandesign"),
   };
   const label = TYPE_LABELS[type] || t("charts.chart");
 
@@ -72,9 +94,7 @@ export default function SavedCharts({ type, profiles, onStartChat }: SavedCharts
           </summary>
           <div className="px-4 pb-4 border-t border-border-light">
             <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap mt-3 max-h-96 overflow-y-auto">
-              {p.savedCharts![chartKey]!
-                .replace(/<[^>]+>/g, "")
-                .trim()}
+              {renderChartPreview(p.savedCharts![chartKey]!)}
             </pre>
             {onStartChat && (
               <button
