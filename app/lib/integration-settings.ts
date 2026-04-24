@@ -8,7 +8,7 @@ export interface IntegrationConfig {
   apiUrl: string;
   apiKey: string;
   enabled: boolean;
-  metadata?: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
 }
 
 export interface IntegrationInput {
@@ -76,8 +76,8 @@ export async function listIntegrations(): Promise<IntegrationConfig[]> {
     let apiKey = "";
     try {
       apiKey = decrypt(row.apiKeyEncrypted);
-    } catch {
-      /* decrypt error already logged above in getIntegration path */
+    } catch (e) {
+      console.error(`[integration-settings] decrypt failed for ${row.service}:`, e);
     }
     return {
       service: row.service,
