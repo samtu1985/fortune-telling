@@ -27,11 +27,11 @@ export default function DivinationCard({
     <button onClick={onClick} className="w-full h-full text-left">
       <div
         className={`
-          h-full rounded p-6 sm:p-8 flex flex-col
-          border transition-colors duration-[330ms]
+          glass-card h-full p-6 sm:p-8 flex flex-col
+          transition-colors duration-[330ms]
           ${active
-            ? "border-accent bg-accent/[0.04] border-l-[3px]"
-            : "border-border-light hover:border-border-subtle bg-bg-primary"
+            ? "!border-accent !bg-accent/[0.06] border-l-[3px]"
+            : "hover:!border-border-subtle"
           }
         `}
       >

@@ -1547,7 +1547,7 @@ ${t("birth.topic")}：${aiQuestion}`;
               >
                 <div
                   className={`
-                    relative overflow-hidden tesla-card-bordered
+                    relative overflow-hidden glass-card
                     ${isActive
                       ? "!border-accent/60 !bg-accent/[0.08]"
                       : ""

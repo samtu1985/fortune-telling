@@ -139,7 +139,7 @@ export default function IntegrationsTab() {
         return (
           <section
             key={key}
-            className="rounded-sm border border-border-light bg-bg-secondary p-4 space-y-4"
+            className="glass-card p-4 space-y-4"
           >
             <div className="flex items-start justify-between gap-4">
               <div>

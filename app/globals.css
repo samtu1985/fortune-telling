@@ -1,7 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 @import "tailwindcss";
 
 :root {
+  /* Tesla-era named colors — kept defined so any direct refs still resolve. */
   --carbon-dark: #171A20;
   --graphite: #393C41;
   --pewter: #5C5E62;
@@ -12,37 +13,55 @@
   --pure-white: #FFFFFF;
   --electric-blue: #3E6AE1;
 
+  /* Deep ink + gold (Eastern minimalist) */
+  --ink-black:    #1a1a1a;
+  --ink-deep:     #0f0f0f;
+  --ink-soft:     #2a2a2a;
+  --gold-soft:    #d4af37;
+  --gold-pale:    #e8c66a;
+  --gold-deep:    #a88923;
+
+  /* Semantic tokens — repointed to ink+gold */
   --bg-primary: var(--pure-white);
   --bg-secondary: var(--light-ash);
-  --text-primary: var(--carbon-dark);
+  --text-primary: var(--ink-black);
   --text-secondary: var(--graphite);
   --text-tertiary: var(--pewter);
   --text-placeholder: var(--silver-fog);
-  --border-light: var(--cloud-gray);
-  --border-subtle: var(--pale-silver);
-  --accent: var(--electric-blue);
+  --border-light: rgba(26, 26, 26, 0.08);
+  --border-subtle: rgba(26, 26, 26, 0.16);
+  --accent: var(--gold-soft);
+  --accent-hover: var(--gold-deep);
 
-  --input-bg: transparent;
-  --input-border: var(--pale-silver);
-  --input-focus-border: var(--electric-blue);
+  --input-bg: rgba(0, 0, 0, 0.02);
+  --input-border: rgba(26, 26, 26, 0.16);
+  --input-focus-border: var(--gold-soft);
+  --nav-bg: rgba(255, 255, 255, 0.65);
 
-  --nav-bg: rgba(255, 255, 255, 0.75);
+  /* Glass surface (light mode) */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(26, 26, 26, 0.06);
 }
 
 [data-theme="dark"] {
-  --bg-primary: var(--carbon-dark);
-  --bg-secondary: #1E2127;
-  --text-primary: var(--cloud-gray);
-  --text-secondary: var(--pale-silver);
-  --text-tertiary: var(--silver-fog);
-  --text-placeholder: var(--pewter);
-  --border-light: #2A2D33;
-  --border-subtle: #3A3D43;
-  --accent: var(--electric-blue);
-  --input-bg: rgba(255, 255, 255, 0.04);
-  --input-border: #3A3D43;
-  --input-focus-border: var(--electric-blue);
-  --nav-bg: rgba(23, 26, 32, 0.85);
+  --bg-primary: var(--ink-black);
+  --bg-secondary: var(--ink-soft);
+  --text-primary: #f0e6d2;
+  --text-secondary: #c8bfa9;
+  --text-tertiary: #8a8276;
+  --text-placeholder: #5d574d;
+  --border-light: rgba(212, 175, 55, 0.10);
+  --border-subtle: rgba(212, 175, 55, 0.22);
+  --accent: var(--gold-soft);
+  --accent-hover: var(--gold-pale);
+  --input-bg: rgba(255, 255, 255, 0.025);
+  --input-border: rgba(212, 175, 55, 0.18);
+  --input-focus-border: var(--gold-soft);
+  --nav-bg: rgba(26, 26, 26, 0.78);
+
+  /* Glass surface (dark mode) */
+  --glass-bg: rgba(26, 26, 26, 0.55);
+  --glass-border: rgba(212, 175, 55, 0.08);
 }
 
 @theme inline {
@@ -55,7 +74,8 @@
   --color-border-light: var(--border-light);
   --color-border-subtle: var(--border-subtle);
   --color-accent: var(--accent);
-  --font-sans: 'Inter', -apple-system, Arial, sans-serif;
+  --font-sans: 'DM Sans', "PingFang TC", "Microsoft JhengHei", "Hiragino Sans", "Yu Gothic", -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', "Source Han Serif TC", "Noto Serif TC", "PingFang TC", "Yu Mincho", serif;
 }
 
 *, *::before, *::after {
@@ -78,6 +98,40 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Playfair Display for the brand headings — sets the Eastern-minimal mood. */
+h1, h2, h3, .font-serif {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* 0.5px hairline border utility — actually rendered via 1px on @1x screens
+   and 0.5 device pixels on @2x+; closest cross-DPR approximation of
+   "hair-thin". Apply via the .hairline class or replace existing
+   border-width on key components. */
+.hairline {
+  border-width: 0.5px;
+}
+.hairline-t { border-top-width: 0.5px; }
+.hairline-b { border-bottom-width: 0.5px; }
+.hairline-l { border-left-width: 0.5px; }
+.hairline-r { border-right-width: 0.5px; }
+
+/* Glass surface — mild backdrop-blur with the themed glass-bg / glass-border. */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 0.5px solid var(--glass-border);
+}
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+  border: 0.5px solid var(--glass-border);
+  border-radius: 6px;
+}
+
 /* Tesla card styles */
 .tesla-card {
   background: var(--bg-primary);
@@ -97,12 +151,13 @@ body {
 
 .tesla-card-bordered {
   background: var(--bg-primary);
-  border: 1px solid var(--border-light);
+  border: 0.5px solid var(--border-light);
   border-radius: 4px;
-  transition: border-color 0.33s;
+  transition: border-color 0.33s, background-color 0.33s;
 }
 .tesla-card-bordered:hover {
-  border-color: var(--border-subtle);
+  border-color: var(--accent);
+  background: var(--bg-secondary);
 }
 [data-theme="dark"] .tesla-card-bordered {
   background: var(--bg-secondary);
@@ -155,7 +210,7 @@ body {
 input:not([type="checkbox"]):not([type="radio"]),
 select {
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: 0.5px solid var(--input-border);
   border-radius: 4px;
   color: var(--text-primary);
   padding: 10px 14px;

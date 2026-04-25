@@ -63,10 +63,7 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
     >
       <div
         ref={dialogRef}
-        className="relative w-full max-w-2xl rounded-xl border border-border-light animate-fade-in"
-        style={{
-          background: "var(--bg-primary)",
-        }}
+        className="glass-card relative w-full max-w-2xl !rounded-xl animate-fade-in"
       >
         {/* Close button */}
         <button
@@ -115,7 +112,7 @@ export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModal
               return (
                 <div
                   key={f.titleKey}
-                  className={`rounded-md border border-border-light bg-bg-secondary p-4 transition hover:border-accent/35 hover:bg-bg-secondary ${
+                  className={`glass-card p-4 transition hover:!border-accent/35 ${
                     f.fullWidth ? "sm:col-span-2" : ""
                   }`}
                 >
