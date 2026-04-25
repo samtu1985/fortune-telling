@@ -81,7 +81,7 @@ export default function MobileSwipePane({
         /* ignore */
       }
     }
-    const t = setTimeout(() => setHintShown(false), 4500);
+    const t = setTimeout(() => setHintShown(false), 3000);
     return () => clearTimeout(t);
   }, [triggerHint, hintShown, hintSessionKey, isMobile]);
 
@@ -92,6 +92,8 @@ export default function MobileSwipePane({
     if (w <= 0) return;
     const idx = Math.round(el.scrollLeft / w);
     setCurrentIndex(Math.max(0, Math.min(panels.length - 1, idx)));
+    // Any user-driven scroll dismisses the hint immediately so it doesn't linger over content.
+    if (hintShown) setHintShown(false);
   }
 
   // Desktop: stack panels normally, no swipe
@@ -134,8 +136,8 @@ export default function MobileSwipePane({
 
       {hintShown && (
         <div
-          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-white text-sm font-medium rounded-full shadow-lg pointer-events-none"
-          style={{ animation: "swipe-hint-pop 4.5s ease-out forwards" }}
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-6 py-4 bg-accent text-white text-lg font-semibold rounded-full shadow-2xl pointer-events-none"
+          style={{ animation: "swipe-hint-blink 3s ease-in-out forwards" }}
         >
           {inactiveHint}
         </div>
@@ -155,29 +157,15 @@ export default function MobileSwipePane({
       )}
 
       <style jsx global>{`
-        @keyframes swipe-hint-pop {
-          0% {
-            opacity: 0;
-            transform: translate(-50%, -8px);
-          }
-          12% {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-          18% {
-            transform: translate(-50%, -2px);
-          }
-          24% {
-            transform: translate(-50%, 0);
-          }
-          85% {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(-50%, -4px);
-          }
+        /* Slow blink centered: pop in, breathe between full and dim opacity, fade out. */
+        @keyframes swipe-hint-blink {
+          0%   { opacity: 0;    transform: translate(-50%, -50%) scale(0.92); }
+          10%  { opacity: 1;    transform: translate(-50%, -50%) scale(1); }
+          25%  { opacity: 0.45; transform: translate(-50%, -50%) scale(1); }
+          50%  { opacity: 1;    transform: translate(-50%, -50%) scale(1); }
+          75%  { opacity: 0.45; transform: translate(-50%, -50%) scale(1); }
+          92%  { opacity: 1;    transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0;    transform: translate(-50%, -50%) scale(0.96); }
         }
       `}</style>
     </>
