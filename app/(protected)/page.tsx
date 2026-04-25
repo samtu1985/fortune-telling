@@ -7,6 +7,7 @@ import ResultDisplay from "@/app/components/ResultDisplay";
 import SavedConversations from "@/app/components/SavedConversations";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import SmokeParticles from "@/app/components/SmokeParticles";
+import GoldParticles from "@/app/components/GoldParticles";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import UserMenu from "@/app/components/UserMenu";
 import ZiweiChart from "@/app/components/ZiweiChart";
@@ -1016,11 +1017,16 @@ ${t("birth.topic")}：${aiQuestion}`;
 
         {/* Messages area — scrollable on desktop; horizontally swipable on mobile */}
         {!isMobile ? (
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
-        >
+        <div className="relative flex-1 min-h-0">
+          <GoldParticles
+            active={conv.streaming}
+            className="absolute inset-0 z-0"
+          />
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="relative z-10 h-full overflow-y-auto px-4 sm:px-6 py-4"
+          >
           <div className="max-w-2xl mx-auto space-y-4">
             {/* Desktop: original stacked layout (chart + messages) */}
             {selectedType === "ziwei" && conv.ziweiBirthInfo && (
@@ -1099,6 +1105,7 @@ ${t("birth.topic")}：${aiQuestion}`;
               </div>
             )}
           </div>
+          </div>
         </div>
         ) : (
           <div className="flex-1 min-h-0 flex flex-col">
@@ -1161,7 +1168,12 @@ ${t("birth.topic")}：${aiQuestion}`;
                   key: "analysis",
                   hintWhenInactive: "向右滑動觀看解說",
                   content: (
-                    <div ref={convScrollRef} onScroll={handleScroll} className="h-full overflow-y-auto px-4 py-4">
+                    <div className="relative h-full">
+                      <GoldParticles
+                        active={conv.streaming}
+                        className="absolute inset-0 z-0"
+                      />
+                      <div ref={convScrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-4 py-4">
                       <div className="max-w-2xl mx-auto space-y-4">
                         {conv.messages.map((msg, i) =>
                           msg.role === "user" ? (
@@ -1205,6 +1217,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                             />
                           </div>
                         )}
+                      </div>
                       </div>
                     </div>
                   ),

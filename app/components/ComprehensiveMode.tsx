@@ -4,12 +4,14 @@ import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "reac
 import InputForm, { type ChartRequest, timeToShichen } from "./InputForm";
 import ZiweiChart from "./ZiweiChart";
 import DOMPurify from "dompurify";
+import { motion } from "framer-motion";
 import ResultDisplay, { renderMarkdown } from "./ResultDisplay";
 import ConfirmDialog from "./ConfirmDialog";
 import MentionDropdown from "./MentionDropdown";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import SmokeParticles from "./SmokeParticles";
+import GoldParticles from "./GoldParticles";
 import FeedbackModal from "./FeedbackModal";
 import SavedConversations from "./SavedConversations";
 import MobileSwipePane from "./MobileSwipePane";
@@ -1338,7 +1340,12 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
       {/* Messages — desktop: single vertical scroll. Mobile: horizontal swipe between charts & conversation. */}
       {!isMobile ? (
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+      <div className="relative flex-1 min-h-0">
+        <GoldParticles
+          active={streamingMaster != null || loading || isAutoDiscussing}
+          className="absolute inset-0 z-0"
+        />
+        <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-4 sm:px-6 py-4">
         <div className="max-w-5xl mx-auto">
           {/* Charts reference at top of discussion */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -1411,7 +1418,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
             const masterBg = masterInfo?.bgClass || "";
 
             return (
-              <div key={i} className="flex justify-start">
+              <motion.div
+                key={i}
+                className="flex justify-start"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
                 <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterBg}`}>
                   {/* Master badge */}
                   <div className="flex items-center gap-1.5 mb-2">
@@ -1449,7 +1462,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
 
@@ -1480,7 +1493,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
 
           {/* Currently streaming */}
           {streamingMaster && streamingContent && (
-            <div className="flex justify-start">
+            <motion.div
+              key={`streaming-${streamingMaster}`}
+              className="flex justify-start"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            >
               {(() => {
                 const masterInfo = getMasterInfo(streamingMaster);
                 return (
@@ -1497,8 +1516,9 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                   </div>
                 );
               })()}
-            </div>
+            </motion.div>
           )}
+        </div>
         </div>
       </div>
       ) : (
@@ -1563,7 +1583,12 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                 key: "discussion",
                 hintWhenInactive: "向右滑動觀看討論",
                 content: (
-                  <div ref={convScrollRef} onScroll={handleScroll} className="h-full overflow-y-auto px-4 py-4">
+                  <div className="relative h-full">
+                    <GoldParticles
+                      active={streamingMaster != null || loading || isAutoDiscussing}
+                      className="absolute inset-0 z-0"
+                    />
+                    <div ref={convScrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-4 py-4">
                     <div className="max-w-2xl mx-auto space-y-4">
                       {messages.map((msg, i) => {
                         if (msg.role === "user") {
@@ -1583,7 +1608,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                         const masterColor = masterInfo?.color || "text-text-primary";
                         const masterBg = masterInfo?.bgClass || "";
                         return (
-                          <div key={i} className="flex justify-start">
+                          <motion.div
+                            key={i}
+                            className="flex justify-start"
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                          >
                             <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterBg}`}>
                               <div className="flex items-center gap-1.5 mb-2">
                                 <span className={`text-base ${masterColor}`}>{masterInfo?.symbol}</span>
@@ -1619,7 +1650,7 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                                 </button>
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         );
                       })}
                       {streamingMaster && !streamingContent && (
@@ -1646,7 +1677,13 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                         </div>
                       )}
                       {streamingMaster && streamingContent && (
-                        <div className="flex justify-start">
+                        <motion.div
+                          key={`streaming-mobile-${streamingMaster}`}
+                          className="flex justify-start"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                        >
                           {(() => {
                             const masterInfo = getMasterInfo(streamingMaster);
                             return (
@@ -1663,8 +1700,9 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
                               </div>
                             );
                           })()}
-                        </div>
+                        </motion.div>
                       )}
+                    </div>
                     </div>
                   </div>
                 ),

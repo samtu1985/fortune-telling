@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import DOMPurify from "dompurify";
+import { motion } from "framer-motion";
 import { useLocale } from "./LocaleProvider";
 
 interface ResultDisplayProps {
@@ -212,7 +213,13 @@ export default function ResultDisplay({
 
       {/* Main result */}
       {content && (
-        <div className="relative">
+        <motion.div
+          key="result-body"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative"
+        >
           {/* Decorative corner brackets */}
           <div className="absolute -top-2 -left-2 w-6 h-6 border-t border-l border-border-light" />
           <div className="absolute -top-2 -right-2 w-6 h-6 border-t border-r border-border-light" />
@@ -227,7 +234,7 @@ export default function ResultDisplay({
               dangerouslySetInnerHTML={{ __html: renderedContent }}
             />
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Save conversation button */}
