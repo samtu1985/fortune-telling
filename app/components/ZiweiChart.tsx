@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, type ReactNode, useState, useEffect, useMemo } from "react";
+import { Component, type ReactNode, useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { astro } from "iztro";
 
 interface ZiweiChartProps {
@@ -212,6 +212,34 @@ function ZiweiChartInner({ birthday, birthTime, gender, birthdayType }: ZiweiCha
     fiveElementsClass: string;
   } | null>(null);
 
+  // Auto-scale-to-fit: the 4×4 grid wants a min-width of 480px to keep palace
+  // text readable. On screens narrower than that, scale the whole grid down
+  // proportionally so it never overflows. Browser pinch-zoom remains available
+  // for users who want to read details up close.
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [naturalHeight, setNaturalHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const wrap = wrapperRef.current;
+    const inner = innerRef.current;
+    if (!wrap || !inner) return;
+    const update = () => {
+      const wrapWidth = wrap.clientWidth;
+      const innerWidth = inner.scrollWidth || 480;
+      const newScale = Math.min(1, wrapWidth / innerWidth);
+      setScale(newScale);
+      // scrollHeight is the unscaled natural height (transform doesn't affect it).
+      setNaturalHeight(inner.scrollHeight);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(wrap);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [chartData]);
+
   useEffect(() => {
     try {
       const chart =
@@ -291,8 +319,16 @@ function ZiweiChartInner({ birthday, birthTime, gender, birthdayType }: ZiweiCha
   }
 
   return (
-    <div className="my-4 rounded-lg border border-border-light overflow-x-auto">
-      <div className="grid grid-cols-4 grid-rows-4 min-w-[480px]">
+    <div
+      ref={wrapperRef}
+      className="my-4 rounded-lg border border-border-light overflow-hidden"
+      style={{ height: naturalHeight != null ? naturalHeight * scale : undefined }}
+    >
+      <div
+        ref={innerRef}
+        className="grid grid-cols-4 grid-rows-4 min-w-[480px]"
+        style={{ transformOrigin: "top left", transform: `scale(${scale})` }}
+      >
         {grid.flatMap((row, r) =>
           row.map((cell, c) => {
             if (!cell) return null;
