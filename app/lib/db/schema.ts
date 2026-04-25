@@ -262,3 +262,12 @@ export const integrationSettings = pgTable("integration_settings", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── Human Design API Cache ──────────────────────────────
+export const humandesignCache = pgTable("humandesign_cache", {
+  cacheKey: varchar("cache_key", { length: 64 }).primaryKey().notNull(),
+  chartData: jsonb("chart_data"),
+  imageBase64: text("image_base64"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }).notNull().defaultNow(),
+});

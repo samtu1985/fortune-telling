@@ -2,6 +2,13 @@ import { Lunar } from "lunar-typescript";
 import { getIntegration } from "@/app/lib/integration-settings";
 import { fetchBodygraph, fetchBodygraphImage, HumanDesignApiError } from "./client";
 import { normalizeResponse } from "./normalize";
+import {
+  computeCacheKey,
+  getCachedChart,
+  getCachedImage,
+  setCachedChart,
+  setCachedImage,
+} from "./cache";
 import type { HumanDesignChartData, HumanDesignInput } from "./types";
 
 export { HumanDesignApiError } from "./client";
@@ -20,6 +27,19 @@ function convertLunarToSolar(dateIso: string): string {
   return `${solar.getYear()}-${mm}-${dd}`;
 }
 
+function effectiveInput(
+  input: HumanDesignInput,
+  options: GenerateChartOptions,
+): HumanDesignInput {
+  return {
+    ...input,
+    date:
+      options.calendarType === "lunar"
+        ? convertLunarToSolar(input.date)
+        : input.date,
+  };
+}
+
 export async function generateHumanDesignChart(
   input: HumanDesignInput,
   options: GenerateChartOptions = {},
@@ -32,27 +52,27 @@ export async function generateHumanDesignChart(
     );
   }
 
-  const effectiveInput: HumanDesignInput = {
-    ...input,
-    date:
-      options.calendarType === "lunar"
-        ? convertLunarToSolar(input.date)
-        : input.date,
-  };
+  const effective = effectiveInput(input, options);
+  const cacheKey = computeCacheKey(effective);
+
+  // Cache hit? Skip API call entirely.
+  const cached = await getCachedChart(cacheKey);
+  if (cached) return cached;
 
   let raw: unknown;
   try {
     raw = await fetchBodygraph(
       { apiUrl: integration.apiUrl, apiKey: integration.apiKey },
-      effectiveInput,
+      effective,
     );
   } catch (e) {
     if (e instanceof HumanDesignApiError) throw e;
     throw new HumanDesignApiError("unavailable", "fetch failed", e);
   }
 
+  let chart: HumanDesignChartData;
   try {
-    return normalizeResponse(raw);
+    chart = normalizeResponse(raw);
   } catch (e) {
     console.error(
       "[humandesign] normalize failed:",
@@ -62,6 +82,13 @@ export async function generateHumanDesignChart(
     );
     throw new HumanDesignApiError("invalid_response", "response shape mismatch", e);
   }
+
+  // Write-through cache (don't await — user-facing latency unaffected by cache write).
+  void setCachedChart(cacheKey, chart).catch((err) =>
+    console.error("[humandesign] cache write failed:", err),
+  );
+
+  return chart;
 }
 
 export async function generateHumanDesignImage(
@@ -76,21 +103,31 @@ export async function generateHumanDesignImage(
     );
   }
 
-  const effectiveInput: HumanDesignInput = {
-    ...input,
-    date:
-      options.calendarType === "lunar"
-        ? convertLunarToSolar(input.date)
-        : input.date,
-  };
+  const effective = effectiveInput(input, options);
+  const cacheKey = computeCacheKey(effective);
 
+  const cached = await getCachedImage(cacheKey);
+  if (cached) {
+    return cached.buffer.slice(
+      cached.byteOffset,
+      cached.byteOffset + cached.byteLength,
+    ) as ArrayBuffer;
+  }
+
+  let bytes: ArrayBuffer;
   try {
-    return await fetchBodygraphImage(
+    bytes = await fetchBodygraphImage(
       { apiUrl: integration.apiUrl, apiKey: integration.apiKey },
-      effectiveInput,
+      effective,
     );
   } catch (e) {
     if (e instanceof HumanDesignApiError) throw e;
     throw new HumanDesignApiError("unavailable", "image fetch failed", e);
   }
+
+  void setCachedImage(cacheKey, bytes).catch((err) =>
+    console.error("[humandesign] image cache write failed:", err),
+  );
+
+  return bytes;
 }
