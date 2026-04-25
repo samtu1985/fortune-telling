@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Panel {
   key: string;
@@ -134,27 +135,36 @@ export default function MobileSwipePane({
         ))}
       </div>
 
-      {hintShown && (
-        <div
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-6 py-4 bg-accent text-white text-lg font-semibold rounded-full shadow-2xl pointer-events-none"
-          style={{ animation: "swipe-hint-blink 3s ease-in-out forwards" }}
-        >
-          {inactiveHint}
-        </div>
-      )}
+      {/* Hint + dot indicator are portaled to document.body so they escape any
+          ancestor with transform/filter/will-change that would otherwise scope
+          their `position: fixed` to a containing block instead of the viewport. */}
+      {hintShown &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed top-1/2 left-1/2 z-[60] px-6 py-4 bg-accent text-white text-lg font-semibold rounded-full shadow-2xl pointer-events-none"
+            style={{ animation: "swipe-hint-blink 3s ease-in-out forwards" }}
+          >
+            {inactiveHint}
+          </div>,
+          document.body,
+        )}
 
-      {panels.length > 1 && (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex gap-1.5 pointer-events-none">
-          {panels.map((p, i) => (
-            <span
-              key={p.key}
-              className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                currentIndex === i ? "bg-accent" : "bg-text-tertiary/40"
-              }`}
-            />
-          ))}
-        </div>
-      )}
+      {panels.length > 1 &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[55] flex gap-1.5 pointer-events-none">
+            {panels.map((p, i) => (
+              <span
+                key={p.key}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  currentIndex === i ? "bg-accent" : "bg-text-tertiary/40"
+                }`}
+              />
+            ))}
+          </div>,
+          document.body,
+        )}
 
       <style jsx global>{`
         /* Slow blink centered: pop in, breathe between full and dim opacity, fade out. */
