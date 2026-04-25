@@ -64,27 +64,15 @@ export default function MobileSwipePane({
     setCurrentIndex(initialPanel);
   }, [initialPanel, isMobile]);
 
-  // Hint: show once per session
+  // Hint: show once per swipe-pane mount (i.e. each time the user enters a
+  // fresh analysis session). hintSessionKey is no longer used to gate across
+  // navigations — the user explicitly asked for the hint to fire every time.
   useEffect(() => {
     if (!isMobile || !triggerHint || hintShown) return;
-    if (hintSessionKey && typeof window !== "undefined") {
-      try {
-        if (window.sessionStorage.getItem(hintSessionKey)) return;
-      } catch {
-        /* ignore */
-      }
-    }
     setHintShown(true);
-    if (hintSessionKey) {
-      try {
-        window.sessionStorage.setItem(hintSessionKey, "1");
-      } catch {
-        /* ignore */
-      }
-    }
     const t = setTimeout(() => setHintShown(false), 3000);
     return () => clearTimeout(t);
-  }, [triggerHint, hintShown, hintSessionKey, isMobile]);
+  }, [triggerHint, hintShown, isMobile]);
 
   function handleScroll() {
     const el = containerRef.current;
