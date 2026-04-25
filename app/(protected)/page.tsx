@@ -1495,7 +1495,7 @@ ${t("birth.topic")}：${aiQuestion}`;
                   : "border-transparent text-text-tertiary hover:text-text-secondary"
               }`}
             >
-              {t("main.savedCharts")}
+              {t(selectedType === "humandesign" ? "main.savedCharts.humandesign" : "main.savedCharts")}
             </button>
           </div>
 
