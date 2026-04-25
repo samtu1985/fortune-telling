@@ -4,15 +4,24 @@ import { fetchBodygraph, fetchBodygraphImage, HumanDesignApiError } from "./clie
 import { normalizeResponse } from "./normalize";
 import {
   computeCacheKey,
+  computeTransitCacheKey,
   getCachedChart,
   getCachedImage,
   setCachedChart,
   setCachedImage,
 } from "./cache";
-import type { HumanDesignChartData, HumanDesignInput } from "./types";
+import type {
+  HumanDesignChartData,
+  HumanDesignInput,
+  HumanDesignTransitData,
+} from "./types";
 
 export { HumanDesignApiError } from "./client";
-export type { HumanDesignChartData, HumanDesignInput } from "./types";
+export type {
+  HumanDesignChartData,
+  HumanDesignInput,
+  HumanDesignTransitData,
+} from "./types";
 
 export interface GenerateChartOptions {
   calendarType?: "solar" | "lunar";
@@ -89,6 +98,96 @@ export async function generateHumanDesignChart(
   );
 
   return chart;
+}
+
+export interface GenerateTransitOptions {
+  /** ISO 8601 datetime with timezone offset, e.g. "2026-04-25T15:30+08:00".
+   *  If omitted, uses the current moment in Asia/Taipei (project default). */
+  datetime?: string;
+  /** City passed to humandesignhub (used for tz/lat resolution server-side). Defaults to "Taipei". */
+  city?: string;
+}
+
+function defaultNowDatetime(): string {
+  // Format current moment as ISO 8601 with +08:00 (Asia/Taipei) — project default.
+  const d = new Date();
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Taipei",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    fmt.formatToParts(d).map((p) => [p.type, p.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}+08:00`;
+}
+
+export async function generateTransit(
+  options: GenerateTransitOptions = {},
+): Promise<HumanDesignTransitData> {
+  const integration = await getIntegration("humandesign");
+  if (!integration || !integration.enabled || !integration.apiKey) {
+    throw new HumanDesignApiError(
+      "not_configured",
+      "humandesign integration not configured",
+    );
+  }
+
+  const datetime = options.datetime ?? defaultNowDatetime();
+  const city = options.city ?? "Taipei";
+
+  // Round to the hour for cache hits within the same hour.
+  // Tolerates "YYYY-MM-DDTHH:mm[:ss][±HH:MM|Z]" — only the minute portion is replaced.
+  const roundedHourly = datetime.replace(/T(\d{2}):\d{2}/, "T$1:00");
+  const cacheKey = computeTransitCacheKey(roundedHourly, city);
+
+  // chart_data column is polymorphic — caller's namespace (transit|) ensures no collision.
+  const cached = await getCachedChart(cacheKey);
+  if (cached) {
+    return cached as unknown as HumanDesignTransitData;
+  }
+
+  const { fetchTransit } = await import("./client");
+  const { normalizeTransitResponse } = await import("./normalize");
+  let raw: unknown;
+  try {
+    raw = await fetchTransit(
+      { apiUrl: integration.apiUrl, apiKey: integration.apiKey },
+      { datetime, city },
+    );
+  } catch (e) {
+    if (e instanceof HumanDesignApiError) throw e;
+    throw new HumanDesignApiError("unavailable", "transit fetch failed", e);
+  }
+
+  let transit: HumanDesignTransitData;
+  try {
+    transit = normalizeTransitResponse(raw, datetime);
+  } catch (e) {
+    console.error(
+      "[humandesign] transit normalize failed:",
+      e,
+      "raw=",
+      JSON.stringify(raw).slice(0, 800),
+    );
+    throw new HumanDesignApiError(
+      "invalid_response",
+      "transit response shape mismatch",
+      e,
+    );
+  }
+
+  void setCachedChart(
+    cacheKey,
+    transit as unknown as HumanDesignChartData,
+  ).catch((err) =>
+    console.error("[humandesign] transit cache write failed:", err),
+  );
+  return transit;
 }
 
 export async function generateHumanDesignImage(

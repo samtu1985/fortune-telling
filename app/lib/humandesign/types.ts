@@ -63,3 +63,12 @@ export const PLANET_KEYS: Planet[] = [
   "mercury", "venus", "mars", "jupiter", "saturn",
   "uranus", "neptune", "pluto", "chiron",
 ];
+
+export interface HumanDesignTransitData {
+  meta: { fetchedAt: string; datetime: string; service: "humandesign-transit" };
+  planets: Record<Planet, { gate: number; line: number }>;
+  gates: number[];
+  channels: Array<{ gates: [number, number]; label: string }>;
+  centers: CenterKey[]; // names of defined centers during this transit moment
+  raw?: unknown;
+}

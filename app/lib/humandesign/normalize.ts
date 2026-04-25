@@ -1,5 +1,6 @@
 import type {
   HumanDesignChartData,
+  HumanDesignTransitData,
   HdType,
   CenterKey,
   Planet,
@@ -71,11 +72,11 @@ function blankActivation(): PlanetActivation {
   return { gate: 0, line: 0, color: 0, tone: 0, base: 0 };
 }
 
-function mapCenterName(name: string): CenterKey | undefined {
+export function mapCenterName(name: string): CenterKey | undefined {
   return CENTER_NAME_MAP[name] ?? CENTER_NAME_MAP[name.replace(/\s+/g, "")];
 }
 
-function mapPlanetName(name: string): Planet | undefined {
+export function mapPlanetName(name: string): Planet | undefined {
   return PLANET_NAME_MAP[name] ?? PLANET_NAME_MAP[name.replace(/\s+/g, "")];
 }
 
@@ -202,6 +203,71 @@ export function normalizeResponse(raw: unknown): HumanDesignChartData {
     channels,
     gates,
     planets,
+    raw,
+  };
+}
+
+export function normalizeTransitResponse(
+  raw: unknown,
+  datetime: string,
+): HumanDesignTransitData {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("invalid transit response: not an object");
+  }
+  const r = raw as Record<string, any>;
+
+  const planets = {} as HumanDesignTransitData["planets"];
+  for (const p of PLANET_KEYS) planets[p] = { gate: 0, line: 0 };
+  const gateAndLine = r.gate_and_line;
+  if (gateAndLine && typeof gateAndLine === "object") {
+    for (const [name, val] of Object.entries(gateAndLine)) {
+      const key = mapPlanetName(name);
+      if (!key) continue;
+      if (Array.isArray(val) && val.length >= 2) {
+        planets[key] = { gate: Number(val[0]) || 0, line: Number(val[1]) || 0 };
+      }
+    }
+  }
+
+  const gatesList = Array.isArray(r.gates)
+    ? (r.gates.filter((n: unknown) => typeof n === "number") as number[])
+    : [];
+
+  const channels = Array.isArray(r.channels)
+    ? r.channels
+        .filter(
+          (c: any) =>
+            c &&
+            Array.isArray(c.gates) &&
+            c.gates.length === 2 &&
+            typeof c.gates[0] === "number" &&
+            typeof c.gates[1] === "number",
+        )
+        .map((c: any) => ({
+          gates: [Number(c.gates[0]), Number(c.gates[1])] as [number, number],
+          label: String(c.name ?? ""),
+        }))
+    : [];
+
+  const centerNames: CenterKey[] = [];
+  if (Array.isArray(r.centers)) {
+    for (const name of r.centers) {
+      if (typeof name !== "string") continue;
+      const key = mapCenterName(name);
+      if (key && !centerNames.includes(key)) centerNames.push(key);
+    }
+  }
+
+  return {
+    meta: {
+      fetchedAt: new Date().toISOString(),
+      datetime,
+      service: "humandesign-transit",
+    },
+    planets,
+    gates: gatesList,
+    channels,
+    centers: centerNames,
     raw,
   };
 }

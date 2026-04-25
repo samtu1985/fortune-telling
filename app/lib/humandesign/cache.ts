@@ -20,6 +20,17 @@ export function computeCacheKey(input: HumanDesignInput): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+/**
+ * Cache key for transit (流年) lookups.
+ * Distinct from natal cache by the "transit|" namespace prefix —
+ * shares the same humandesign_cache table but never collides with bodygraph rows.
+ * Pass a datetime that has been rounded (e.g., to the hour) to maximize hits.
+ */
+export function computeTransitCacheKey(roundedDatetime: string, city: string): string {
+  const canonical = `transit|${roundedDatetime.trim()}|${city.trim().toLowerCase()}`;
+  return createHash("sha256").update(canonical).digest("hex");
+}
+
 export async function getCachedChart(key: string): Promise<HumanDesignChartData | null> {
   const rows = await db
     .select({ data: humandesignCache.chartData })
