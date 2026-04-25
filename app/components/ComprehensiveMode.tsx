@@ -115,7 +115,10 @@ export default function ComprehensiveMode({
   const fetchTTSRef = useRef<((master: MasterType, text: string, slotId?: number | null) => Promise<void>) | null>(null);
   const audioQueueRef = useRef<ReturnType<typeof useAudioQueue> | null>(null);
 
-  const MAX_ROUNDS = 3;
+  // Total rounds = 1 initial round + MAX_ROUNDS auto-rounds.
+  // Capped at 2 auto-rounds so the full discussion is at most 3 rounds —
+  // 4 masters × 3 rounds (≈12 long replies + TTS) is already lengthy.
+  const MAX_ROUNDS = 2;
 
   // Tracks whether the scroll container has moved at all. Used to toggle the
   // floating TTS status bar from translucent (at top) to opaque (scrolled)
@@ -563,8 +566,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
       const contextMsg: MasterMessage = {
         role: "user",
         content: isLastRound
-          ? "這是最後一輪討論。請每位老師做最後總結：1. 你的核心觀點 2. 跟其他老師最大的分歧點 3. 給問卦者最重要的一個建議。最後由星座老師統整三位老師的共識與分歧，加上 [CONSENSUS] 標記。"
-          : "請針對前面其他老師已經提出的觀點進行回應，特別是你不同意或有不同解讀的地方。不要重複自己先前說過的分析。重點放在：1. 指出其他老師的分析哪裡跟你的系統看法不同 2. 用你的命盤依據反駁或提出替代解讀 3. 如果真的同意，也要補充對方沒提到的面向。只有在三位老師已經充分交鋒、具體問題上真正取得一致後，才由星座老師做總結。",
+          ? "這是最後一輪討論。請每位老師做最後總結：1. 你的核心觀點 2. 跟其他老師最大的分歧點 3. 給問卦者最重要的一個建議。最後由設計圖解讀師統整四位老師的共識與分歧，加上 [CONSENSUS] 標記。"
+          : "請針對前面其他老師已經提出的觀點進行回應，特別是你不同意或有不同解讀的地方。不要重複自己先前說過的分析。重點放在：1. 指出其他老師的分析哪裡跟你的系統看法不同 2. 用你的命盤依據反駁或提出替代解讀 3. 如果真的同意，也要補充對方沒提到的面向。只有在四位老師已經充分交鋒、具體問題上真正取得一致後，才由設計圖解讀師做總結。",
       };
       currentMsgs = [...currentMsgs, contextMsg];
       setMessages(currentMsgs);
