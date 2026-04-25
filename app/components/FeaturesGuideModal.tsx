@@ -14,14 +14,18 @@ type FeatureEntry = {
   fullWidth?: boolean;
 };
 
+// Display order matters; i18n keys are intentionally not renumbered when new
+// cards are inserted (renaming keys across 4 locales is high-churn for low gain).
+// f8 is the most recently added card and is shown in position 03 by design.
 const FEATURES: FeatureEntry[] = [
-  { titleKey: "guide.f1.title", taglineKey: "guide.f1.tagline" },
-  { titleKey: "guide.f2.title", taglineKey: "guide.f2.tagline" },
-  { titleKey: "guide.f3.title", taglineKey: "guide.f3.tagline" },
-  { titleKey: "guide.f4.title", taglineKey: "guide.f4.tagline" },
-  { titleKey: "guide.f5.title", taglineKey: "guide.f5.tagline" },
-  { titleKey: "guide.f6.title", taglineKey: "guide.f6.tagline" },
-  { titleKey: "guide.f7.title", taglineKey: "guide.f7.tagline", fullWidth: true },
+  { titleKey: "guide.f1.title", taglineKey: "guide.f1.tagline" }, // 密鎖天機
+  { titleKey: "guide.f2.title", taglineKey: "guide.f2.tagline" }, // 眾師論道
+  { titleKey: "guide.f8.title", taglineKey: "guide.f8.tagline" }, // 設計圖解讀 + 流年 (newest)
+  { titleKey: "guide.f3.title", taglineKey: "guide.f3.tagline" }, // 紫微星盤視覺化
+  { titleKey: "guide.f4.title", taglineKey: "guide.f4.tagline" }, // 命途隨聽 (Podcast)
+  { titleKey: "guide.f5.title", taglineKey: "guide.f5.tagline" }, // 逐字流光應答
+  { titleKey: "guide.f6.title", taglineKey: "guide.f6.tagline" }, // 四海同參
+  { titleKey: "guide.f7.title", taglineKey: "guide.f7.tagline", fullWidth: true }, // 命盤永存
 ];
 
 export default function FeaturesGuideModal({ open, onClose }: FeaturesGuideModalProps) {
