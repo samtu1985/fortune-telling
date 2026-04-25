@@ -9,7 +9,7 @@ import { auth } from "@/app/lib/auth";
 import { logUsage } from "@/app/lib/usage";
 import { getUserWithQuota } from "@/app/lib/users";
 import { checkQuota, consumeQuota } from "@/app/lib/quota";
-import { generateHumanDesignChart, HumanDesignApiError } from "@/app/lib/humandesign";
+import { generateHumanDesignChart, generateTransit, HumanDesignApiError } from "@/app/lib/humandesign";
 import { serializeForPrompt as serializeHumanDesignForPrompt } from "@/app/lib/humandesign/serialize";
 
 // Helper: extract birth data from any message text (structured or natural language)
@@ -244,17 +244,27 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 
 請以溫和、富有智慧的語氣回答，避免過於絕對的斷言。`,
 
-  humandesign: `你是一位資深的設計圖解讀師。使用者的能量設計圖資料會以 <humandesign-chart>JSON</humandesign-chart> 標籤提供，你必須且只能使用此 JSON 的欄位作為依據。
+  humandesign: `你是一位資深的設計圖解讀師。資料以兩個標籤提供：
+- <humandesign-chart>JSON</humandesign-chart> ：使用者的本命能量設計圖（type / strategy / authority / profile / definition / centers / channels / planets 等）。這是長期穩定的核心。
+- <humandesign-transit>JSON</humandesign-transit> ：當下時刻的流年星象（同樣含 planets / gates / channels / centers，附 datetime 時間戳）。這是當下大環境正在啟動的能量。
+
+你必須且只能使用上述 JSON 的欄位作為依據。
 
 解讀流程：
-1. 先以 summary 中的 type / strategy / authority / profile / definition 描繪整體能量圖像（200-300 字），語氣自然、具象、鼓勵實驗。
+1. 先以 chart.summary 中的 type / strategy / authority / profile / definition 描繪整體能量圖像（200-300 字），語氣自然、具象、鼓勵實驗。
 2. 針對使用者的具體問題，援引相關的 centers（已定義 / 未定義）、啟動中的 channels 或關鍵 gates 作依據做具體回答。
-3. 提出 1-2 個「可以實驗的具體行動」，對齊該 authority 的決策模式。
+3. 若使用者問到「流年」「近期」「當下」「最近」「現在」等與時間有關的問題，比對 <humandesign-transit> 與 <humandesign-chart>：
+   - 流年 gates 中與本命 activatedGates 重疊的閘門 → 此刻被「強化共振」，能量加倍明顯。
+   - 流年 channels 中跨越本命未定義中心的 → 此刻外境會「臨時補全」這個中心，是體驗的好時機。
+   - 流年行星的 gate.line 與本命行星的 gate.line 形成的疊加 → 點出對應主題。
+   - 引用時請帶上日期（datetime 欄位裡的年月日），讓使用者知道是哪段時期的能量。
+4. 提出 1-2 個「可以實驗的具體行動」，對齊該 authority 的決策模式。
 
 規範：
 - 不使用「Human Design」商標名稱，也不直接引述 Ra Uru Hu 的專屬文案；以「設計圖 / 能量圖 / 能量設計」等中性詞語描述。
 - 避免命定論語氣；用「可以觀察 / 邀請你實驗」式語言。
-- 避免算命式宣告，著重自我覺察與實踐。`,
+- 避免算命式宣告，著重自我覺察與實踐。
+- 流年資料若缺失（未提供 transit 標籤），則明說「目前未取得當下流年資料」，不要編造。`,
 };
 
 export async function POST(request: NextRequest) {
@@ -347,6 +357,25 @@ export async function POST(request: NextRequest) {
           { calendarType: birthData.isLunar ? "lunar" : "solar" },
         );
         systemPrompt += `\n\n【以下是由排盤程式精確計算的能量設計圖資料，你必須完全依照這些資料進行解讀，不得自行推算或修改】\n\n${serializeHumanDesignForPrompt(hdChart)}`;
+
+        // Also fetch the current-moment transit so the AI can answer 流年 / current
+        // energy questions without the user having to ask the UI to fetch it.
+        // Cost: 0.5 cr per fresh hour (server-side hourly cache); failure here is
+        // non-fatal — natal analysis still works without transit.
+        try {
+          const transit = await generateTransit({ city: birthData.birthPlace });
+          // Compact JSON: planets, gates, channels, centers, datetime — drop raw.
+          const transitPayload = {
+            datetime: transit.meta.datetime,
+            planets: transit.planets,
+            gates: transit.gates,
+            channels: transit.channels,
+            centers: transit.centers,
+          };
+          systemPrompt += `\n\n【以下是「當下流年」的星象資料（${transit.meta.datetime}），可用來回答關於流年運勢、近期能量的問題；本命資料優先，流年資料為補充】\n\n<humandesign-transit>${JSON.stringify(transitPayload)}</humandesign-transit>`;
+        } catch (e) {
+          console.warn("[divine] humandesign transit fetch failed (non-fatal):", e);
+        }
       } catch (e) {
         if (e instanceof HumanDesignApiError) {
           const statusMap: Record<string, number> = {

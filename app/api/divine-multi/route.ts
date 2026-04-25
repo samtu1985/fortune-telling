@@ -273,6 +273,26 @@ export async function POST(request: NextRequest) {
     ? `${promptWithDate}\n\n【以下是由排盤程式精確計算的命盤數據】\n\n${chartData}`
     : promptWithDate;
 
+  // Humandesign master also gets the current-moment transit so it can speak
+  // to 流年 / current-energy questions. Transit has server-side hourly cache;
+  // failure here is non-fatal (master can still discuss natal-only).
+  if (master === "humandesign") {
+    try {
+      const { generateTransit } = await import("@/app/lib/humandesign");
+      const transit = await generateTransit({});
+      const transitPayload = {
+        datetime: transit.meta.datetime,
+        planets: transit.planets,
+        gates: transit.gates,
+        channels: transit.channels,
+        centers: transit.centers,
+      };
+      fullSystemPrompt += `\n\n【當下流年星象資料（${transit.meta.datetime}），可在回應時對照本命圖解讀近期能量】\n\n<humandesign-transit>${JSON.stringify(transitPayload)}</humandesign-transit>`;
+    } catch (e) {
+      console.warn("[divine-multi] humandesign transit fetch failed (non-fatal):", e);
+    }
+  }
+
   // For Gemini models: inject conversational tone
   if (config.provider === "google") {
     fullSystemPrompt += GEMINI_MULTI_TONE;
