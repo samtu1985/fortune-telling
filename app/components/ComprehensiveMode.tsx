@@ -12,6 +12,7 @@ import UserMenu from "./UserMenu";
 import SmokeParticles from "./SmokeParticles";
 import FeedbackModal from "./FeedbackModal";
 import SavedConversations from "./SavedConversations";
+import MobileSwipePane from "./MobileSwipePane";
 import { useLocale } from "./LocaleProvider";
 import { useAudioQueue, type AudioSegment } from "@/app/hooks/useAudioQueue";
 import { useQuotaExhausted } from "./QuotaExhaustedGate";
@@ -103,6 +104,7 @@ export default function ComprehensiveMode({
   const [caseSummary, setCaseSummary] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const convScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isNearBottomRef = useRef(true);
   const autoDiscussRef = useRef(false);
@@ -124,10 +126,23 @@ export default function ComprehensiveMode({
   // the saved-conversations archive (manual + auto).
   const [view, setView] = useState<"discussion" | "saved">("discussion");
 
+  // Runtime mobile detection (matches MobileSwipePane breakpoint).
+  // Used to render either the desktop stacked layout OR the mobile swipe pane,
+  // but never both — to avoid double-mounting nested streaming components.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   // Auto-scroll + collapse mobile controls on scroll
   const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const el = scrollRef.current ?? convScrollRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
     const threshold = window.innerWidth < 640 ? 200 : 80;
     isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < threshold;
     // Flip opaque background once the container has scrolled at all.
@@ -139,8 +154,13 @@ export default function ComprehensiveMode({
   }, []);
 
   useEffect(() => {
-    if (scrollRef.current && isNearBottomRef.current) {
+    if (!isNearBottomRef.current) return;
+    // Desktop: outer scrollRef. Mobile: per-panel convScrollRef.
+    if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+    if (convScrollRef.current) {
+      convScrollRef.current.scrollTop = convScrollRef.current.scrollHeight;
     }
   }, [streamingContent, messages.length]);
 
@@ -1313,7 +1333,8 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
         <div className="mx-auto mt-1 w-24 tesla-divider" />
       </div>
 
-      {/* Messages */}
+      {/* Messages — desktop: single vertical scroll. Mobile: horizontal swipe between charts & conversation. */}
+      {!isMobile ? (
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
         <div className="max-w-5xl mx-auto">
           {/* Charts reference at top of discussion */}
@@ -1477,6 +1498,178 @@ ${t("birth.gender")}：${chartRequest?.gender || "未提供"}`;
           )}
         </div>
       </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex flex-col">
+          <MobileSwipePane
+            triggerHint={loading || isAutoDiscussing}
+            hintSessionKey="swipe-hint-multi"
+            panels={[
+              {
+                key: "charts",
+                hintWhenInactive: "向左滑動觀看命盤",
+                content: (
+                  <div className="h-full overflow-y-auto px-4 py-4">
+                    <div className="max-w-5xl mx-auto">
+                      <div className="grid grid-cols-1 gap-3 mb-6">
+                        {MASTERS.map((m) => {
+                          const chart = charts[m.id];
+                          if (!chart) return null;
+                          return (
+                            <details
+                              key={m.id}
+                              className={`rounded-lg border overflow-hidden ${m.bgClass}`}
+                              open
+                            >
+                              <summary className="px-3 py-2 cursor-pointer hover:bg-bg-secondary transition-colors flex items-center gap-1.5 text-xs">
+                                <span className={m.color}>{m.symbol}</span>
+                                <span className={`${m.color}`}>{m.label}命盤</span>
+                                <svg className="w-3 h-3 text-text-placeholder ml-auto transition-transform details-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </summary>
+                              <div className="px-3 pb-3 border-t border-border-light">
+                                {typeof chart === "string" ? (
+                                  <pre className="text-[10px] text-text-tertiary leading-relaxed whitespace-pre-wrap mt-2 max-h-48 overflow-y-auto">
+                                    {chart.replace(/<[^>]+>/g, "").trim()}
+                                  </pre>
+                                ) : m.id === "humandesign" && humandesignImageUrl ? (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img
+                                    src={humandesignImageUrl}
+                                    alt="Human Design Bodygraph"
+                                    className="w-full h-auto mt-2 rounded"
+                                  />
+                                ) : (
+                                  <p className="text-[10px] text-text-tertiary mt-2">載入圖片中…</p>
+                                )}
+                              </div>
+                            </details>
+                          );
+                        })}
+                      </div>
+                      {ziweiBirthInfo && charts.ziwei && (
+                        <div className="mb-6">
+                          <ZiweiChart {...ziweiBirthInfo} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: "discussion",
+                hintWhenInactive: "向右滑動觀看討論",
+                content: (
+                  <div ref={convScrollRef} onScroll={handleScroll} className="h-full overflow-y-auto px-4 py-4">
+                    <div className="max-w-2xl mx-auto space-y-4">
+                      {messages.map((msg, i) => {
+                        if (msg.role === "user") {
+                          if (msg.content.startsWith("請針對前面其他老師")) return null;
+                          if (msg.content.startsWith("這是最後一輪")) return null;
+                          const displayContent = msg.content.replace(/\n\n【(以下是|系統提示)[\s\S]*$/, "").trim();
+                          if (!displayContent) return null;
+                          return (
+                            <div key={i} className="flex justify-end">
+                              <div className="bg-accent/8 border border-border-light rounded-lg px-4 py-3 max-w-[85%] text-sm text-text-primary leading-relaxed">
+                                <div className="whitespace-pre-wrap">{displayContent}</div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        const masterInfo = getMasterInfo(msg.master);
+                        const masterColor = masterInfo?.color || "text-text-primary";
+                        const masterBg = masterInfo?.bgClass || "";
+                        return (
+                          <div key={i} className="flex justify-start">
+                            <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterBg}`}>
+                              <div className="flex items-center gap-1.5 mb-2">
+                                <span className={`text-base ${masterColor}`}>{masterInfo?.symbol}</span>
+                                <span className={`text-xs font-semibold ${masterColor}`}>{masterInfo?.label}</span>
+                              </div>
+                              <div
+                                className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap prose-sm"
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(msg.content)) }}
+                              />
+                              <div className="flex justify-end mt-1">
+                                <button
+                                  onClick={() => handleSaveConversation(i)}
+                                  disabled={savedMessageIds.has(i)}
+                                  className={`text-xs flex items-center gap-1 min-h-[28px] px-1.5 transition-colors ${
+                                    savedMessageIds.has(i) ? "text-text-tertiary" : "text-text-placeholder hover:text-text-tertiary"
+                                  }`}
+                                >
+                                  {savedMessageIds.has(i) ? (
+                                    <>
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      已保存
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                      </svg>
+                                      保存
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {streamingMaster && !streamingContent && (
+                        <div className="flex justify-start">
+                          {(() => {
+                            const masterInfo = getMasterInfo(streamingMaster);
+                            return (
+                              <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterInfo?.bgClass || ""}`}>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <span className={`text-base ${masterInfo?.color}`}>{masterInfo?.symbol}</span>
+                                  <span className={`text-xs font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-sm text-text-tertiary">
+                                  <span className="inline-flex gap-0.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+                                  </span>
+                                  <span className="text-xs animate-pulse">{t("comprehensive.thinking")}</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                      {streamingMaster && streamingContent && (
+                        <div className="flex justify-start">
+                          {(() => {
+                            const masterInfo = getMasterInfo(streamingMaster);
+                            return (
+                              <div className={`border rounded-lg px-4 py-3 max-w-[90%] ${masterInfo?.bgClass || ""}`}>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <span className={`text-base ${masterInfo?.color}`}>{masterInfo?.symbol}</span>
+                                  <span className={`text-xs font-semibold ${masterInfo?.color}`}>{masterInfo?.label}</span>
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
+                                </div>
+                                <div
+                                  className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap streaming-cursor prose-sm"
+                                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(streamingContent)) }}
+                                />
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
+      )}
       </>
       )}
 

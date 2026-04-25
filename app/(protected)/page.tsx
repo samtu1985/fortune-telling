@@ -15,6 +15,7 @@ import MentionDropdown from "@/app/components/MentionDropdown";
 import SavedCharts from "@/app/components/SavedCharts";
 import ComprehensiveMode from "@/app/components/ComprehensiveMode";
 import FeedbackModal from "@/app/components/FeedbackModal";
+import MobileSwipePane from "@/app/components/MobileSwipePane";
 import SiteFooter from "@/app/components/SiteFooter";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
@@ -133,6 +134,7 @@ export default function Home() {
   const [followUp, setFollowUp] = useState("");
   const [followUpImages, setFollowUpImages] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const convScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const followUpFileRef = useRef<HTMLInputElement>(null);
 
@@ -225,9 +227,22 @@ export default function Home() {
   // Track whether user is near the bottom of the scroll area
   const isNearBottomRef = useRef(true);
 
+  // Runtime mobile detection (matches MobileSwipePane breakpoint).
+  // Used to render either the desktop stacked layout OR the mobile swipe pane,
+  // but never both — to avoid double-mounting nested streaming components.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const el = scrollRef.current ?? convScrollRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
     const threshold = window.innerWidth < 640 ? 200 : 80;
     isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < threshold;
     // On mobile, collapse controls when user scrolls up
@@ -238,8 +253,13 @@ export default function Home() {
 
   // Auto-scroll only when user is near the bottom
   useEffect(() => {
-    if (scrollRef.current && isNearBottomRef.current) {
+    if (!isNearBottomRef.current) return;
+    // Desktop: outer scrollRef. Mobile: per-panel convScrollRef.
+    if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+    if (convScrollRef.current) {
+      convScrollRef.current.scrollTop = convScrollRef.current.scrollHeight;
     }
   }, [conv.streamingContent, conv.streamingReasoning, conv.messages.length]);
 
@@ -993,14 +1013,15 @@ ${t("birth.topic")}：${aiQuestion}`;
           <div className="mx-auto mt-1 w-24 tesla-divider" />
         </div>
 
-        {/* Messages area — scrollable */}
+        {/* Messages area — scrollable on desktop; horizontally swipable on mobile */}
+        {!isMobile ? (
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
         >
           <div className="max-w-2xl mx-auto space-y-4">
-            {/* Visual ziwei chart */}
+            {/* Desktop: original stacked layout (chart + messages) */}
             {selectedType === "ziwei" && conv.ziweiBirthInfo && (
               <ZiweiChart
                 birthday={conv.ziweiBirthInfo.birthday}
@@ -1009,7 +1030,6 @@ ${t("birth.topic")}：${aiQuestion}`;
                 birthdayType={conv.ziweiBirthInfo.birthdayType}
               />
             )}
-            {/* Visual human design chart */}
             {selectedType === "humandesign" && conv.humanDesignBirthInfo && (
               <HumanDesignChartLoader birthInfo={conv.humanDesignBirthInfo} />
             )}
@@ -1045,8 +1065,6 @@ ${t("birth.topic")}：${aiQuestion}`;
                 </div>
               )
             )}
-
-            {/* Currently streaming */}
             {conv.streaming && (
               <div>
                 <ResultDisplay
@@ -1057,8 +1075,6 @@ ${t("birth.topic")}：${aiQuestion}`;
                 />
               </div>
             )}
-
-            {/* Save chart button */}
             {!conv.streaming && conv.chartData && conv.profileId && (
               <div className="flex justify-center py-2">
                 {chartSaved ? (
@@ -1083,6 +1099,119 @@ ${t("birth.topic")}：${aiQuestion}`;
             )}
           </div>
         </div>
+        ) : (
+          <div className="flex-1 min-h-0 flex flex-col">
+            <MobileSwipePane
+              triggerHint={conv.streaming || conv.messages.length > 0}
+              hintSessionKey="swipe-hint-single"
+              panels={[
+                {
+                  key: "chart",
+                  hintWhenInactive: "向左滑動觀看圖表",
+                  content: (
+                    <div className="h-full overflow-y-auto px-4 py-4">
+                      <div className="max-w-2xl mx-auto space-y-4">
+                        {selectedType === "ziwei" && conv.ziweiBirthInfo && (
+                          <ZiweiChart
+                            birthday={conv.ziweiBirthInfo.birthday}
+                            birthTime={conv.ziweiBirthInfo.birthTime}
+                            gender={conv.ziweiBirthInfo.gender}
+                            birthdayType={conv.ziweiBirthInfo.birthdayType}
+                          />
+                        )}
+                        {selectedType === "humandesign" && conv.humanDesignBirthInfo && (
+                          <HumanDesignChartLoader birthInfo={conv.humanDesignBirthInfo} />
+                        )}
+                        {selectedType !== "ziwei" && selectedType !== "humandesign" && typeof conv.chartData === "string" && (
+                          <div className="border border-border-light rounded-lg p-4">
+                            <h3 className="text-sm text-accent mb-3">{t("main.chartData")}</h3>
+                            <pre className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap">
+                              {conv.chartData.replace(/<[^>]+>/g, "").trim()}
+                            </pre>
+                          </div>
+                        )}
+                        {!conv.streaming && conv.chartData && conv.profileId && (
+                          <div className="flex justify-center py-2">
+                            {chartSaved ? (
+                              <span className="text-xs text-text-tertiary flex items-center gap-1.5 px-3 py-1.5">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                {t("main.chartSavedTo")}「{conv.profileLabel}」
+                              </span>
+                            ) : (
+                              <button
+                                onClick={handleSaveChart}
+                                className="text-xs text-accent hover:text-accent transition-colors flex items-center gap-1.5 px-3 py-1.5 border border-accent/20 rounded-full"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                </svg>
+                                {t(selectedType === "humandesign" ? "main.saveChartTo.humandesign" : "main.saveChartTo")}「{conv.profileLabel}」
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: "analysis",
+                  hintWhenInactive: "向右滑動觀看解說",
+                  content: (
+                    <div ref={convScrollRef} onScroll={handleScroll} className="h-full overflow-y-auto px-4 py-4">
+                      <div className="max-w-2xl mx-auto space-y-4">
+                        {conv.messages.map((msg, i) =>
+                          msg.role === "user" ? (
+                            <div key={i} className="flex justify-end">
+                              <div className="bg-accent/[0.04] border border-accent/20 rounded-lg px-4 py-3 max-w-[85%] text-sm text-text-primary leading-relaxed">
+                                {msg.images && msg.images.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-2">
+                                    {msg.images.map((img, j) => (
+                                      <img
+                                        key={j}
+                                        src={img}
+                                        alt=""
+                                        className="w-24 h-24 object-cover rounded border border-border-light"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="whitespace-pre-wrap">{msg.content}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div key={i}>
+                              <ResultDisplay
+                                content={msg.content}
+                                reasoning={msg.reasoning || ""}
+                                streaming={false}
+                                hideDisclaimer
+                                onSave={() => handleSaveConversation(i)}
+                                isSaved={savedMessageIds.has(i)}
+                              />
+                            </div>
+                          )
+                        )}
+                        {conv.streaming && (
+                          <div>
+                            <ResultDisplay
+                              content={conv.streamingContent}
+                              reasoning={conv.streamingReasoning}
+                              streaming
+                              hideDisclaimer
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        )}
 
         {/* Mobile FAB — collapsed state */}
         <button
