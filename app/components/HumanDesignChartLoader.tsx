@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { HumanDesignChartData } from "@/app/lib/humandesign/types";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { localizeHdTerm } from "@/app/lib/humandesign/localize";
+import HumanDesignPlanetTable from "@/app/components/HumanDesignPlanetTable";
 
 interface BirthInfo {
   birthDate: string; // "YYYY-MM-DD"
@@ -142,6 +143,7 @@ export default function HumanDesignChartLoader({ birthInfo }: { birthInfo: Birth
         alt="Human Design Bodygraph"
         className="w-full h-auto rounded-sm"
       />
+      <HumanDesignPlanetTable chart={chart} />
     </div>
   );
 }
