@@ -5,6 +5,13 @@ import type { HumanDesignChartData } from "@/app/lib/humandesign/types";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { localizeHdTerm } from "@/app/lib/humandesign/localize";
 import HumanDesignPlanetTable from "@/app/components/HumanDesignPlanetTable";
+import {
+  computeBrowserCacheKey,
+  getCachedEntry,
+  setCachedEntry,
+  arrayBufferToBase64,
+  base64ToUint8Array,
+} from "@/app/lib/humandesign/browser-cache";
 
 interface BirthInfo {
   birthDate: string; // "YYYY-MM-DD"
@@ -45,6 +52,26 @@ export default function HumanDesignChartLoader({ birthInfo }: { birthInfo: Birth
     async function load() {
       setLoading(true);
       setError(null);
+
+      // 1) Browser cache hit → render instantly, skip both API round-trips.
+      let cacheKey = "";
+      try {
+        cacheKey = await computeBrowserCacheKey(birthInfo);
+        const cached = getCachedEntry(cacheKey);
+        if (cached && !cancelled) {
+          const bytes = base64ToUint8Array(cached.imageBase64);
+          const blob = new Blob([new Uint8Array(bytes)], { type: "image/png" });
+          currentObjectUrl = URL.createObjectURL(blob);
+          setChart(cached.chart);
+          setImageUrl(currentObjectUrl);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Cache key compute or read failed — fall through to network fetch.
+      }
+
+      // 2) Cache miss → fetch from API (server itself has its own cache).
       try {
         const [chartRes, imageRes] = await Promise.all([
           fetch("/api/chart", {
@@ -74,10 +101,22 @@ export default function HumanDesignChartLoader({ birthInfo }: { birthInfo: Birth
           if (!cancelled) setError(localizeError(code));
           return;
         }
-        const blob = await imageRes.blob();
+        const arrayBuf = await imageRes.arrayBuffer();
+        const blob = new Blob([new Uint8Array(arrayBuf)], { type: "image/png" });
         currentObjectUrl = URL.createObjectURL(blob);
-        if (!cancelled) {
-          setImageUrl(currentObjectUrl);
+        if (!cancelled) setImageUrl(currentObjectUrl);
+
+        // Write-through to browser cache (best-effort; quota errors handled inside).
+        if (cacheKey && chartBody.chart) {
+          try {
+            setCachedEntry(cacheKey, {
+              chart: chartBody.chart,
+              imageBase64: arrayBufferToBase64(arrayBuf),
+              timestamp: Date.now(),
+            });
+          } catch {
+            // Storage failure is non-fatal — server cache still saves credits.
+          }
         }
       } catch {
         if (!cancelled) setError(t("humandesign.error.serviceUnavailable"));
