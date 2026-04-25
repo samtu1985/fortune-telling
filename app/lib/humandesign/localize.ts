@@ -153,44 +153,58 @@ const DEFINITION_JA: TermMap = {
 
 // ── Signature ──
 // API: "Satisfaction", "Success", "Peace", "Surprise"
+// Manifesting Generators get a compound: "Satisfaction and Peace" (Gen + Manifestor).
 const SIGNATURE_ZH_HANT: TermMap = {
   "Satisfaction": "滿足",
   "Success": "成功",
   "Peace": "平和",
   "Surprise": "驚喜",
+  "Satisfaction and Peace": "滿足與平和",
+  "Peace and Satisfaction": "平和與滿足",
 };
 const SIGNATURE_ZH_HANS: TermMap = {
   "Satisfaction": "满足",
   "Success": "成功",
   "Peace": "平和",
   "Surprise": "惊喜",
+  "Satisfaction and Peace": "满足与平和",
+  "Peace and Satisfaction": "平和与满足",
 };
 const SIGNATURE_JA: TermMap = {
   "Satisfaction": "満足",
   "Success": "成功",
   "Peace": "平和",
   "Surprise": "驚き",
+  "Satisfaction and Peace": "満足と平和",
+  "Peace and Satisfaction": "平和と満足",
 };
 
 // ── Not-Self Theme ──
 // API: "Frustration", "Anger", "Bitterness", "Disappointment"
+// Manifesting Generators get a compound: "Frustration and Anger" (Gen + Manifestor).
 const NOT_SELF_ZH_HANT: TermMap = {
   "Frustration": "挫敗感",
   "Anger": "憤怒",
   "Bitterness": "苦澀",
   "Disappointment": "失望",
+  "Frustration and Anger": "挫敗與憤怒",
+  "Anger and Frustration": "憤怒與挫敗",
 };
 const NOT_SELF_ZH_HANS: TermMap = {
   "Frustration": "挫败感",
   "Anger": "愤怒",
   "Bitterness": "苦涩",
   "Disappointment": "失望",
+  "Frustration and Anger": "挫败与愤怒",
+  "Anger and Frustration": "愤怒与挫败",
 };
 const NOT_SELF_JA: TermMap = {
   "Frustration": "フラストレーション",
   "Anger": "怒り",
   "Bitterness": "苦さ",
   "Disappointment": "失望",
+  "Frustration and Anger": "フラストレーションと怒り",
+  "Anger and Frustration": "怒りとフラストレーション",
 };
 
 export type HdTermCategory =
