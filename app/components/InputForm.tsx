@@ -257,7 +257,19 @@ export default function InputForm({ type, onSubmit, loading, profiles, onProfile
             </button>
             {showSavedChart && (
               <div className="text-xs text-text-tertiary leading-relaxed whitespace-pre-wrap pl-4 border-l-2 border-border-light max-h-48 overflow-y-auto">
-                {savedChart.replace(/<[^>]+>/g, "").trim()}
+                {typeof savedChart === "string"
+                  ? savedChart.replace(/<[^>]+>/g, "").trim()
+                  : (() => {
+                      const s = (savedChart as { summary?: Record<string, string> })?.summary;
+                      if (!s) return "";
+                      return [
+                        s.type && `Type: ${s.type}`,
+                        s.strategy && `Strategy: ${s.strategy}`,
+                        s.authority && `Authority: ${s.authority}`,
+                        s.profile && `Profile: ${s.profile}`,
+                        s.definition && `Definition: ${s.definition}`,
+                      ].filter(Boolean).join("\n");
+                    })()}
               </div>
             )}
           </div>
