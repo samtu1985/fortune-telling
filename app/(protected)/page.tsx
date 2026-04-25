@@ -17,6 +17,7 @@ import ComprehensiveMode from "@/app/components/ComprehensiveMode";
 import FeedbackModal from "@/app/components/FeedbackModal";
 import MobileSwipePane from "@/app/components/MobileSwipePane";
 import SiteFooter from "@/app/components/SiteFooter";
+import Hero from "@/app/components/Hero";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleSwitcher from "@/app/components/LocaleSwitcher";
 import FeaturesGuideButton from "@/app/components/FeaturesGuideButton";
@@ -1394,22 +1395,8 @@ ${t("birth.topic")}：${aiQuestion}`;
         <UserMenu />
       </div>
 
-      {/* Header */}
-      <header className="pt-16 pb-12 px-6 text-center">
-        <h1
-          className="animate-fade-in text-[40px] font-medium text-text-primary"
-        >
-          {t("app.title")}
-        </h1>
-        <p
-          className="animate-fade-in mt-3 text-lg sm:text-xl text-text-tertiary"
-        >
-          {t("app.subtitle")}
-        </p>
-        <div
-          className="animate-fade-in mx-auto mt-6 w-32 tesla-divider"
-        />
-      </header>
+      {/* Hero with mystical wavy background */}
+      <Hero title={t("app.title")} subtitle={t("app.subtitle")} />
 
       {/* Resume conversations */}
       {typesWithConversation.length > 0 && (
