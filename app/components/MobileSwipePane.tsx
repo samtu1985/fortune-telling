@@ -38,6 +38,9 @@ export default function MobileSwipePane({
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(initialPanel);
   const [hintShown, setHintShown] = useState(false);
+  // Latch: once hint has fired in this mount, never fire again, even if hintShown
+  // toggles back to false (animation finished, or user swiped to dismiss).
+  const hintFiredRef = useRef(false);
 
   // Defeat iOS edge-swipe back/forward while mounted
   useEffect(() => {
@@ -64,15 +67,19 @@ export default function MobileSwipePane({
     setCurrentIndex(initialPanel);
   }, [initialPanel, isMobile]);
 
-  // Hint: show once per swipe-pane mount (i.e. each time the user enters a
-  // fresh analysis session). hintSessionKey is no longer used to gate across
-  // navigations — the user explicitly asked for the hint to fire every time.
+  // Hint: fires exactly ONCE per swipe-pane mount. Using a ref-based latch
+  // (instead of `hintShown` state in the deps array) so that swiping —
+  // which toggles hintShown false → true via setHintShown re-renders —
+  // can NOT cause this effect to fire the hint a second time in the same
+  // conversation. Re-mounting (e.g. user switches mode and re-enters) gets
+  // a fresh ref and a fresh hint, which is intended.
   useEffect(() => {
-    if (!isMobile || !triggerHint || hintShown) return;
+    if (!isMobile || !triggerHint || hintFiredRef.current) return;
+    hintFiredRef.current = true;
     setHintShown(true);
     const t = setTimeout(() => setHintShown(false), 3000);
     return () => clearTimeout(t);
-  }, [triggerHint, hintShown, isMobile]);
+  }, [triggerHint, isMobile]);
 
   function handleScroll() {
     const el = containerRef.current;
@@ -96,8 +103,11 @@ export default function MobileSwipePane({
     );
   }
 
-  const inactiveHint =
-    panels[currentIndex === 0 ? 1 : 0]?.hintWhenInactive ?? "";
+  // Pin the hint text to the initial-swipe direction (from initialPanel → next panel)
+  // and don't morph it based on currentIndex. We only show one hint per mount;
+  // changing the text mid-conversation would only confuse users who already swiped.
+  const initialNextPanel = (initialPanel + 1) % panels.length;
+  const inactiveHint = panels[initialNextPanel]?.hintWhenInactive ?? "";
 
   return (
     <>
